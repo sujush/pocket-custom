@@ -6,17 +6,20 @@ const mainServices = [
   { 
     title: 'HS CODE 조회', 
     description: '제품 정보를 입력하면 정확한 HS CODE를 제공합니다.',
-    icon: Search
+    icon: Search,
+    link: '/services/hscode'
   },
   { 
     title: '수입 요건 확인', 
     description: 'HS CODE를 기반으로 관세율, 협정세율, 세관장 확인대상을 확인할 수 있습니다.',
-    icon: FileCheck
+    icon: FileCheck,
+    link: '/services/import-requirements'
   },
   { 
     title: '인보이스 및 패킹리스트 제작', 
     description: '간편하게 인보이스와 패킹리스트를 작성할 수 있습니다.',
-    icon: FileText
+    icon: FileText,
+    link: '/services/invoice'
   }
 ];
 
@@ -33,7 +36,7 @@ const MainServiceCard = ({ service }) => (
       <h2 className="text-xl font-semibold text-indigo-800">{service.title}</h2>
     </div>
     <p className="text-gray-700 mb-4 text-sm">{service.description}</p>
-    <Link href="/services" className="inline-flex items-center text-indigo-600 hover:text-indigo-700 font-medium text-sm">
+    <Link href={service.link} className="inline-flex items-center text-indigo-600 hover:text-indigo-700 font-medium text-sm">
       자세히 보기 <ArrowRight className="ml-2 h-4 w-4" />
     </Link>
   </div>
