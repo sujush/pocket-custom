@@ -8,10 +8,10 @@ export default function Footer() {
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-3 gap-8">
             <div>
-              <h3 className="text-lg font-semibold mb-4 text-indigo-800">고객센터</h3>
+              <h3 className="text-lg font-semibold mb-4 text-indigo-800">상담센터</h3>
               <p className="text-gray-700">평일 09:00 - 18:00</p>
               <p className="text-gray-700">주말 및 공휴일 휴무</p>
-              <p className="text-indigo-600 font-semibold mt-2">1544-0000</p>
+              <p className="text-indigo-600 font-semibold mt-2">032-710-9432</p>
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-4 text-indigo-800">포켓커스텀 소개</h3>

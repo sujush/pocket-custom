@@ -1,6 +1,6 @@
 import Hero from '@/components/Hero'
 import Services from '@/components/Services'
-import LogisticsServices from '@/components/LogisticsServices'
+import CertifiedService from '@/components/CertifiedService'
 import Footer from '@/components/Footer'
 
 
@@ -10,7 +10,7 @@ export default function Home() {
       <div className="container mx-auto px-4 py-16">
         <Hero />
         <Services />
-        <LogisticsServices />
+        <CertifiedService />
       </div>
       <Footer />
     </div>

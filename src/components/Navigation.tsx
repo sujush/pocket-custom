@@ -10,10 +10,10 @@ export default function Navigation() {
         </Link>
         <div className="flex items-center space-x-6 mr-auto">
           <Link href="/" className="text-gray-600 hover:text-gray-800 transition-colors duration-300">
-            메인페이지
+            회사소개
           </Link>
           <Link href="/services" className="text-gray-600 hover:text-gray-800 transition-colors duration-300">
-            서비스
+            문의게시판
           </Link>
           <Link href="/support" className="text-gray-600 hover:text-gray-800 transition-colors duration-300">
             고객 지원
