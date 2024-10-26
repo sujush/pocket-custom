@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { useRouter } from 'next/navigation'
+
 
 // 국가별 관세율 코드 매핑
 const COUNTRY_RATE_TYPES = {
@@ -133,6 +135,7 @@ const RATE_TYPE_MAPPING = {
 }
 
 export default function ImportRequirementsPage() {
+  const router = useRouter() //컴포넌트 함수 내부로 이동
   const [hsCode, setHsCode] = useState('')
   const [results, setResults] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -229,7 +232,7 @@ export default function ImportRequirementsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-4">HS CODE 관세율 조회</h1>
+      <h1 className="text-2xl font-bold mb-4">HS CODE 조회</h1>
       
       <div className="space-y-4">
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -249,7 +252,7 @@ export default function ImportRequirementsPage() {
                 <SelectValue placeholder="국가를 선택하세요" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">수입국 선택</SelectItem>
+                <SelectItem value="ALL">전체</SelectItem>
                 {Object.entries(COUNTRIES).sort((a, b) => a[1].localeCompare(b[1])).map(([code, name]) => (
                   <SelectItem key={code} value={code}>
                     {name} ({code})
@@ -259,8 +262,8 @@ export default function ImportRequirementsPage() {
             </Select>
           </div>
 
-          <Button type="submit" className="w-full">
-            조회하기
+          <Button type="submit" disabled={isLoading} className="w-full">
+            {isLoading ? '조회 중...' : '조회하기'}
           </Button>
         </form>
 
@@ -283,37 +286,47 @@ export default function ImportRequirementsPage() {
             <CardContent>
               <div className="grid gap-4">
                 {results.map((item, index) => (
-                  <div 
-                    key={index} 
-                    className={`border p-4 rounded-lg bg-white shadow-sm ${
-                      item.관세율구분 === 'A' ? 'border-blue-500 bg-blue-50' : ''
-                    }`}
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-1">
-                        <p className="font-semibold text-gray-700">품목번호</p>
-                        <p className="text-gray-900 font-mono">{item.품목번호}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="font-semibold text-gray-700">관세율구분</p>
-                        <p className={`text-gray-900 ${
-                          item.관세율구분 === 'A' ? 'font-bold text-blue-600' : ''
-                        }`}>
-                          {RATE_TYPE_MAPPING[item.관세율구분] || item.관세율구분 || '-'}
-                        </p>
-                        </div>
-                      <div className="space-y-1">
-                        <p className="font-semibold text-gray-700">관세율</p>
-                        <p className="text-gray-900">{item.관세율 || '-'}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        ) : null}
-      </div>
-    </div>
-  )
+                 <div 
+                 key={index} 
+                 className={`border p-4 rounded-lg bg-white shadow-sm ${
+                   item.관세율구분 === 'A' ? 'border-blue-500 bg-blue-50' : ''
+                 }`}
+               >
+                 <div className="grid grid-cols-4 gap-4 items-center">
+                   <div className="space-y-1">
+                     <p className="font-semibold text-gray-700">품목번호</p>
+                     <p className="text-gray-900 font-mono">{item.품목번호}</p>
+                   </div>
+                   <div className="space-y-1">
+                     <p className="font-semibold text-gray-700">관세율구분</p>
+                     <p className={`text-gray-900 ${
+                       item.관세율구분 === 'A' ? 'font-bold text-blue-600' : ''
+                     }`}>
+                       {RATE_TYPE_MAPPING[item.관세율구분] || item.관세율구분 || '-'}
+                     </p>
+                   </div>
+                   <div className="space-y-1">
+                     <p className="font-semibold text-gray-700">관세율</p>
+                     <p className="text-gray-900">{item.관세율 || '-'}</p>
+                   </div>
+                   <div className="flex justify-end">
+                     {item.관세율구분 === 'A' && (
+                       <Button
+                         onClick={() => router.push(`/services/import-requirements/check/${item.품목번호}`)}
+                         className="bg-green-600 hover:bg-green-700 text-white whitespace-nowrap"
+                       >
+                         수입요건 확인
+                       </Button>
+                     )}
+                   </div>
+                 </div>
+               </div>
+               ))}
+             </div>
+           </CardContent>
+         </Card>
+       ) : null}
+     </div>
+   </div>
+ )
 }

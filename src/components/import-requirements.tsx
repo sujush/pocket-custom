@@ -29,8 +29,8 @@ export const ImportRequirements = ({ hsCode }) => {
 
   useEffect(() => {
     const fetchHsCodeData = async () => {
-      const apiUrl = 'https://api.odcloud.kr/api/15051179/v1/uddi:7f43bd09-d336-4d62-aa5e-de6f7c154ec2'
-      const apiKey = 'uoTt3pQhDBnejXS1QBI7%2FjYqNH3jbM3dq6odKeI%2BJOl2qAIE%2FIx%2F%2FacM5gR3mDluxAxebxpRNP7GiVRyVrB3dg%3D%3D'
+      const apiUrl = process.env.NEXT_PUBLIC_TARIFF_API_URL
+      const apiKey = process.env.NEXT_PUBLIC_TARIFF_API_KEY
 
       const fullUrl = `${apiUrl}?serviceKey=${apiKey}&page=1&perPage=100&returnType=JSON&cond[품목번호::EQ]=${hsCode}`
       console.log("Final API Request URL:", fullUrl)
