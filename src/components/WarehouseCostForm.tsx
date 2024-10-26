@@ -14,8 +14,16 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 const formSchema = z.object({
+  port: z.enum(['incheon', 'busan']),
   storageDays: z.number().int().positive(),
   appraisedValue: z.number().int().nonnegative(),
   cbm: z.number().positive(),
@@ -29,18 +37,17 @@ export function WarehouseCostForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      storageDays: undefined, // 기본값을 undefined로 설정
+      port: 'incheon',
+      storageDays: undefined,
       appraisedValue: undefined, 
       cbm: undefined,
       weight: undefined,
     },
   });
 
-  // Lambda API 호출 함수
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      // Lambda API 호출
       const response = await fetch('https://7716t0w0u7.execute-api.ap-northeast-2.amazonaws.com/warehouse', {
         method: 'POST',
         headers: {
@@ -49,9 +56,8 @@ export function WarehouseCostForm() {
         body: JSON.stringify(values),
       });
 
-      // 응답 데이터 파싱
       const data = await response.json();
-      setCalculationResult(data.result); // 계산 결과 저장
+      setCalculationResult(data.result);
     } catch (error) {
       console.error('계산 중 오류가 발생했습니다:', error);
     } finally {
@@ -66,6 +72,28 @@ export function WarehouseCostForm() {
           <div className="space-y-4 border p-4 rounded">
             <FormField
               control={form.control}
+              name="port"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>항구 선택</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="항구를 선택하세요" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="incheon">인천항</SelectItem>
+                      <SelectItem value="busan">부산항</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="storageDays"
               render={({ field }) => (
                 <FormItem>
@@ -75,7 +103,7 @@ export function WarehouseCostForm() {
                       type="number"
                       placeholder="일수 입력"
                       {...field}
-                      onChange={(e) => field.onChange(e.target.valueAsNumber || undefined)} // undefined로 설정
+                      onChange={(e) => field.onChange(e.target.valueAsNumber || undefined)}
                     />
                   </FormControl>
                   <FormMessage />
@@ -148,11 +176,12 @@ export function WarehouseCostForm() {
           {isLoading ? '계산 중...' : '계산하기'}
         </Button>
 
-        {/* 결과가 있는 경우 아래에 결과를 표시 */}
         {calculationResult !== null && (
           <div className="mt-4 p-4 bg-blue-100 rounded-md">
             <h2 className="text-xl font-semibold mb-2">계산 결과</h2>
-            <p className="text-2xl font-bold text-blue-800">{calculationResult.toLocaleString()}원</p>
+            <p className="text-2xl font-bold text-blue-800">
+              {form.getValues('port') === 'incheon' ? '인천항' : '부산항'} 창고료: {calculationResult.toLocaleString()}원
+            </p>
           </div>
         )}
       </form>

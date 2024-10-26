@@ -37,8 +37,8 @@ const additionalServices = [
     link: 'LocalTruckingCharge'
   },
   { 
-    title: '전문가 상담', 
-    description: '관세사에게 보다 자세한 상담을 받아보세요.\n이연관세사무소 진현우 관세사 \nT) 032-710-9432 F)032-232-4932 \nE-mail :e-yeon@e-yeon.com', 
+    title: '오류 발생 시 연락처', 
+    description: '오류 발생 및 추가 기능 개선 요청\n이연관세사무소 진현우 관세사 \n \n', 
     icon: Phone, 
     color: 'purple' 
   }

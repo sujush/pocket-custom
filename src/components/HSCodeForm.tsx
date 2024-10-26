@@ -58,19 +58,19 @@ export const HSCodeForm: React.FC = () => {
         
         <Card className="mb-4 flex-shrink-0">
           <CardHeader>
-            <CardTitle>코드를 조회해볼까?</CardTitle>
+            <CardTitle>코드를 조회하기 전에 아래의 내용을 확인하세요</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {[
-              "안녕! HS CODE 를 확인하러 왔구나!",
-              "HS CODE는 6자리까지 세계 공통으로 적용되는 거 알고 있어?",
-              "아래에 HS CODE에 필요한 내용을 기재해주면 HS CODE 6자리를 알려줄게!",
-              "통관에 필요한 HS CODE는 10자리지만, 6자리까지 알게되면 10자리는 쉽게 알 수 있어!",
-              "6자리를 확인했으면, \"다음\" 버튼을 누르고 세율이랑 요건을 확인해봐!"
+              "안녕하세요. 이연관세사무소 여러분",
+              "HS CODE는 6자리까지 세계 공통으로 적용됩니다.",
+              "아래에 HS CODE에 필요한 내용을 기재해주면 HS CODE 6자리를 제공합니다.",
+              "6자리까지 확인되었다면 법령 검토 후 10단위를 확정하세요",
+              "10자리를 확정한 경우 뒤로 돌아가 세율과 요건을 확인하세요"
             ].map((text, index) => (
               <div key={index} className="flex items-start space-x-2">
                 <Avatar className="w-8 h-8 flex-shrink-0">
-                  <AvatarImage src="/cute-doctor.png" alt="Cute Doctor" />
+                  <AvatarImage src="/eyeon_logo.png" alt="eyeon_logo" />
                   <AvatarFallback>DR</AvatarFallback>
                 </Avatar>
                 <p className="text-sm">{text}</p>

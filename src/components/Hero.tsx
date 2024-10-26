@@ -5,13 +5,13 @@ export default function Hero() {
     <div className="text-center mb-16">
       <div className="flex items-center justify-center mb-4">
         <Avatar className="h-24 w-24 mr-4">
-          <AvatarImage src="/cute-doctor.png" alt="Cute Doctor" />
+          <AvatarImage src="/eyeon_logo.png" alt="eyeon_logo" />
           <AvatarFallback>DR</AvatarFallback>
         </Avatar>
-        <h1 className="text-5xl font-bold text-indigo-600">포켓커스텀</h1>
+        <h1 className="text-5xl font-bold text-indigo-600">이연 관세사무소</h1>
       </div>
       <p className="text-xl text-gray-700 mb-8">
-        내 손 안의 작은 관세사를 만나보세요.
+        통관 관련 내부 검토용 시스템
       </p>
     </div>
   )
