@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
+import { Textarea } from './ui/textarea' // 추가된 부분
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
@@ -65,7 +66,7 @@ export const HSCodeForm: React.FC = () => {
       if (!data.data || data.data.length === 0) break
 
       allResults = [...allResults, ...data.data]
-      
+
       if (data.data.length < 1000 || currentPage * 1000 >= data.matchCount) break
       currentPage++
     }
@@ -109,13 +110,13 @@ export const HSCodeForm: React.FC = () => {
       }
 
       const data = await response.json()
-      
+
       if (!data.hsCode) {
         throw new Error('HS CODE를 받아오지 못했습니다')
       }
 
       const sixDigitCode = data.hsCode.trim().substring(0, 6)
-      
+
       if (!/^\d{6}$/.test(sixDigitCode)) {
         throw new Error('유효하지 않은 HS CODE 형식입니다')
       }
@@ -126,7 +127,7 @@ export const HSCodeForm: React.FC = () => {
       // 모든 페이지에서 검색
       const allResults = await fetchAllPages(sixDigitCode)
       console.log('Total results fetched:', allResults.length)
-      
+
       const filteredResults = allResults
         .filter(item => {
           const hsCode = String(item.HS부호).padStart(10, '0')
@@ -153,7 +154,7 @@ export const HSCodeForm: React.FC = () => {
       }
 
       setHSCodeResults(filteredResults)
-      
+
     } catch (error) {
       console.error('Error:', error)
       const errorMessage = error instanceof Error ? error.message : '요청 처리 중 오류가 발생했습니다.'
@@ -168,7 +169,7 @@ export const HSCodeForm: React.FC = () => {
     <div className="flex h-screen overflow-hidden">
       <div className="w-1/2 p-4 flex flex-col overflow-auto">
         <h1 className="text-2xl font-bold mb-4">6단위 조회</h1>
-        
+
         <Card className="mb-4 flex-shrink-0">
           <CardHeader>
             <CardTitle>코드를 조회하기 전에 아래의 내용을 확인하세요</CardTitle>
@@ -200,7 +201,7 @@ export const HSCodeForm: React.FC = () => {
                 name="material"
                 value={product.material}
                 onChange={handleInputChange}
-                placeholder="제품 재질"
+                placeholder="제품 재질 (의류인 경우 직물/편물 여부 및 성분 배합비율까지 기재)"
                 disabled={isSubmitting}
                 required
               />
@@ -209,7 +210,7 @@ export const HSCodeForm: React.FC = () => {
                 name="function"
                 value={product.function}
                 onChange={handleInputChange}
-                placeholder="제품의 기능 및 용도"
+                placeholder="제품의 기능 및 용도 (의류인 경우 남성/여성 구분, 수영복 등 특수의류인 경우 그 내용까지)"
                 disabled={isSubmitting}
                 required
               />
@@ -218,22 +219,22 @@ export const HSCodeForm: React.FC = () => {
                 name="shape"
                 value={product.shape}
                 onChange={handleInputChange}
-                placeholder="제품의 형태"
+                placeholder="제품의 형태 (의류인 경우 수트처럼 세트로 되어있는지 아니면 상의/하의인지 여부까지)"
                 disabled={isSubmitting}
                 required
               />
-              <Input
-                type="text"
+              <Textarea
                 name="description"
                 value={product.description}
                 onChange={handleInputChange}
-                placeholder="그 외 설명사항"
+                placeholder="그 외 설명사항 - 최대한 상세하게 기술하세요."
                 disabled={isSubmitting}
                 required
+                rows={11} // 원하는 초기 표시 줄 수로 설정 가능
               />
-              <Button 
-                type="submit" 
-                disabled={isSubmitting} 
+              <Button
+                type="submit"
+                disabled={isSubmitting}
                 className="w-full"
               >
                 {isSubmitting ? '조회 중...' : 'HS CODE 조회'}
@@ -267,11 +268,11 @@ export const HSCodeForm: React.FC = () => {
                     HS CODE 6자리: {hsCode}
                   </p>
                 </div>
-                
+
                 {hsCodeResults.length > 0 && (
                   <div className="space-y-4">
                     <p className="font-medium text-gray-600">
-                      해당하는 HS CODE 10자리: {hsCodeResults.length}개
+                      검색된 품목 수: {hsCodeResults.length}개
                     </p>
                     <div className="grid gap-4">
                       {hsCodeResults.map((result, index) => (
