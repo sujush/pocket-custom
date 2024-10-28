@@ -1,4 +1,4 @@
-// src/app/services/import-requirements/page.tsx
+// src/app/import-requirements/[[...hsCode]]/page.tsx
 'use client'
 
 import React, { useEffect, useState } from 'react'
@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
-
 
 // 국가별 관세율 코드 매핑
 const COUNTRY_RATE_TYPES = {
@@ -115,7 +114,7 @@ const COUNTRIES = {
 }
 
 // 기본 관세율 코드
-const BASE_RATE_TYPES = ['A', 'C', 'P1', 'P3', , 'W1', 'W2']
+const BASE_RATE_TYPES = ['A', 'C', 'P1', 'P3', 'W1', 'W2']
 
 // 관세율 구분 설명
 const RATE_TYPE_MAPPING = {
@@ -134,43 +133,53 @@ const RATE_TYPE_MAPPING = {
   'W2': 'W2 (WTO 협정관세-미추천세율)'
 }
 
-export default function ImportRequirementsPage() {
-  const router = useRouter() //컴포넌트 함수 내부로 이동
-  const [hsCode, setHsCode] = useState('')
+export default function ImportRequirementsPage({ params }: { params: { hsCode?: string[] } }) {
+  const router = useRouter()
+  const [hsCode, setHsCode] = useState<string>('') //빈 문자열로 초기화
   const [results, setResults] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
   const [selectedCountry, setSelectedCountry] = useState('ALL')
   const [isSubmitted, setIsSubmitted] = useState(false)
 
+  // URL 파라미터로부터 hsCode 설정
+  useEffect(() => {
+    // hsCode가 제공된 경우에만 입력창에 세팅
+    if (params.hsCode && params.hsCode.length > 0) {
+      const codeFromParams = params.hsCode.join('');
+      setHsCode(codeFromParams);  // 파라미터가 있으면 설정
+      setIsSubmitted(true);       // URL로 접근한 경우 자동으로 조회 수행
+    }
+  }, [params.hsCode]);
+
   // HS CODE 입력 핸들러
   const handleInputChange = (e) => {
-    setHsCode(e.target.value)
-    setIsSubmitted(false)
-  }
+    setHsCode(e.target.value);
+    setIsSubmitted(false);
+  };
 
   // 조회 버튼 클릭 핸들러
   const handleSubmit = (e) => {
-    e.preventDefault()
+    e.preventDefault();
     if (hsCode.length !== 10) {
-      alert('HS CODE 10자리를 입력해 주세요.')
-      return
+      alert('HS CODE 10자리를 입력해 주세요.');
+      return;
     }
-    setIsSubmitted(true)
-  }
+    setIsSubmitted(true);
+  };
 
   // 국가 선택 핸들러
   const handleCountryChange = (value) => {
     setSelectedCountry(value)
     if (isSubmitted) {
-      setIsSubmitted(true) // 국가 변경 시 재조회 트리거
+      setIsSubmitted(true)
     }
   }
 
   // API 호출 및 데이터 처리
   useEffect(() => {
     const fetchHsCodeData = async () => {
-      if (!isSubmitted) return
+      if (!isSubmitted || !hsCode) return
 
       const apiUrl = process.env.NEXT_PUBLIC_TARIFF_API_URL
       const apiKey = process.env.NEXT_PUBLIC_TARIFF_API_KEY
@@ -252,7 +261,7 @@ export default function ImportRequirementsPage() {
                 <SelectValue placeholder="국가를 선택하세요" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">전체</SelectItem>
+                <SelectItem value="ALL">협정세율을 확인하려면 국가를 선택해주세요</SelectItem>
                 {Object.entries(COUNTRIES).sort((a, b) => a[1].localeCompare(b[1])).map(([code, name]) => (
                   <SelectItem key={code} value={code}>
                     {name} ({code})
@@ -263,7 +272,8 @@ export default function ImportRequirementsPage() {
           </div>
 
           <Button type="submit" disabled={isLoading} className="w-full">
-            {isLoading ? '조회 중...' : '조회하기'}
+            {isLoading ? '조회 중...' : '조회하기'
+            }
           </Button>
         </form>
 
@@ -286,47 +296,49 @@ export default function ImportRequirementsPage() {
             <CardContent>
               <div className="grid gap-4">
                 {results.map((item, index) => (
-                 <div 
-                 key={index} 
-                 className={`border p-4 rounded-lg bg-white shadow-sm ${
-                   item.관세율구분 === 'A' ? 'border-blue-500 bg-blue-50' : ''
-                 }`}
-               >
-                 <div className="grid grid-cols-4 gap-4 items-center">
-                   <div className="space-y-1">
-                     <p className="font-semibold text-gray-700">품목번호</p>
-                     <p className="text-gray-900 font-mono">{item.품목번호}</p>
-                   </div>
-                   <div className="space-y-1">
-                     <p className="font-semibold text-gray-700">관세율구분</p>
-                     <p className={`text-gray-900 ${
-                       item.관세율구분 === 'A' ? 'font-bold text-blue-600' : ''
-                     }`}>
-                       {RATE_TYPE_MAPPING[item.관세율구분] || item.관세율구분 || '-'}
-                     </p>
-                   </div>
-                   <div className="space-y-1">
-                     <p className="font-semibold text-gray-700">관세율</p>
-                     <p className="text-gray-900">{item.관세율 || '-'}</p>
-                   </div>
-                   <div className="flex justify-end">
-                     {item.관세율구분 === 'A' && (
-                       <Button
-                         onClick={() => router.push(`/services/import-requirements/check/${item.품목번호}`)}
-                         className="bg-green-600 hover:bg-green-700 text-white whitespace-nowrap"
-                       >
-                         수입요건 확인
-                       </Button>
-                     )}
-                   </div>
-                 </div>
-               </div>
-               ))}
-             </div>
-           </CardContent>
-         </Card>
-       ) : null}
-     </div>
-   </div>
- )
+                  <div 
+                    key={index} 
+                    className={`border p-4 rounded-lg bg-white shadow-sm ${
+                      item.관세율구분 === 'A' ? 'border-blue-500 bg-blue-50' : ''
+                    }`}
+                  >
+                    <div className="grid grid-cols-4 gap-4 items-center">
+                      <div className="space-y-1">
+                        <p className="font-semibold text-gray-700">품목번호</p>
+                        <p className="text-gray-900 font-mono">{item.품목번호}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="font-semibold text-gray-700">관세율구분</p>
+                        <p className={`text-gray-900 ${
+                          item.관세율구분 === 'A' ? 'font-bold text-blue-600' : ''
+                        }`}>
+                          {RATE_TYPE_MAPPING[item.관세율구분] || item.관세율구분 || '-'}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="font-semibold text-gray-700">관세율</p>
+                        <p className="text-gray-900">{item.관세율 || '-'}</p>
+                      </div>
+                      <div className="flex justify-end">
+                        {item.관세율구분 === 'A' && (
+                          <Button
+                            onClick={() => router.push(`/services/import-requirements/check/${item.품목번호}`)}
+                            className="bg-green-600 hover:bg-green-700 text-white whitespace-nowrap"
+                          >
+                            수입요건 확인
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          isSubmitted && <p>데이터가 없습니다.</p>
+        )}
+      </div>
+    </div>
+  )
 }

@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons'
+import Link from 'next/link';
+
 
 interface HSCodeResult {
   품목번호: string;
@@ -168,7 +170,7 @@ export const HSCodeForm: React.FC = () => {
   return (
     <div className="flex h-screen overflow-hidden">
       <div className="w-1/2 p-4 flex flex-col overflow-auto">
-        <h1 className="text-2xl font-bold mb-4">6단위 조회</h1>
+        <h1 className="text-2xl font-bold mb-4">10단위 조회</h1>
 
         <Card className="mb-4 flex-shrink-0">
           <CardHeader>
@@ -176,10 +178,10 @@ export const HSCodeForm: React.FC = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             {[
-              "안녕하세요. 이연관세사무소 여러분",
+              "안녕하세요. 여기서 HS CODE 10단위를 조회할 수 있습니다.",
               "HS CODE는 6자리까지 세계 공통으로 적용됩니다.",
-              "아래에 HS CODE에 필요한 내용을 기재해주면 HS CODE 6자리를 제공합니다.",
-              "6자리까지 확인되었다면 법령 검토 후 10단위를 확정하세요",
+              "아래에 HS CODE에 필요한 내용을 기재해주면 HS CODE 10자리를 제공합니다.",
+              "만약 [유효하지 않은 HS CODE 형식] 이라고 나오는 경우 더 자세하게 작성하세요",
               "10자리를 확정한 경우 뒤로 돌아가 세율과 요건을 확인하세요"
             ].map((text, index) => (
               <div key={index} className="flex items-start space-x-2">
@@ -293,6 +295,14 @@ export const HSCodeForm: React.FC = () => {
                               </div>
                               <div className="text-sm text-gray-600 pt-2">
                                 <p>적용기간: {result.적용시작일} ~ {result.적용종료일}</p>
+                              </div>
+                              {/* 세율 및 요건확인 버튼 추가 */}
+                              <div className='pt-2'>
+                                <Link href={`/services/import-requirements/${result.품목번호}`}>
+                                  <Button className='w-full'>
+                                    세율 및 요건확인
+                                  </Button>
+                                </Link>
                               </div>
                             </div>
                           </CardContent>

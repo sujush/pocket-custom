@@ -5,7 +5,7 @@ export default function Hero() {
     <div className="text-center mb-16">
       <div className="flex items-center justify-center mb-4">
         <Avatar className="h-24 w-24 mr-4">
-          <AvatarImage src="/eyeon_logo.png" alt="eyeon_logo" />
+          <AvatarImage src="/eyeon_logo.png" alt="eyeon_logo" /> 
           <AvatarFallback>DR</AvatarFallback>
         </Avatar>
         <h1 className="text-5xl font-bold text-indigo-600">이연 관세사무소</h1>
