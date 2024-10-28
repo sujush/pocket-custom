@@ -1,3 +1,4 @@
+// components/Navigation.tsx
 import Link from 'next/link'
 import { Button } from "@/components/ui/button"
 
@@ -25,6 +26,9 @@ export default function Navigation() {
           </Link>
           <Link href="/signup">
             <Button className="bg-indigo-600 text-white hover:bg-indigo-700 transition-colors duration-300">회원가입</Button>
+          </Link>
+          <Link href="/upgrade">
+            <Button className="bg-yellow-500 text-white hover:bg-yellow-600 transition-colors duration-300">프리미엄 회원 전환</Button>
           </Link>
         </div>
       </div>

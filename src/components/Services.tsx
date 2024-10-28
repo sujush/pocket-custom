@@ -6,20 +6,20 @@ import { useRouter } from 'next/navigation';
 import { ArrowRight, Search, FileCheck, FileText, Calculator, Box, Phone } from 'lucide-react';
 
 const mainServices = [
-  { 
-    title: 'HS CODE 조회', 
+  {
+    title: 'HS CODE 조회',
     description: '제품 정보를 입력하면 HS CODE를 제공합니다.',
     icon: Search,
     link: '/services/hscode'
   },
-  { 
-    title: '관세율 및 수입 요건 확인', 
+  {
+    title: '관세율 및 수입 요건 확인',
     description: 'HS CODE를 기반으로 관세율, 협정세율, 세관장 확인대상을 확인할 수 있습니다.',
     icon: FileCheck,
     link: '/services/import-requirements/'
   },
-  { 
-    title: '수출 인보이스 및 패킹리스트 제작', 
+  {
+    title: '수출 인보이스 및 패킹리스트 제작',
     description: '간편하게 인보이스와 패킹리스트를 작성할 수 있습니다. (구독자용)',
     icon: FileText,
     link: '/services/invoice'
@@ -27,25 +27,26 @@ const mainServices = [
 ];
 
 const additionalServices = [
-  { 
-    title: '창고료 확인', 
-    description: '창고료 예상비용을 확인할 수 있습니다.', 
-    icon: Calculator, 
+  {
+    title: '창고료 확인',
+    description: '창고료 예상비용을 확인할 수 있습니다.',
+    icon: Calculator,
     color: 'blue',
     link: '/services/WarehouseCost'
   },
-  { 
-    title: '화물 위치 및 통관 상태 확인', 
-    description: '현재 화물의 위치와 통관 상태를 확인할 수 있습니다', 
-    icon: Box, 
+  {
+    title: '화물 위치 및 통관 상태 확인',
+    description: '현재 화물의 위치와 통관 상태를 확인할 수 있습니다',
+    icon: Box,
     color: 'blue',
-    link: 'LocalTruckingCharge'
+    link: 'cargo-location'
   },
-  { 
-    title: '오류 발생 시 연락처', 
-    description: '오류 발생 및 추가 기능 개선 요청\n이연관세사무소 진현우 관세사 \n \n', 
-    icon: Phone, 
-    color: 'purple' 
+  {
+    title: '검사 대행 찾기',
+    description: '검사대행 서비스를 이용할 수 있습니다. \n 의뢰인 또는 검사자가 중개인없이 컨택이 가능합니다.',
+    icon: Phone,
+    color: 'purple',
+    link: 'https://www.customs-inspection.net/' //외부링크
   }
 ];
 
@@ -89,6 +90,13 @@ const AdditionalServiceCard = ({ service }) => {
 
   // 설명을 두 부분으로 나눔
   const [mainDescription, ...contactInfo] = service.description.split('\n');
+
+  // 링크 처리를 위한 함수
+  const handleClick = () => {
+    if (service.link?.startsWith('http')) {
+      window.open(service.link, '_blank'); // 외부 링크일 경우 새 탭에서 열기
+    }
+  };
 
   // 연락처 정보를 렌더링하는 함수
   const renderContactInfo = (info) => {

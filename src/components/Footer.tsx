@@ -14,7 +14,7 @@ export default function Footer() {
               <p className="text-indigo-600 font-semibold mt-2">032-710-9432</p>
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-4 text-indigo-800">포켓커스텀 소개</h3>
+              <h3 className="text-lg font-semibold mb-4 text-indigo-800">이연관세사무소 소개</h3>
               <ul className="space-y-2">
                 <li><Link href="/about" className="text-gray-700 hover:text-indigo-600">회사 소개</Link></li>
                 <li><Link href="/terms" className="text-gray-700 hover:text-indigo-600">이용약관</Link></li>
@@ -34,7 +34,7 @@ export default function Footer() {
       </div>
       <footer className="bg-indigo-900 text-white py-4">
         <div className="container mx-auto px-4 text-center">
-          <p>&copy; 2023 포켓커스텀. All rights reserved.</p>
+          <p>&copy; 2024 이연관세사무소 포켓커스텀. All rights reserved.</p>
         </div>
       </footer>
     </>
