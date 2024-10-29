@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Navigation from "@/components/Navigation"; // Navigation 컴포넌트 임포트
+import Navigation from "@/components/Navigation";
 
 export default function CargoLocation() {
     const [cargoData, setCargoData] = useState(null);
@@ -44,16 +44,41 @@ export default function CargoLocation() {
     };
 
     const orderedFields = [
-        "통관진행상태", "항차", "품명", "양륙항명", "입항일자", "용적", "중량단위", "화물구분", 
-        "포장개수", "입항세관", "선박명", "HBL번호", "처리일시", "포워더부호", "총중량", 
-        "적재항명", "포워더명", "화물관리번호", "컨테이너번호", "MBL번호", "적출국가코드", 
-        "진행상태", "선사항공사", "포장단위"
+        { key: "통관진행상태", label: "통관진행상태" },
+        { key: "항차", label: "항차" },
+        { key: "품명", label: "품명" },
+        { key: "양륙항명", label: "양륙항명" },
+        { key: "입항일자", label: "입항일자" },
+        { key: "용적", label: "용적" },
+        { key: "중량단위", label: "중량단위" },
+        { key: "화물구분", label: "화물구분" },
+        { key: "포장개수", label: "포장개수" },
+        { key: "입항세관", label: "입항세관" },
+        { key: "선박명", label: "선박명" },
+        { key: "HBL번호", label: "HBL번호" },
+        { key: "처리일시", label: "처리일시" },
+        { key: "포워더부호", label: "포워더부호" },
+        { key: "총중량", label: "총중량" },
+        { key: "적재항명", label: "적재항명" },
+        { key: "포워더명", label: "포워더명" },
+        { key: "화물관리번호", label: "화물관리번호" },
+        { key: "컨테이너번호", label: "컨테이너번호" },
+        { key: "MBL번호", label: "MBL번호" },
+        { key: "적출국가코드", label: "적출국가코드" },
+        { key: "진행상태", label: "진행상태" },
+        { key: "선사항공사", label: "선사항공사" },
+        { key: "포장단위", label: "포장단위" }
     ];
 
     const groupedFields = [];
     for (let i = 0; i < orderedFields.length; i += 3) {
         groupedFields.push(orderedFields.slice(i, i + 3));
     }
+
+    const formatDate = (datetimeStr) => {
+        if (!datetimeStr) return "N/A";
+        return `${datetimeStr.slice(0, 4)}.${datetimeStr.slice(4, 6)}.${datetimeStr.slice(6, 8)} ${datetimeStr.slice(8, 10)}:${datetimeStr.slice(10, 12)}`;
+    };
 
     const getSummaryText = () => {
         if (!cargoData) return "";
@@ -80,7 +105,7 @@ export default function CargoLocation() {
 
     return (
         <div className="container mx-auto p-4">
-            <Navigation /> {/* 상단 Navigation 추가 */}
+            <Navigation />
             <div className="flex justify-between mb-8">
                 <div className="w-1/2 p-4 bg-white shadow-md rounded-lg mr-4">
                     <h1 className="text-2xl font-bold mb-4">화물 위치 및 통관 상태 확인</h1>
@@ -147,8 +172,11 @@ export default function CargoLocation() {
                         <tbody>
                             {groupedFields.map((fieldGroup, rowIndex) => (
                                 <tr key={rowIndex}>
-                                    {fieldGroup.map((field) => (
-                                        <td key={field} className="border px-4 py-2 font-semibold">{field}</td>
+                                    {fieldGroup.map(({ key, label }) => (
+                                        <>
+                                            <td key={`${key}-label`} className="border px-4 py-2 font-semibold">{label}</td>
+                                            <td key={`${key}-value`} className="border px-4 py-2">{cargoData[key]}</td>
+                                        </>
                                     ))}
                                 </tr>
                             ))}
@@ -175,7 +203,7 @@ export default function CargoLocation() {
                                     {cargoData.cargCsclPrgsInfoDtlQryVo.map((item, index) => (
                                         <tr key={index}>
                                             <td className="border px-4 py-2">{item.장치장명}</td>
-                                            <td className="border px-4 py-2">{item.처리일시}</td>
+                                            <td className="border px-4 py-2">{formatDate(item.처리일시)}</td>
                                             <td className="border px-4 py-2">{item.중량}</td>
                                             <td className="border px-4 py-2">{item.중량단위}</td>
                                             <td className="border px-4 py-2">{item.포장개수}</td>

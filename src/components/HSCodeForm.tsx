@@ -1,15 +1,35 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Button } from './ui/button'
-import { Input } from './ui/input'
-import { Textarea } from './ui/textarea' // 추가된 부분
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
-import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
-import { ExclamationTriangleIcon } from '@radix-ui/react-icons'
-import Link from 'next/link';
+import React, { useState, useEffect } from 'react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
+import { useRouter } from 'next/navigation';
 
+const categoryOptions = [
+  '가구', '조명', '컴퓨터용 제품', '공구', '농업용 또는 원예용 제품', '전기용품',
+  '서적 또는 인쇄물', '운동용품', '식품', '모자 및 신발', '애완용품', '의료용품',
+  '완구', '어린이제품', '직물제 의류 및 의류부속품', '편물제 의류 및 의류부속품',
+  '자동차용품', '주방용품', '침구 또는 커튼', '두발 또는 구강용품', '화장품',
+  'CD 또는 DVD', '시계', '악기', '도자제품', '가방', '가죽제품', '목욕용 제품',
+  '액세서리', '해당사항 없음'
+];
+
+const functionOptions = [
+  '전기를 사용하나요?',
+  '가정에서 사용하는 제품인가요?',
+  '유아용 제품인가요?',
+  '기계거나 또는 정밀기기인가요?'
+];
+
+const materialOptions = [
+  '플라스틱제', '고무제', '도자제', '유리제',
+  '방직용 섬유제', '가죽제', '금속제', '종이제', '나무제', '모르거나 해당사항 없음'
+];
 
 interface HSCodeResult {
   품목번호: string;
@@ -22,122 +42,169 @@ interface HSCodeResult {
 }
 
 interface Product {
+  category: string;
   material: string;
-  function: string;
-  shape: string;
-  description: string;
+  name: string;
+  usage: string;
+  additionalDescription: string;
+  additionalInput: string;
 }
+
+// 파일의 최상단 (HSCodeForm 컴포넌트 함수 바깥)
+const fetchAllPages = async (sixDigitCode: string): Promise<Array<any>> => {
+  const apiUrl = process.env.NEXT_PUBLIC_HSCODE_API_URL;
+  const apiKey = process.env.NEXT_PUBLIC_HSCODE_API_KEY;
+  const decodedKey = decodeURIComponent(apiKey!);
+  let allResults: Array<any> = [];
+  let currentPage = 1;
+
+  while (true) {
+    const baseUrl = new URL(apiUrl!);
+    baseUrl.searchParams.append('serviceKey', decodedKey);
+    baseUrl.searchParams.append('page', String(currentPage));
+    baseUrl.searchParams.append('perPage', '1000');
+    baseUrl.searchParams.append('returnType', 'JSON');
+
+    const response = await fetch(baseUrl.toString());
+    if (!response.ok) break;
+
+    const data = await response.json();
+    if (!data.data || data.data.length === 0) break;
+
+    allResults = [...allResults, ...data.data];
+
+    if (data.data.length < 1000 || currentPage * 1000 >= data.matchCount) break;
+    currentPage++;
+  }
+
+  return allResults;
+};
 
 export const HSCodeForm: React.FC = () => {
   const [product, setProduct] = useState<Product>({
+    category: '',
     material: '',
-    function: '',
-    shape: '',
-    description: '',
-  })
-  const [hsCode, setHsCode] = useState('')
-  const [hsCodeResults, setHSCodeResults] = useState<HSCodeResult[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string>('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
+    name: '',
+    usage: '',
+    additionalDescription: '',
+    additionalInput: ''
+  });
+  const [functions, setFunctions] = useState<{ [key: string]: string }>({});
+  const [hsCode, setHsCode] = useState('');
+  const [hsCodeResults, setHSCodeResults] = useState<HSCodeResult[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resetTrigger, setResetTrigger] = useState(false); // 상태 초기화를 위한 트리거
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setProduct(prev => ({ ...prev, [name]: value }))
-    setError('')
-  }
+  const router = useRouter();
 
-  const fetchAllPages = async (sixDigitCode: string): Promise<Array<any>> => {
-    const apiUrl = process.env.NEXT_PUBLIC_HSCODE_API_URL
-    const apiKey = process.env.NEXT_PUBLIC_HSCODE_API_KEY
-    const decodedKey = decodeURIComponent(apiKey!)
-    let allResults: Array<any> = []
-    let currentPage = 1
+  // 상태 초기화를 위한 resetForm 함수 정의
+  const resetForm = () => {
+    setFunctions({});
+    setProduct({
+      category: '',
+      material: '',
+      name: '',
+      usage: '',
+      additionalDescription: '',
+      additionalInput: ''
+    });
+  };
 
-    while (true) {
-      const baseUrl = new URL(apiUrl!)
-      baseUrl.searchParams.append('serviceKey', decodedKey)
-      baseUrl.searchParams.append('page', String(currentPage))
-      baseUrl.searchParams.append('perPage', '1000')
-      baseUrl.searchParams.append('returnType', 'JSON')
-
-      const response = await fetch(baseUrl.toString())
-      if (!response.ok) break
-
-      const data = await response.json()
-      if (!data.data || data.data.length === 0) break
-
-      allResults = [...allResults, ...data.data]
-
-      if (data.data.length < 1000 || currentPage * 1000 >= data.matchCount) break
-      currentPage++
+  // resetTrigger 변경 시 resetForm 호출
+  useEffect(() => {
+    if (resetTrigger) {
+      resetForm();
+      setResetTrigger(false); // 트리거 초기화
     }
+  }, [resetTrigger]);
 
-    return allResults
-  }
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setProduct(prev => ({ ...prev, [name]: value }));
+    setError('');
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setProduct(prev => ({ ...prev, category: value }));
+    setFunctions({}); // 새로운 카테고리 선택 시 기능/용도 상태 초기화
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    handleSubmitAsync()
-  }
+    e.preventDefault();
+    handleSubmitAsync();
+  };
 
   const handleSubmitAsync = async () => {
-    setIsSubmitting(true)
-    setIsLoading(true)
-    setHSCodeResults([])
-    setError('')
-    setHsCode('')
+    setIsSubmitting(true);
+    setIsLoading(true);
+    setHSCodeResults([]);
+    setError('');
+    setHsCode('');
+
+    console.log("Starting handleSubmitAsync with functions:", functions);
+    console.log("Starting handleSubmitAsync with product:", product);
 
     try {
-      // 입력값 검증
-      const requiredFields = ['material', 'function', 'shape', 'description'] as const
-      for (const field of requiredFields) {
-        if (!product[field].trim()) {
-          throw new Error(`${field} 필드를 입력해주세요.`)
+      if (!product.category) {
+        throw new Error('제품 카테고리를 선택해주세요.');
+      }
+
+      if (product.category === '해당사항 없음') {
+        if (!product.additionalInput.trim()) {
+          throw new Error('제품에 대한 상세 정보를 입력해주세요.');
+        }
+      } else {
+        if (Object.keys(functions).length < functionOptions.length) {
+          throw new Error('제품의 기능 및 용도에 대한 모든 질문에 답해주세요.');
+        }
+        if (!product.material) {
+          throw new Error('제품의 재질을 선택해주세요.');
+        }
+        if (!product.name.trim()) {
+          throw new Error('제품의 명칭을 입력해주세요.');
+        }
+        if (!product.usage.trim()) {
+          throw new Error('제품의 용도를 입력해주세요.');
         }
       }
 
-      // OpenAI API 호출
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/hscode`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(product),
-      })
+        body: JSON.stringify({ ...product, functions }),
+      });
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'AI API 요청 실패')
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'AI API 요청 실패');
       }
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!data.hsCode) {
-        throw new Error('HS CODE를 받아오지 못했습니다')
+        throw new Error('HS CODE를 받아오지 못했습니다');
       }
 
-      const sixDigitCode = data.hsCode.trim().substring(0, 6)
+      const sixDigitCode = data.hsCode.trim().substring(0, 6);
 
       if (!/^\d{6}$/.test(sixDigitCode)) {
-        throw new Error('유효하지 않은 HS CODE 형식입니다')
+        throw new Error('유효하지 않은 HS CODE 형식입니다');
       }
 
-      setHsCode(sixDigitCode)
-      console.log('Searching for HS Code:', sixDigitCode)
+      setHsCode(sixDigitCode);
+      console.log('Searching for HS Code:', sixDigitCode);
 
-      // 모든 페이지에서 검색
-      const allResults = await fetchAllPages(sixDigitCode)
-      console.log('Total results fetched:', allResults.length)
+      const allResults = await fetchAllPages(sixDigitCode);
+      console.log('Total results fetched:', allResults.length);
 
       const filteredResults = allResults
         .filter(item => {
-          const hsCode = String(item.HS부호).padStart(10, '0')
-          const matches = hsCode.substring(0, 6) === sixDigitCode
-          if (matches) {
-            console.log('Found matching code:', hsCode)
-          }
-          return matches
+          const hsCode = String(item.HS부호).padStart(10, '0');
+          return hsCode.substring(0, 6) === sixDigitCode;
         })
         .map(item => ({
           품목번호: String(item.HS부호).padStart(10, '0'),
@@ -147,25 +214,30 @@ export const HSCodeForm: React.FC = () => {
           단위: item.수량단위코드 || '-',
           적용시작일: item.적용시작일자 || '-',
           적용종료일: item.적용종료일자 || '-'
-        }))
+        }));
 
-      console.log('Filtered results:', filteredResults)
+      console.log('Filtered results:', filteredResults);
 
       if (filteredResults.length === 0) {
-        throw new Error(`${sixDigitCode}에 해당하는 HS CODE를 찾을 수 없습니다.`)
+        throw new Error(`${sixDigitCode}에 해당하는 HS CODE를 찾을 수 없습니다.`);
       }
 
-      setHSCodeResults(filteredResults)
+      setHSCodeResults(filteredResults);
 
     } catch (error) {
-      console.error('Error:', error)
-      const errorMessage = error instanceof Error ? error.message : '요청 처리 중 오류가 발생했습니다.'
-      setError(errorMessage)
+      console.error('Error:', error);
+      const errorMessage = error instanceof Error ? error.message : '요청 처리 중 오류가 발생했습니다.';
+      setError(errorMessage);
     } finally {
-      setIsLoading(false)
-      setIsSubmitting(false)
+      setIsLoading(false);
+      setIsSubmitting(false);
+      setResetTrigger(true); // 상태 초기화를 위한 트리거 활성화
     }
-  }
+  };
+
+  const handleNavigateToRequirements = (hsCode: string) => {
+    router.push(`/services/import-requirements/${hsCode}`);
+  };
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -185,10 +257,6 @@ export const HSCodeForm: React.FC = () => {
               "10자리를 확정한 경우 뒤로 돌아가 세율과 요건을 확인하세요"
             ].map((text, index) => (
               <div key={index} className="flex items-start space-x-2">
-                <Avatar className="w-8 h-8 flex-shrink-0">
-                  <AvatarImage src="/eyeon_logo.png" alt="eyeon_logo" />
-                  <AvatarFallback>EY</AvatarFallback>
-                </Avatar>
                 <p className="text-sm">{text}</p>
               </div>
             ))}
@@ -198,47 +266,96 @@ export const HSCodeForm: React.FC = () => {
         <Card className="flex-shrink-0">
           <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-4">
-              <Input
-                type="text"
-                name="material"
-                value={product.material}
-                onChange={handleInputChange}
-                placeholder="제품 재질 (의류인 경우 직물/편물 여부 및 성분 배합비율까지 기재)"
-                disabled={isSubmitting}
-                required
-              />
-              <Input
-                type="text"
-                name="function"
-                value={product.function}
-                onChange={handleInputChange}
-                placeholder="제품의 기능 및 용도 (의류인 경우 남성/여성 구분, 수영복 등 특수의류인 경우 그 내용까지)"
-                disabled={isSubmitting}
-                required
-              />
-              <Input
-                type="text"
-                name="shape"
-                value={product.shape}
-                onChange={handleInputChange}
-                placeholder="제품의 형태 (의류인 경우 수트처럼 세트로 되어있는지 아니면 상의/하의인지 여부까지)"
-                disabled={isSubmitting}
-                required
-              />
-              <Textarea
-                name="description"
-                value={product.description}
-                onChange={handleInputChange}
-                placeholder="그 외 설명사항 - 최대한 상세하게 기술하세요."
-                disabled={isSubmitting}
-                required
-                rows={11} // 원하는 초기 표시 줄 수로 설정 가능
-              />
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full"
-              >
+              <Select onValueChange={handleCategoryChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="제품 카테고리를 선택해주세요" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categoryOptions.map(option => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {product.category && product.category !== '해당사항 없음' && (
+                <>
+                  {functionOptions.map(question => (
+                    <div key={question}>
+                      <p>{question}</p>
+                      <div onChange={(e) => {
+                        const target = e.target as HTMLInputElement;
+                        setFunctions(prev => ({
+                          ...prev,
+                          [question]: target.value
+                        }));
+                        setProduct(prev => ({
+                          ...prev,
+                          functions: { ...prev.functions, [question]: target.value }
+                        }));
+                      }}>
+                        <label style={{ marginRight: '10px' }}>
+                          <input type="radio" value="예" name={question} /> 예
+                        </label>
+                        <label>
+                          <input type="radio" value="아니오" name={question} /> 아니오
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+
+                  <Select onValueChange={value => setProduct(prev => ({ ...prev, material: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="제품의 재질을 선택해주세요" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {materialOptions.map(option => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Input
+                    type="text"
+                    name="name"
+                    value={product.name}
+                    onChange={handleInputChange}
+                    placeholder="제품의 영문 명칭 또는 한글 명칭을 기재해주세요"
+                    required
+                  />
+                  <Input
+                    type="text"
+                    name="usage"
+                    value={product.usage}
+                    onChange={handleInputChange}
+                    placeholder="제품의 용도를 기재해주세요"
+                    required
+                  />
+                  <Textarea
+                    name="additionalDescription"
+                    value={product.additionalDescription}
+                    onChange={handleInputChange}
+                    placeholder="그 외 설명할 부분을 상세하게 기재해주세요"
+                    rows={5}
+                  />
+                </>
+              )}
+
+              {product.category === '해당사항 없음' && (
+                <Textarea
+                  name="additionalInput"
+                  value={product.additionalInput}
+                  onChange={handleInputChange}
+                  placeholder="제품에 대한 재질, 용도, 작동방식, 그 외 설명할 수 있는 내용을 상세하게 기재해주세요."
+                  required
+                  rows={10}
+                />
+              )}
+
+              <Button type="submit" disabled={isSubmitting} className="w-full">
                 {isSubmitting ? '조회 중...' : 'HS CODE 조회'}
               </Button>
             </form>
@@ -296,13 +413,13 @@ export const HSCodeForm: React.FC = () => {
                               <div className="text-sm text-gray-600 pt-2">
                                 <p>적용기간: {result.적용시작일} ~ {result.적용종료일}</p>
                               </div>
-                              {/* 세율 및 요건확인 버튼 추가 */}
                               <div className='pt-2'>
-                                <Link href={`/services/import-requirements/${result.품목번호}`}>
-                                  <Button className='w-full'>
-                                    세율 및 요건확인
-                                  </Button>
-                                </Link>
+                                <Button
+                                  className='w-full'
+                                  onClick={() => handleNavigateToRequirements(result.품목번호)}
+                                >
+                                  세율 및 요건확인
+                                </Button>
                               </div>
                             </div>
                           </CardContent>
@@ -322,5 +439,5 @@ export const HSCodeForm: React.FC = () => {
         </Card>
       </div>
     </div>
-  )
+  );
 }
