@@ -254,7 +254,7 @@ export const HSCodeForm: React.FC = () => {
               "HS CODE는 6자리까지 세계 공통으로 적용됩니다.",
               "아래에 HS CODE에 필요한 내용을 기재해주면 HS CODE 10자리를 제공합니다.",
               "만약 [유효하지 않은 HS CODE 형식] 이라고 나오는 경우 더 자세하게 작성하세요",
-              "10자리를 확정한 경우 뒤로 돌아가 세율과 요건을 확인하세요"
+              "제시된 10자리 중 가장 유사한 것을 확정하세요"
             ].map((text, index) => (
               <div key={index} className="flex items-start space-x-2">
                 <p className="text-sm">{text}</p>
