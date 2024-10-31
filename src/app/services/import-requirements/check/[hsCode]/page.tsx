@@ -20,8 +20,12 @@ async function fetchRequirements(hsCode: string): Promise<RequirementResult[]> {
     const response = await fetch(url);
     const data = await response.text();
 
+    console.log("API Response:", data); // 응답 전체를 로그로 출력하여 구조 확인
+
     const parser = new xml2js.Parser();
     const result = await parser.parseStringPromise(data);
+
+    console.log("Parsed XML Result:", result); // 파싱된 결과 확인
 
     const items = result.response.body[0].items[0].item || [];
     return items.map((item: any) => ({

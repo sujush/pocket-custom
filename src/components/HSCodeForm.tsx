@@ -26,9 +26,12 @@ const functionOptions = [
   '기계거나 또는 정밀기기인가요?'
 ];
 
-const materialOptions = [
-  '플라스틱제', '고무제', '도자제', '유리제',
-  '방직용 섬유제', '가죽제', '금속제', '종이제', '나무제', '모르거나 해당사항 없음'
+const defaultMaterialOptions = [
+  '플라스틱제', '고무제', '도자제', '유리제', '방직용 섬유제', '가죽제', '금속제', '종이제', '나무제', '모르거나 해당사항 없음'
+];
+
+const textileMaterialOptions = [
+  '면', '합성섬유', '재생ㆍ반합성섬유', '양모', '기타 동물의 부드러운 털', '견 (silk)', '리넨 (linen)'
 ];
 
 interface HSCodeResult {
@@ -50,7 +53,6 @@ interface Product {
   additionalInput: string;
 }
 
-// 파일의 최상단 (HSCodeForm 컴포넌트 함수 바깥)
 const fetchAllPages = async (sixDigitCode: string): Promise<Array<any>> => {
   const apiUrl = process.env.NEXT_PUBLIC_HSCODE_API_URL;
   const apiKey = process.env.NEXT_PUBLIC_HSCODE_API_KEY;
@@ -62,7 +64,7 @@ const fetchAllPages = async (sixDigitCode: string): Promise<Array<any>> => {
     const baseUrl = new URL(apiUrl!);
     baseUrl.searchParams.append('serviceKey', decodedKey);
     baseUrl.searchParams.append('page', String(currentPage));
-    baseUrl.searchParams.append('perPage', '1000');
+    baseUrl.searchParams.append('perPage', '5000');
     baseUrl.searchParams.append('returnType', 'JSON');
 
     const response = await fetch(baseUrl.toString());
@@ -89,17 +91,17 @@ export const HSCodeForm: React.FC = () => {
     additionalDescription: '',
     additionalInput: ''
   });
+  const [materialOptions, setMaterialOptions] = useState(defaultMaterialOptions);
   const [functions, setFunctions] = useState<{ [key: string]: string }>({});
   const [hsCode, setHsCode] = useState('');
   const [hsCodeResults, setHSCodeResults] = useState<HSCodeResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [resetTrigger, setResetTrigger] = useState(false); // 상태 초기화를 위한 트리거
+  const [resetTrigger, setResetTrigger] = useState(false);
 
   const router = useRouter();
 
-  // 상태 초기화를 위한 resetForm 함수 정의
   const resetForm = () => {
     setFunctions({});
     setProduct({
@@ -112,11 +114,10 @@ export const HSCodeForm: React.FC = () => {
     });
   };
 
-  // resetTrigger 변경 시 resetForm 호출
   useEffect(() => {
     if (resetTrigger) {
       resetForm();
-      setResetTrigger(false); // 트리거 초기화
+      setResetTrigger(false);
     }
   }, [resetTrigger]);
 
@@ -127,8 +128,14 @@ export const HSCodeForm: React.FC = () => {
   };
 
   const handleCategoryChange = (value: string) => {
-    setProduct(prev => ({ ...prev, category: value }));
-    setFunctions({}); // 새로운 카테고리 선택 시 기능/용도 상태 초기화
+    setProduct(prev => ({ ...prev, category: value, material: '' }));
+    setFunctions({});
+    
+    if (value === '직물제 의류 및 의류부속품' || value === '편물제 의류 및 의류부속품' || value === '모자 및 신발') {
+      setMaterialOptions(textileMaterialOptions);
+    } else {
+      setMaterialOptions(defaultMaterialOptions);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -143,97 +150,92 @@ export const HSCodeForm: React.FC = () => {
     setError('');
     setHsCode('');
 
-    console.log("Starting handleSubmitAsync with functions:", functions);
-    console.log("Starting handleSubmitAsync with product:", product);
-
     try {
-      if (!product.category) {
-        throw new Error('제품 카테고리를 선택해주세요.');
-      }
-
-      if (product.category === '해당사항 없음') {
-        if (!product.additionalInput.trim()) {
-          throw new Error('제품에 대한 상세 정보를 입력해주세요.');
+        if (!product.category) {
+            throw new Error('제품 카테고리를 선택해주세요.');
         }
-      } else {
-        if (Object.keys(functions).length < functionOptions.length) {
-          throw new Error('제품의 기능 및 용도에 대한 모든 질문에 답해주세요.');
+
+        if (product.category === '해당사항 없음') {
+            if (!product.additionalInput.trim()) {
+                throw new Error('제품에 대한 상세 정보를 입력해주세요.');
+            }
+        } else {
+            if (Object.keys(functions).length < functionOptions.length) {
+                throw new Error('제품의 기능 및 용도에 대한 모든 질문에 답해주세요.');
+            }
+            if (!product.material) {
+                throw new Error('제품의 재질을 선택해주세요.');
+            }
+            if (!product.name.trim()) {
+                throw new Error('제품의 명칭을 입력해주세요.');
+            }
+            if (!product.usage.trim()) {
+                throw new Error('제품의 용도를 입력해주세요.');
+            }
         }
-        if (!product.material) {
-          throw new Error('제품의 재질을 선택해주세요.');
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/hscode`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ ...product, functions }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'AI API 요청 실패');
         }
-        if (!product.name.trim()) {
-          throw new Error('제품의 명칭을 입력해주세요.');
+
+        const data = await response.json();
+
+        if (!data.hsCode) {
+            throw new Error('HS CODE를 받아오지 못했습니다');
         }
-        if (!product.usage.trim()) {
-          throw new Error('제품의 용도를 입력해주세요.');
+
+        const sixDigitCode = data.hsCode.trim().substring(0, 6);
+
+        if (!/^\d{6}$/.test(sixDigitCode)) {
+            throw new Error('유효하지 않은 HS CODE 형식입니다');
         }
-      }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/hscode`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ...product, functions }),
-      });
+        setHsCode(sixDigitCode);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'AI API 요청 실패');
-      }
+        const allResults = await fetchAllPages(sixDigitCode);
 
-      const data = await response.json();
+        const filteredResults = allResults
+            .filter(item => {
+                const hsCode = String(item.HS부호).padStart(10, '0');
+                return hsCode.substring(0, 6) === sixDigitCode;
+            })
+            .map(item => ({
+                품목번호: String(item.HS부호).padStart(10, '0'),
+                품목명: item.한글품목명 || '설명 없음',
+                영문명: item.영문품목명 || '',
+                기본세율: '확인 필요',
+                단위: item.수량단위코드 || '-',
+                적용시작일: item.적용시작일자 || '-',
+                적용종료일: item.적용종료일자 || '-'
+            }));
 
-      if (!data.hsCode) {
-        throw new Error('HS CODE를 받아오지 못했습니다');
-      }
+        if (filteredResults.length === 0) {
+            throw new Error(`${sixDigitCode}에 해당하는 HS CODE를 찾을 수 없습니다.`);
+        }
 
-      const sixDigitCode = data.hsCode.trim().substring(0, 6);
+        setHSCodeResults(filteredResults);
 
-      if (!/^\d{6}$/.test(sixDigitCode)) {
-        throw new Error('유효하지 않은 HS CODE 형식입니다');
-      }
-
-      setHsCode(sixDigitCode);
-      console.log('Searching for HS Code:', sixDigitCode);
-
-      const allResults = await fetchAllPages(sixDigitCode);
-      console.log('Total results fetched:', allResults.length);
-
-      const filteredResults = allResults
-        .filter(item => {
-          const hsCode = String(item.HS부호).padStart(10, '0');
-          return hsCode.substring(0, 6) === sixDigitCode;
-        })
-        .map(item => ({
-          품목번호: String(item.HS부호).padStart(10, '0'),
-          품목명: item.한글품목명 || '설명 없음',
-          영문명: item.영문품목명 || '',
-          기본세율: '확인 필요',
-          단위: item.수량단위코드 || '-',
-          적용시작일: item.적용시작일자 || '-',
-          적용종료일: item.적용종료일자 || '-'
-        }));
-
-      console.log('Filtered results:', filteredResults);
-
-      if (filteredResults.length === 0) {
-        throw new Error(`${sixDigitCode}에 해당하는 HS CODE를 찾을 수 없습니다.`);
-      }
-
-      setHSCodeResults(filteredResults);
+        // 오류가 없는 경우에만 폼 초기화
+        setResetTrigger(true);
 
     } catch (error) {
-      console.error('Error:', error);
-      const errorMessage = error instanceof Error ? error.message : '요청 처리 중 오류가 발생했습니다.';
-      setError(errorMessage);
+        const errorMessage = error instanceof Error ? error.message : '요청 처리 중 오류가 발생했습니다.';
+        setError(errorMessage);
+        console.error("Error:", error);
     } finally {
-      setIsLoading(false);
-      setIsSubmitting(false);
-      setResetTrigger(true); // 상태 초기화를 위한 트리거 활성화
+        setIsLoading(false);
+        setIsSubmitting(false);
     }
-  };
+};
 
   const handleNavigateToRequirements = (hsCode: string) => {
     router.push(`/services/import-requirements/${hsCode}`);
@@ -338,7 +340,7 @@ export const HSCodeForm: React.FC = () => {
                     name="additionalDescription"
                     value={product.additionalDescription}
                     onChange={handleInputChange}
-                    placeholder="그 외 설명할 부분을 상세하게 기재해주세요"
+                    placeholder="그 외 설명할 부분을 상세하게 기재해주세요 (공백 가능)"
                     rows={5}
                   />
                 </>
