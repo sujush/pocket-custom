@@ -6,7 +6,7 @@ import { Loader } from 'lucide-react';
 
 const LoadingStatus = ({ isLoading, status }) => {
   if (!isLoading) return null;
-
+  
   return (
     <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-50 z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
@@ -22,7 +22,23 @@ const BulkHSCodePage = () => {
   const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [queryStatus, setQueryStatus] = useState('');
+  const [selectedItems, setSelectedItems] = useState({});
   const MAX_PRODUCTS_LIMIT = 20;
+
+  const handleItemSelect = (groupSixDigitCode, item) => {
+    setSelectedItems(prev => ({
+      ...prev,
+      [groupSixDigitCode]: item
+    }));
+  };
+
+  const handleItemDeselect = (groupSixDigitCode) => {
+    setSelectedItems(prev => {
+      const newItems = { ...prev };
+      delete newItems[groupSixDigitCode];
+      return newItems;
+    });
+  };
 
   const validateProducts = () => {
     for (const product of products) {
@@ -81,60 +97,72 @@ const BulkHSCodePage = () => {
   };
 
   const downloadExcel = () => {
-    // 데이터를 엑셀 형식에 맞게 변환
-    const excelData = results.flatMap(group => {
-      // 그룹 제목 행 추가
-      const titleRow = {
-        '구분': group.title,
-        '제품명': '',
-        'HS CODE': '',
-      };
+    let excelData;
 
-      // 그룹의 각 아이템을 행으로 변환
-      const itemRows = group.items.map(item => ({
-        '구분': '',  // 구분 열은 빈칸으로
-        '제품명': item.name,
-        'HS CODE': item.hscode,
+    if (Array.isArray(results) && results[0]?.items) {
+      excelData = results.flatMap(group => {
+        const titleRow = {
+          '구분': group.title,
+          '제품명': '',
+          'HS CODE': '',
+        };
+
+        const itemRows = group.items.map(item => ({
+          '구분': '',
+          '제품명': item.name,
+          'HS CODE': item.hscode,
+        }));
+
+        const emptyRow = {
+          '구분': '',
+          '제품명': '',
+          'HS CODE': '',
+        };
+
+        return [titleRow, ...itemRows, emptyRow];
+      });
+    } else {
+      excelData = results.map(result => ({
+        '제품명': result.name,
+        'HS CODE': result.hscode,
       }));
+    }
 
-      // 그룹 사이에 빈 행 추가
-      const emptyRow = {
-        '구분': '',
-        '제품명': '',
-        'HS CODE': '',
-      };
-
-      return [titleRow, ...itemRows, emptyRow];
-    });
-
-    // 워크시트 생성
     const worksheet = XLSX.utils.json_to_sheet(excelData);
-
-    // 열 너비 설정
+    
     const columnWidths = [
-      { wch: 40 },  // 구분 열
+      { wch: 40 },
+      { wch: 30 },
+      { wch: 15 },
+    ];
+    worksheet['!cols'] = columnWidths;
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'HS CODE Results');
+
+    const currentDate = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `HSCode_Results_${currentDate}.xlsx`);
+  };
+
+  const downloadSelectedItems = () => {
+    const excelData = Object.entries(selectedItems).map(([sixDigitCode, item]) => ({
+      '제품명': item.name,
+      'HS CODE': item.hscode
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    
+    const columnWidths = [
       { wch: 30 },  // 제품명 열
       { wch: 15 },  // HS CODE 열
     ];
     worksheet['!cols'] = columnWidths;
 
-    // 워크북 생성 및 워크시트 추가
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'HS CODE Results');
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Selected HS CODE Results');
 
-    // 스타일 적용 (제목 행 굵게)
-    let rowIndex = 0;
-    results.forEach(group => {
-      const titleCell = worksheet[XLSX.utils.encode_cell({ r: rowIndex, c: 0 })];
-      if (titleCell) {
-        titleCell.s = { font: { bold: true } };
-      }
-      rowIndex += group.items.length + 2;
-    });
-
-    // 파일 다운로드
     const currentDate = new Date().toISOString().split('T')[0];
-    XLSX.writeFile(workbook, `HSCode_Results_${currentDate}.xlsx`);
+    XLSX.writeFile(workbook, `Selected_HSCode_Results_${currentDate}.xlsx`);
   };
 
   const fetchHSCode = async () => {
@@ -179,9 +207,6 @@ const BulkHSCodePage = () => {
     setQueryStatus("10자리 HS CODE 조회 중...");
 
     try {
-      console.log('Service Key:', serviceKey);
-      console.log('API URL:', apiUrl);
-
       const hs6Codes = results.map(result => result.hscode.replace(/\s+/g, ''));
       const allResults = [];
 
@@ -190,13 +215,8 @@ const BulkHSCodePage = () => {
         let totalFetched = 0;
         let totalDataCount = Infinity;
 
-        console.log('Processing HS Code:', hs6Code);
-
         while (totalFetched < totalDataCount) {
           const url = `${apiUrl}?serviceKey=${serviceKey}&page=${currentPage}&perPage=5000&returnType=JSON&HS부호=${hs6Code}`;
-
-          console.log('Request URL:', url);
-          console.log('Making request for HS Code:', hs6Code, 'Page:', currentPage);
 
           const response = await fetch(url);
 
@@ -206,26 +226,16 @@ const BulkHSCodePage = () => {
           }
 
           const data = await response.json();
-          console.log('Raw API Response:', data);
-
-          if (data.data && data.data.length > 0) {
-            console.log('First item structure:', data.data[0]);
-            console.log('Available fields:', Object.keys(data.data[0]));
-          }
 
           if (currentPage === 1) {
             totalDataCount = data.matchCount;
           }
 
           const filteredData = data.data.filter(item => {
-            console.log('Checking item:', item);
             const itemHsCode = String(item.HS부호 || '');
-            console.log('Item HS Code:', itemHsCode, 'Comparing with:', hs6Code);
             return itemHsCode.startsWith(hs6Code);
           });
-
-          console.log(`Found ${filteredData.length} matching items for HS Code ${hs6Code}`);
-
+          
           allResults.push(...filteredData);
 
           totalFetched += data.currentCount;
@@ -233,14 +243,11 @@ const BulkHSCodePage = () => {
         }
       }
 
-      console.log('Final processed results:', allResults);
-
       if (allResults.length === 0) {
         setQueryStatus("조회된 10자리 품목번호가 없습니다.");
       } else {
         setQueryStatus("10자리 HS CODE 조회 완료!");
-
-        // 결과를 6자리 코드별로 그룹화
+        
         const groupedResults = allResults.reduce((groups, item) => {
           const hsCode = String(item.HS부호);
           const sixDigitCode = hsCode.substring(0, 6);
@@ -254,14 +261,21 @@ const BulkHSCodePage = () => {
           return groups;
         }, {});
 
-        // 그룹화된 결과를 표시용 형식으로 변환
-        const processedResults = Object.entries(groupedResults).map(([sixDigitCode, items]) => ({
-          sixDigitCode,
-          title: `${sixDigitCode.substring(0, 4)}.${sixDigitCode.substring(4, 6)} 호에 대한 10자리 코드 목록`,
-          items
-        }));
+        const processedResults = Object.entries(groupedResults).map(([sixDigitCode, items]) => {
+          const originalProduct = products.find(p => {
+            const result = results.find(r => r.hscode.replace(/\s+/g, '') === sixDigitCode);
+            return result && result.name === p.name;
+          });
+
+          return {
+            sixDigitCode,
+            title: `${originalProduct?.name || '제품'} 에 대한 10자리 코드 목록`,
+            items
+          };
+        });
 
         setResults(processedResults);
+        setSelectedItems({});
       }
     } catch (error) {
       console.error('10자리 HS CODE 조회 실패:', error);
@@ -350,8 +364,8 @@ const BulkHSCodePage = () => {
           <div className="flex justify-between items-center mb-4">
             <h2 className="font-bold">조회 결과</h2>
             {results.length > 0 && (
-              <button
-                onClick={downloadExcel}
+              <button 
+                onClick={downloadExcel} 
                 className="px-4 py-2 mb-4 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
               >
                 📥 조회 결과 엑셀 다운로드
@@ -359,40 +373,96 @@ const BulkHSCodePage = () => {
             )}
           </div>
 
-          {/* 결과가 배열이고 첫 번째 항목에 items가 있으면 그룹화된 10자리 결과로 처리 */}
           {Array.isArray(results) && results[0]?.items ? (
-            // 10자리 HS CODE 결과 표시
-            results.map((group, groupIndex) => (
-              <div key={groupIndex} className="mb-6 p-4 border rounded-md bg-white shadow-sm">
-                <h3 className="font-bold text-lg mb-4 text-blue-600">{group.title}</h3>
-                {group.items.map((item, itemIndex) => (
-                  <div key={itemIndex} className="mb-2 pl-4 border-l-2 border-gray-200">
-                    <p className="font-bold">제품명: {item.name}</p>
-                    <p className="text-gray-700">HS CODE: {item.hscode}</p>
+            <>
+              {/* 그룹화된 결과 표시 */}
+              <div className="mb-8">
+                {results.map((group, groupIndex) => (
+                  <div key={groupIndex} className="mb-6 p-4 border rounded-md bg-white shadow-sm">
+                    <h3 className="font-bold text-lg mb-4 text-blue-600">{group.title}</h3>
+                    {group.items.map((item, itemIndex) => (
+                      <div key={itemIndex} className="mb-2 pl-4 border-l-2 border-gray-200 flex justify-between items-center">
+                        <div>
+                          <p className="font-bold">제품명: {item.name}</p>
+                          <p className="text-gray-700">HS CODE: {item.hscode}</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            const isCurrentlySelected = selectedItems[group.sixDigitCode]?.hscode === item.hscode;
+                            if (isCurrentlySelected) {
+                              handleItemDeselect(group.sixDigitCode);
+                            } else {
+                              handleItemSelect(group.sixDigitCode, item);
+                            }
+                          }}
+                          className={`px-3 py-1 rounded-md ${
+                            selectedItems[group.sixDigitCode]?.hscode === item.hscode
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                          }`}
+                        >
+                          {selectedItems[group.sixDigitCode]?.hscode === item.hscode ? '선택됨' : '선택'}
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>
-            ))
-          ) : (
-            // 6자리 HS CODE 결과 표시
-            results.map((result, index) => (
-              <div key={index} className="mb-4 p-4 border rounded-md">
-                <p className="font-bold">제품명: {result.name}</p>
-                <p>HS CODE: {result.hscode}</p>
-              </div>
-            ))
-          )}
 
-          <button
-            onClick={fetch10DigitHSCode}
-            className="px-4 py-2 mt-4 bg-blue-600 text-white rounded-md w-full"
-          >
-            전체 물품에 대해 HS CODE 10자리 조회
-          </button>
+              {/* 선택된 항목들 표시 */}
+              {Object.keys(selectedItems).length > 0 && (
+                <div className="mt-8 p-4 border-t-2 border-gray-200">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-bold text-lg text-green-600">선택된 품목</h3>
+                    <button 
+                      onClick={downloadSelectedItems}
+                      className="px-3 py-1 rounded-md bg-green-500 hover:bg-green-600 text-white transition-colors"
+                    >
+                      📥 선택 항목 다운로드
+                    </button>
+                  </div>
+                  {Object.entries(selectedItems).map(([sixDigitCode, item], index) => (
+                    <div key={index} className="mb-4 p-3 bg-green-50 rounded-md flex justify-between items-center">
+                      <div>
+                        <p className="font-bold">제품명: {item.name}</p>
+                        <p className="text-gray-700">HS CODE: {item.hscode}</p>
+                      </div>
+                      <button
+                        onClick={() => handleItemDeselect(sixDigitCode)}
+                        className="px-3 py-1 rounded-md bg-red-100 hover:bg-red-200 text-red-700"
+                      >
+                        선택 해제
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            // 6자리 결과 표시
+            <>
+              {results.map((result, index) => (
+                <div key={index} className="mb-4 p-4 border rounded-md">
+                  <p className="font-bold">제품명: {result.name}</p>
+                  <p>HS CODE: {result.hscode}</p>
+                </div>
+              ))}
+              
+              {/* 6자리 결과가 있을 때만 10자리 조회 버튼 표시 */}
+              {results.length > 0 && (
+                <button
+                  onClick={fetch10DigitHSCode}
+                  className="px-4 py-2 mt-4 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition-colors"
+                >
+                  전체 물품에 대해 HS CODE 10자리 조회
+                </button>
+              )}
+            </>
+          )}
           <p className="mt-2 text-center">{queryStatus}</p>
         </div>
       </div>
-
+      
       <LoadingStatus isLoading={isLoading} status={queryStatus} />
     </div>
   );
