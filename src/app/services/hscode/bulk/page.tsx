@@ -4,6 +4,32 @@ import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
 import { Loader } from 'lucide-react';
 
+// 재질 코드 매핑 상수 추가
+const MATERIAL_CODES = {
+  'P': '플라스틱제',
+  'R': '고무제',
+  'C': '도자제',
+  'G': '유리제',
+  'T': '방직용 섬유제',
+  'L': '가죽제',
+  'M': '금속제',
+  'PA': '종이제',
+  'W': '나무제',
+  'N': '모르거나 해당사항 없음'
+};
+
+// 코드로 재질명 얻기
+const getMaterialNameByCode = (code) => {
+  return MATERIAL_CODES[code.toUpperCase()] || '모르거나 해당사항 없음';
+};
+
+// 재질명으로 코드 얻기
+const getMaterialCodeByName = (name) => {
+  return Object.entries(MATERIAL_CODES).find(([code, materialName]) => 
+    materialName === name
+  )?.[0] || 'N';
+};
+
 const LoadingStatus = ({ isLoading, status }) => {
   if (!isLoading) return null;
   
@@ -86,7 +112,7 @@ const BulkHSCodePage = () => {
 
       const uploadedProducts = json.map((row) => ({
         name: row["제품명"] || '',
-        material: row["재질"] || '',
+        material: getMaterialNameByCode(row["재질코드"] || 'N'),
         description: row["기타"] || '',
       }));
 
@@ -94,6 +120,81 @@ const BulkHSCodePage = () => {
     };
 
     reader.readAsArrayBuffer(file);
+  };
+
+  const downloadSampleExcel = () => {
+    // 샘플 데이터 생성
+    const sampleData = [
+      {
+        '제품명': '',
+        '재질코드': '',
+        '기타': '',
+      },
+      {
+        '제품명': '',
+        '재질코드': '',
+        '기타': '',
+      },
+      {
+        '제품명': '',
+        '재질코드': '',
+        '기타': '',
+      },
+      {
+        '제품명': '아래는 재질코드 가이드입니다 ▼',
+        '재질코드': '업로드 시 삭제',
+        '기타': '',
+      },
+      {
+        '제품명': '──────────────',
+        '재질코드': '──────────',
+        '기타': '──────────',
+      },
+      // 재질 코드 가이드를 샘플 데이터 아래에 추가
+      ...Object.entries(MATERIAL_CODES).map(([code, name]) => ({
+        '제품명': name,
+        '재질코드': code,
+        '기타': `${code} 입력 시 ${name}로 자동 변환`,
+      })),
+      {
+        '제품명': '',
+        '재질코드': '',
+        '기타': '',
+      },
+      {
+        '제품명': '■ 입력 예시',
+        '재질코드': '',
+        '기타': '',
+      },
+      {
+        '제품명': '플라스틱 용기',
+        '재질코드': 'P',
+        '기타': '500ml 용량의 투명 용기',
+      },
+      {
+        '제품명': '고무 장갑',
+        '재질코드': 'R',
+        '기타': '주방용 고무 장갑',
+      },
+    ];
+  
+    const workbook = XLSX.utils.book_new();
+    
+    // 입력 양식 시트 생성
+    const worksheet = XLSX.utils.json_to_sheet(sampleData);
+  
+    // 열 너비 설정
+    const columnWidths = [
+      { wch: 30 },  // 제품명
+      { wch: 15 },  // 재질코드
+      { wch: 40 },  // 기타
+    ];
+    worksheet['!cols'] = columnWidths;
+  
+    XLSX.utils.book_append_sheet(workbook, worksheet, '입력양식');
+  
+    // 파일 다운로드
+    XLSX.writeFile(workbook, 'HS_CODE_조회_양식.xlsx');
   };
 
   const downloadExcel = () => {
@@ -153,8 +254,8 @@ const BulkHSCodePage = () => {
     const worksheet = XLSX.utils.json_to_sheet(excelData);
     
     const columnWidths = [
-      { wch: 30 },  // 제품명 열
-      { wch: 15 },  // HS CODE 열
+      { wch: 30 },
+      { wch: 15 },
     ];
     worksheet['!cols'] = columnWidths;
 
@@ -292,16 +393,20 @@ const BulkHSCodePage = () => {
         <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md shadow-sm">
           <p>이곳은 사용자가 제품별로 HS CODE를 조회할 수 있는 기능입니다.</p>
           <p>좌측에서 제품 정보를 입력하고, 조회 버튼을 클릭하세요.</p>
-          <p>제품명과 재질을 입력하고 필요 시 기타 정보를 추가할 수 있습니다.</p>
+          <p>최대 10개까지 입력 가능합니다. 엑셀 양식을 활용하세요</p>
           <p>엑셀 파일을 업로드하면 파일의 내용이 자동 입력됩니다.</p>
           <p>조회된 HS CODE는 우측 결과 창에 표시됩니다.</p>
         </div>
 
         <div className="mb-4 flex items-center justify-between">
           <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="block" />
-          <a href="/sample.xlsx" download className="text-blue-500">
-            엑셀 양식 다운로드
-          </a>
+          <button 
+            onClick={downloadSampleExcel} 
+            className="text-blue-500 hover:text-blue-600 flex items-center"
+          >
+            <span className="mr-1">📥</span>
+            엑셀 입력 양식 다운로드
+          </button>
         </div>
 
         <div className="bg-white p-4 rounded-md shadow-sm">
@@ -323,16 +428,9 @@ const BulkHSCodePage = () => {
                 className="w-full p-2 mb-4 border rounded-md"
               >
                 <option value="">재질을 선택하세요</option>
-                <option value="플라스틱제">플라스틱제</option>
-                <option value="고무제">고무제</option>
-                <option value="도자제">도자제</option>
-                <option value="유리제">유리제</option>
-                <option value="방직용 섬유제">방직용 섬유제</option>
-                <option value="가죽제">가죽제</option>
-                <option value="금속제">금속제</option>
-                <option value="종이제">종이제</option>
-                <option value="나무제">나무제</option>
-                <option value="모르거나 해당사항 없음">모르거나 해당사항 없음</option>
+                {Object.entries(MATERIAL_CODES).map(([code, name]) => (
+                  <option key={code} value={name}>{name}</option>
+                ))}
               </select>
 
               <label className="block mb-2">기타</label>

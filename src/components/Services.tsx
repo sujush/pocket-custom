@@ -90,7 +90,7 @@ const MainServiceCard = ({ service }) => {
               onClick={handleClickBulkCheck} 
               className="inline-flex items-center text-indigo-600 hover:text-indigo-700 font-bold"
             >
-              -> HS CODE 대량 조회
+              -> HS CODE 대량 조회 (★)
             </button>
           </>
         )}

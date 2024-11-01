@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server';
 
 // 최대 제품 개수 제한을 설정합니다. 이 값을 바꾸면 조회 가능한 제품 개수가 변경됩니다.
-const MAX_PRODUCTS_LIMIT = 20;
+const MAX_PRODUCTS_LIMIT = 10;
 
 export async function POST(request: Request) {
   const { products } = await request.json();
