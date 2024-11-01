@@ -209,7 +209,7 @@ export default function ImportRequirementsPage({ params }: { params: { hsCode?: 
         )
 
         if (filteredData.length === 0) {
-          setError('입력하신 HS CODE에 대한 데이터가 없습니다.')
+          setError('올바른 HS CODE 10자리를 입력해주세요')
           setResults(null)
         } else {
           // 품목번호 형식 맞추기 및 정렬

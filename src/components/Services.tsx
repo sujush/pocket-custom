@@ -65,6 +65,12 @@ const MainServiceCard = ({ service }) => {
     }
   };
 
+  // 'HS CODE 대량 조회' 버튼 클릭 시 이동 처리 함수
+  const handleClickBulkCheck = () => {
+    router.push('/services/hscode/bulk'); // 'HS CODE 대량 조회' 페이지 경로 설정
+  };
+
+
   return (
     <div className="bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg border border-indigo-200 p-6 transform hover:-translate-y-1 hover:scale-105">
       <div className="flex items-center mb-4">
@@ -72,9 +78,23 @@ const MainServiceCard = ({ service }) => {
         <h2 className="text-xl font-semibold text-indigo-800">{service.title}</h2>
       </div>
       <p className="text-gray-700 mb-4 text-sm">{service.description}</p>
-      <button onClick={handleClick} className="inline-flex items-center text-indigo-600 hover:text-indigo-700 font-medium text-sm">
-        자세히 보기 <ArrowRight className="ml-2 h-4 w-4" />
-      </button>
+      <div className="flex items-center">
+        <button onClick={handleClick} className="inline-flex items-center text-indigo-600 hover:text-indigo-700 font-medium text-sm">
+          자세히 보기 <ArrowRight className="ml-2 h-4 w-4" />
+        </button>
+        {/* HS CODE 조회 서비스에만 'HS CODE 대량 조회' 버튼 추가 */}
+        {service.title === 'HS CODE 조회' && (
+          <>
+            <div className="flex-grow"></div> {/* 왼쪽 버튼과 오른쪽 버튼 사이의 공간 확보 */}
+            <button 
+              onClick={handleClickBulkCheck} 
+              className="inline-flex items-center text-indigo-600 hover:text-indigo-700 font-bold"
+            >
+              -> HS CODE 대량 조회
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 };
