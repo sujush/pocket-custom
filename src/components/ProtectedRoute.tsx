@@ -1,36 +1,35 @@
 // src/components/ProtectedRoute.tsx
-'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuthStore } from '@/lib/store/authStore'
+"use client";
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/lib/store/authStore';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const router = useRouter()
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const isLoading = useState(true)
+  const router = useRouter();
+  const { isAuthenticated, checkAuth } = useAuthStore();
 
   useEffect(() => {
-    // 클라이언트 사이드에서만 실행
-    const token = localStorage.getItem('token')
-    if (!token) {
-      router.push('/components/Auth/login')
-    } else {
-      setIsAuthenticated(true)
-    }
-  }, [router])
+    console.log("ProtectedRoute 시작, isAuthenticated:", isAuthenticated);
+    checkAuth();  // 페이지 접근 시 쿠키에서 토큰 확인
 
-  // 로딩 중이거나 인증되지 않은 경우 아무것도 렌더링하지 않음
+    if (!isAuthenticated) {
+      console.log("isAuthenticated가 false여서 로그인 페이지로 이동");
+      router.push('/login');
+    }
+  }, [isAuthenticated, router, checkAuth]);
+
   if (!isAuthenticated) {
-    return null
+    console.log("ProtectedRoute에서 isAuthenticated false로 반환");
+    return null;
   }
 
-  // 인증된 경우에만 children 렌더링
-  return <>{children}</>
-}
+  return <>{children}</>;
+};
 
-export default ProtectedRoute
+export default ProtectedRoute;

@@ -7,18 +7,12 @@ export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
 
   // 로그인이 필요한 보호된 경로들
-  const protectedPaths = [
-    '/services/hscode',
-    '/services/import-requirements',
-    '/services/invoice',
-    '/services/WarehouseCost',
-    '/cargo-location'
-  ]
+  const protectedPaths = []; //보호를 해제하려면 비워둠
 
   // 항상 접근 가능한 public 경로들
   const publicPaths = [
     '/',  // 메인 페이지
-    '/components/Auth/Login',
+    '/components/Auth/login',
     '/components/Auth/signup',
     '/components/Auth/reset-password'
   ]
@@ -37,7 +31,7 @@ export function middleware(request: NextRequest) {
     const token = request.cookies.get('token')
     
     if (!token) {
-      return NextResponse.redirect(new URL('/Login', request.url))
+      return NextResponse.redirect(new URL('/login', request.url))
     }
   }
 
