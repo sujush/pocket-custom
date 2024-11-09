@@ -40,6 +40,7 @@ export default function ResetPassword() {
         setError(data.message || '비밀번호 재설정 요청에 실패했습니다.')
       }
     } catch (error) {
+      console.error(error); //error를 로그에 출력하여 사용함
       setError('서버 오류가 발생했습니다.')
     }
   }
@@ -75,6 +76,7 @@ export default function ResetPassword() {
         setError(data.message || '비밀번호 재설정에 실패했습니다.')
       }
     } catch (error) {
+      console.error(error); //error를 로그에 출력하여 사용함
       setError('서버 오류가 발생했습니다.')
     }
   }

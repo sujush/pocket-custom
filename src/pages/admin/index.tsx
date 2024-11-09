@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 
 export default function AdminPage() {
-  const [members, setMembers] = useState([])
+  const [members, setMembers] = useState<{ id: number; email: string; name: string; isPremium: boolean; lastLogin: string }[]>([])
 
   useEffect(() => {
     // 회원 목록 가져오기 (API 호출)

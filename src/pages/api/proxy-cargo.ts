@@ -57,8 +57,8 @@ const subFieldMap = {
 };
 
 // 필요한 필드만 남기고 이름을 한글로 변환하는 함수
-function transformFields(data, map) {
-  const transformed = {};
+function transformFields(data: Record<string, unknown>, map: Record<string, string>): Record<string, unknown> {
+  const transformed: Record<string, unknown> = {};
   for (const key in data) {
     if (map[key]) {
       transformed[map[key]] = data[key];
@@ -96,7 +96,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const mainData = transformFields(jsonData.cargCsclPrgsInfoQryRtnVo.cargCsclPrgsInfoQryVo, fieldMap);
 
     // 하위 필드 필터링 및 변환
-    const subData = jsonData.cargCsclPrgsInfoQryRtnVo.cargCsclPrgsInfoDtlQryVo.map((item) => transformFields(item, subFieldMap));
+    const subData = jsonData.cargCsclPrgsInfoQryRtnVo.cargCsclPrgsInfoDtlQryVo.map((item: Record<string, unknown>) => transformFields(item, subFieldMap));
 
     // 최종 데이터 조합
     const result = {
@@ -105,8 +105,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
 
     res.status(200).json(result);
-  } catch (error) {
-    console.error("Unipass API 요청 오류:", error.message);
-    res.status(500).json({ error: 'Unipass API 요청에 실패했습니다.', details: error.message });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error("Unipass API 요청 오류:", error.message);
+      res.status(500).json({ error: 'Unipass API 요청에 실패했습니다.', details: error.message });
+    } else {
+      console.error("Unipass API 요청 오류:", error);
+      res.status(500).json({ error: 'Unipass API 요청에 실패했습니다.', details: '알 수 없는 오류 발생' });
+    }
   }
 }

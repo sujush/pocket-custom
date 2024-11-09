@@ -1,12 +1,35 @@
 "use client";
 
-import { useState } from "react";
 import Navigation from "@/components/Navigation";
+import { Item } from "aws-sdk/clients/simpledb";
+import React, { useState } from "react";
+
+interface CargoData {
+    cargCsclPrgsInfoDtlQryVo?: Array<{
+        장치장명: string;
+        처리일시: string;
+        중량: number;
+        중량단위: string;
+        포장개수: number;
+        처리구분: string;
+        포장단위: string;
+        장치장부호: string;
+    }>;
+    품명?: string;
+    통관진행상태?: string;
+    총중량?: number;
+    중량단위?: string;
+    용적?: number;
+    컨테이너번호?: string;
+    입항세관?: string;
+    포워더명?: string;
+    // 필요한 다른 필드 추가
+}
 
 export default function CargoLocation() {
-    const [cargoData, setCargoData] = useState(null);
+    const [cargoData, setCargoData] = useState<CargoData | null>(null);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState<string | null>(null);
     const [blType, setBlType] = useState("mbl");
     const [blNumber, setBlNumber] = useState("");
     const blYy = "2024";
@@ -31,14 +54,18 @@ export default function CargoLocation() {
 
             const data = await response.json();
             setCargoData(data);
-        } catch (err) {
-            setError(err.message);
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError("알 수 없는 오류가 발생했습니다.");
+            }
         } finally {
             setLoading(false);
         }
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         fetchCargoInfo();
     };
@@ -75,7 +102,7 @@ export default function CargoLocation() {
         groupedFields.push(orderedFields.slice(i, i + 3));
     }
 
-    const formatDate = (datetimeStr) => {
+    const formatDate = (datetimeStr: string) => {
         if (!datetimeStr) return "N/A";
         return `${datetimeStr.slice(0, 4)}.${datetimeStr.slice(4, 6)}.${datetimeStr.slice(6, 8)} ${datetimeStr.slice(8, 10)}:${datetimeStr.slice(10, 12)}`;
     };
@@ -86,21 +113,20 @@ export default function CargoLocation() {
         const {
             품명 = "N/A",
             통관진행상태 = "N/A",
-            포장개수 = "N/A",
-            포장단위 = "N/A",
             총중량 = "N/A",
             중량단위 = "N/A",
             용적 = "N/A",
             컨테이너번호 = "N/A",
             입항세관 = "N/A",
-            포워더명 = "N/A"
+            포워더명 = "N/A",
+            cargCsclPrgsInfoDtlQryVo = []
         } = cargoData;
 
-        const firstStorage = cargoData.cargCsclPrgsInfoDtlQryVo?.[0] || {};
+        const firstStorage = cargCsclPrgsInfoDtlQryVo[0] || {};
         const 장치장명 = firstStorage.장치장명 || "N/A";
         const 처리구분 = firstStorage.처리구분 || "N/A";
 
-        return `${품명} 화물은 현재 ${통관진행상태} 상태에 있으며 ${포장개수}${포장단위}, ${총중량}${중량단위}이고 용적은 ${용적} CBM입니다. ${컨테이너번호} 컨테이너에 적입되어 ${입항세관}의 심사에 따라 통관되었거나 통관될 예정입니다. 현재 위치는 ${장치장명}이며 ${처리구분} 상태입니다. 운송 관련해서는 ${포워더명}에 연락하시기 바랍니다.`;
+        return `${품명} 화물은 현재 ${통관진행상태} 상태에 있으며 ${총중량}${중량단위}, ${용적} CBM입니다. ${컨테이너번호} 컨테이너에 적입되어 ${입항세관}의 심사에 따라 통관되었거나 통관될 예정입니다. 현재 위치는 ${장치장명}이며 ${처리구분} 상태입니다. 운송 관련해서는 ${포워더명}에 연락하시기 바랍니다.`;
     };
 
     return (
@@ -173,10 +199,24 @@ export default function CargoLocation() {
                             {groupedFields.map((fieldGroup, rowIndex) => (
                                 <tr key={rowIndex}>
                                     {fieldGroup.map(({ key, label }) => (
-                                        <>
-                                            <td key={`${key}-label`} className="border px-4 py-2 font-semibold">{label}</td>
-                                            <td key={`${key}-value`} className="border px-4 py-2">{cargoData[key]}</td>
-                                        </>
+                                        <React.Fragment key={key}> {/* Fragment에 key 추가 */}
+                                            <td className="border px-4 py-2 font-semibold">{label}</td>
+                                            <td className="border px-4 py-2">
+                                                {Array.isArray(cargoData[key as keyof CargoData]) ? (
+                                                    // `cargoData[key]`가 배열인 경우 `map`을 사용하여 항목을 렌더링
+                                                    (cargoData[key as keyof CargoData] as unknown as Array<Item>).map((item, idx) => (
+                                                        <div key={idx}>{JSON.stringify(item)}</div>
+                                                    ))
+                                                ) : (
+                                                    // `cargoData[key]`가 배열이 아닌 경우, `string`, `number`, 또는 `null` 값으로 출력
+                                                    (typeof cargoData[key as keyof CargoData] === 'string' ||
+                                                    typeof cargoData[key as keyof CargoData] === 'number' ||
+                                                    cargoData[key as keyof CargoData] === null) ? (
+                                                        cargoData[key as keyof CargoData] as React.ReactNode
+                                                    ) : null
+                                                )}
+                                            </td>
+                                        </React.Fragment>
                                     ))}
                                 </tr>
                             ))}

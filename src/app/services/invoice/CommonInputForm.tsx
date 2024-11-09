@@ -45,7 +45,7 @@ export default function CommonInputForm({
           </div>
           <div>
             <Label htmlFor="importerEnglishAddress">수입자 영문주소</Label>
-            <Textarea id="importerEnglishAddress" name="importerEnglishAddress" value={commonData.importerEnglishAddress} onChange={handleCommonInputChange} pattern="^[a-zA-Z0-9\s]+$" />
+            <Textarea id="importerEnglishAddress" name="importerEnglishAddress" value={commonData.importerEnglishAddress} onChange={handleCommonInputChange} />
           </div>
         </div>
       </div>
@@ -66,7 +66,12 @@ export default function CommonInputForm({
         </div>
         <div>
           <Label htmlFor="importerKoreanAddress">수입자 한글주소</Label>
-          <Textarea id="importerKoreanAddress" name="importerKoreanAddress" value={commonData.importerKoreanAddress} onChange={handleCommonInputChange} pattern="^[가-힣\s]+$" />
+          <Textarea 
+            id="importerKoreanAddress" 
+            name="importerKoreanAddress" 
+            value={commonData.importerKoreanAddress} 
+            onChange={handleCommonInputChange} 
+          />
         </div>
         
         {/* 사업자 정보 */}

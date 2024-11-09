@@ -1,10 +1,17 @@
 import React, { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 
-export const ImportRequirements = ({ hsCode }) => {
-  const [results, setResults] = useState(null)
+type ItemType = {
+  품목번호: string;
+  관세율구분: string;
+  관세율?: string;
+  // 필요한 다른 속성 추가
+}
+
+export const ImportRequirements: React.FC<{ hsCode: string }> = ({ hsCode }) => {
+  const [results, setResults] = useState<ItemType[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null) // 타입을 string | null로 변경
 
   // 관세율구분 코드 매핑
   const RATE_TYPE_MAPPING = {
@@ -49,22 +56,22 @@ export const ImportRequirements = ({ hsCode }) => {
         console.log('API 응답 데이터:', data)
 
         // 허용된 관세율구분만 필터링
-        const filteredData = data.data.filter(item => 
+        const filteredData = data.data.filter((item: { 관세율구분: string }) => 
           ALLOWED_RATE_TYPES.includes(item.관세율구분)
         )
 
         if (filteredData.length === 0) {
           setError('입력하신 HS CODE에 대한 데이터가 없습니다.')
-          setResults(null)
+          setResults([])
         } else {
           // 품목번호 형식 맞추기 (10자리 유지)
-          const formattedData = filteredData.map(item => ({
+          const formattedData = filteredData.map((item: { 품목번호: number | string }) => ({
             ...item,
             품목번호: item.품목번호.toString().padStart(10, '0')
           }))
 
           // 관세율구분 A를 최상단으로, 나머지는 관세율 오름차순 정렬
-          const sortedData = formattedData.sort((a, b) => {
+          const sortedData = formattedData.sort((a: { 관세율구분: string; 관세율?: string }, b: { 관세율구분: string; 관세율?: string }) => {
             if (a.관세율구분 === 'A') return -1
             if (b.관세율구분 === 'A') return 1
 
@@ -79,7 +86,7 @@ export const ImportRequirements = ({ hsCode }) => {
       } catch (error) {
         console.error('Error fetching HS Code details:', error)
         setError('데이터 조회 중 오류가 발생했습니다.')
-        setResults(null)
+        setResults([])
       } finally {
         setIsLoading(false)
       }
@@ -88,7 +95,7 @@ export const ImportRequirements = ({ hsCode }) => {
     if (hsCode.length === 10) {
       fetchHsCodeData()
     }
-  }, [hsCode])
+  }, [hsCode, ALLOWED_RATE_TYPES])
 
   if (isLoading) {
     return (
@@ -135,7 +142,7 @@ export const ImportRequirements = ({ hsCode }) => {
                       <p className={`text-gray-900 ${
                         item.관세율구분 === 'A' ? 'font-bold text-blue-600' : ''
                       }`}>
-                        {RATE_TYPE_MAPPING[item.관세율구분] || item.관세율구분 || '-'}
+                        {RATE_TYPE_MAPPING[item.관세율구분 as keyof typeof RATE_TYPE_MAPPING] || item.관세율구분 || '-'}
                       </p>
                     </div>
                     <div className="space-y-1">

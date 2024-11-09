@@ -9,6 +9,11 @@ interface RequirementResult {
   reqCfrmIstmNm: string;
 }
 
+interface Item {
+  dcerCfrmLworNm: string[];
+  reqCfrmIstmNm: string[];
+}
+
 async function fetchRequirements(hsCode: string): Promise<RequirementResult[]> {
   const serviceKey = process.env.NEXT_PUBLIC_SERVICE_KEY;
   const apiUrl = process.env.NEXT_PUBLIC_SERVICE_URL;
@@ -28,7 +33,7 @@ async function fetchRequirements(hsCode: string): Promise<RequirementResult[]> {
     console.log("Parsed XML Result:", result); // 파싱된 결과 확인
 
     const items = result.response.body[0].items[0].item || [];
-    return items.map((item: any) => ({
+    return items.map((item: Item) => ({
       dcerCfrmLworNm: item.dcerCfrmLworNm[0],
       reqCfrmIstmNm: item.reqCfrmIstmNm[0],
     }));
@@ -41,14 +46,11 @@ async function fetchRequirements(hsCode: string): Promise<RequirementResult[]> {
 export default function ImportRequirementsCheckPage({ params }: { params: { hsCode: string } }) {
   const [requirements, setRequirements] = useState<RequirementResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedRequirement, setSelectedRequirement] = useState<string | null>(null);
   const [requirementDescription, setRequirementDescription] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchRequirementsData = async () => {
       setIsLoading(true);
-      setError(null);
 
       try {
         const data = await fetchRequirements(params.hsCode);
@@ -58,7 +60,8 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
         );
         setRequirements(uniqueData);
       } catch (error) {
-        setError('수입요건 조회 중 오류가 발생했습니다.');
+        console.error(error); //error 를 로그에 출력하여 사용함
+        setRequirementDescription('수입요건 조회 중 오류가 발생했습니다.');
       } finally {
         setIsLoading(false);
       }
@@ -81,7 +84,6 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
   };
 
   const handleRequirementClick = (reqCfrmIstmNm: string) => {
-    setSelectedRequirement(reqCfrmIstmNm);
     fetchRequirementDescriptions(reqCfrmIstmNm);
   };
 
@@ -101,12 +103,6 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
             <div className="flex justify-center items-center p-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
             </div>
-          ) : error ? (
-            <Card className="bg-red-50">
-              <CardContent className="p-4">
-                <p className="text-red-600">{error}</p>
-              </CardContent>
-            </Card>
           ) : requirements.length > 0 ? (
             <div className="space-y-4">
               {requirements.map((requirement, index) => (

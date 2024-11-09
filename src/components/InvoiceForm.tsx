@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import * as XLSX from 'xlsx';
 
-export default function InvoiceForm({ onSubmit }) {
+export default function InvoiceForm({ onSubmit }: { onSubmit: () => void }) {
   const [formData, setFormData] = useState({
     exporterName: '',
     exporterAddress: '',
@@ -17,12 +17,12 @@ export default function InvoiceForm({ onSubmit }) {
     currency: 'USD',
   });
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     generateExcel();
     onSubmit();

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Select } from "@/components/ui/select"
 
 const apiUrl = process.env.NEXT_PUBLIC_APIGATEWAY_URL;
 
@@ -125,7 +124,7 @@ export default function SignupForm() {
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">회원가입</h2>
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">회���가입</h2>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit} autoComplete="off">
           <div className="mb-4">
@@ -229,7 +228,7 @@ export default function SignupForm() {
             <Checkbox
               id="premium-option"
               checked={isPremium}
-              onChange={(e) => setIsPremium(e.target.checked)}
+              onChange={(e) => setIsPremium((e.target as HTMLInputElement).checked)}
             />
             <Label htmlFor="premium-option" className="ml-2 block text-sm text-gray-900">
               프리미엄 회원으로 가입

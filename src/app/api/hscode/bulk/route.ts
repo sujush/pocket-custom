@@ -23,7 +23,7 @@ export async function POST(request: Request) {
 
   try {
     // 각 제품별로 독립적인 API 요청을 보내고, 모든 요청이 완료될 때까지 기다립니다.
-    const hscodes = await Promise.all(products.map(async (product) => {
+    const hscodes = await Promise.all(products.map(async (product: { name: string; material: string; description: string; }) => {
       const prompt = `
         너는 무역을 전공한 사람이고, HS CODE 품목분류의 전문가야. 제품의 상세사항에 기반해서
         오직 6자리의 HS CODE를 제공해. 다른 부가적인 말은 필요없이 6자리의 HS CODE 값만 도출해.

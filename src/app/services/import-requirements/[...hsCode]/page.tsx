@@ -136,9 +136,9 @@ const RATE_TYPE_MAPPING = {
 export default function ImportRequirementsPage({ params }: { params: { hsCode?: string[] } }) {
   const router = useRouter()
   const [hsCode, setHsCode] = useState<string>('') //빈 문자열로 초기화
-  const [results, setResults] = useState(null)
+  const [results, setResults] = useState<{ 품목번호: string; 관세율구분: string; 관세율?: string }[]>([]) // 빈 배열로 초기화
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null) // null 또는 문자열로 초기화
   const [selectedCountry, setSelectedCountry] = useState('ALL')
   const [isSubmitted, setIsSubmitted] = useState(false)
 
@@ -153,13 +153,13 @@ export default function ImportRequirementsPage({ params }: { params: { hsCode?: 
   }, [params.hsCode]);
 
   // HS CODE 입력 핸들러
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setHsCode(e.target.value);
     setIsSubmitted(false);
   };
 
   // 조회 버튼 클릭 핸들러
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (hsCode.length !== 10) {
       alert('HS CODE 10자리를 입력해 주세요.');
@@ -169,7 +169,7 @@ export default function ImportRequirementsPage({ params }: { params: { hsCode?: 
   };
 
   // 국가 선택 핸들러
-  const handleCountryChange = (value) => {
+  const handleCountryChange = (value: string) => {
     setSelectedCountry(value)
     if (isSubmitted) {
       setIsSubmitted(true)
@@ -199,24 +199,24 @@ export default function ImportRequirementsPage({ params }: { params: { hsCode?: 
         
         // 허용된 관세율구분 결정
         let allowedTypes = [...BASE_RATE_TYPES]
-        if (selectedCountry && selectedCountry !== 'ALL' && COUNTRY_RATE_TYPES[selectedCountry]) {
-          allowedTypes = [...allowedTypes, ...COUNTRY_RATE_TYPES[selectedCountry]]
+        if (selectedCountry && selectedCountry !== 'ALL' && COUNTRY_RATE_TYPES[selectedCountry as keyof typeof COUNTRY_RATE_TYPES]) {
+          allowedTypes = [...allowedTypes, ...COUNTRY_RATE_TYPES[selectedCountry as keyof typeof COUNTRY_RATE_TYPES]]
         }
 
         // 데이터 필터링
-        const filteredData = data.data.filter(item => 
+        const filteredData = data.data.filter((item: { 관세율구분: string }) => 
           allowedTypes.includes(item.관세율구분)
         )
 
         if (filteredData.length === 0) {
           setError('올바른 HS CODE 10자리를 입력해주세요')
-          setResults(null)
+          setResults([])
         } else {
           // 품목번호 형식 맞추기 및 정렬
-          const formattedData = filteredData.map(item => ({
+          const formattedData = filteredData.map((item: { 품목번호: number; 관세율구분: string; 관세율?: string }) => ({
             ...item,
             품목번호: item.품목번호.toString().padStart(10, '0')
-          })).sort((a, b) => {
+          })).sort((a: { 관세율구분: string; 관세율?: string }, b: { 관세율구분: string; 관세율?: string }) => {
             if (a.관세율구분 === 'A') return -1
             if (b.관세율구분 === 'A') return 1
             const rateA = parseFloat(a.관세율?.replace(/[^0-9.]/g, '') || '0')
@@ -230,7 +230,7 @@ export default function ImportRequirementsPage({ params }: { params: { hsCode?: 
       } catch (error) {
         console.error('Error fetching HS Code details:', error)
         setError('데이터 조회 중 오류가 발생했습니다.')
-        setResults(null)
+        setResults([])
       } finally {
         setIsLoading(false)
       }
@@ -312,7 +312,7 @@ export default function ImportRequirementsPage({ params }: { params: { hsCode?: 
                         <p className={`text-gray-900 ${
                           item.관세율구분 === 'A' ? 'font-bold text-blue-600' : ''
                         }`}>
-                          {RATE_TYPE_MAPPING[item.관세율구분] || item.관세율구분 || '-'}
+                          {RATE_TYPE_MAPPING[item.관세율구분 as keyof typeof RATE_TYPE_MAPPING] || item.관세율구분 || '-'}
                         </p>
                       </div>
                       <div className="space-y-1">

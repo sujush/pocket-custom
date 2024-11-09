@@ -1,7 +1,6 @@
 "use client";
 
 import React from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Search, FileCheck, FileText, Calculator, Box, Phone } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/authStore';
@@ -52,7 +51,7 @@ const additionalServices = [
 ];
 
 // MainServiceCard 컴포넌트
-const MainServiceCard = ({ service }) => {
+const MainServiceCard: React.FC<{ service: { title: string; description: string; icon: React.ElementType; link: string } }> = ({ service }) => {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
 
@@ -73,7 +72,7 @@ const MainServiceCard = ({ service }) => {
   };
 
   const handleBulkCheck = () => {
-    console.log('대량 조회 클릭 시 상태:', {
+    console.log('대량 조회 클릭  상태:', {
       isAuthenticated: useAuthStore.getState().isAuthenticated,
       token: useAuthStore.getState().token,
       currentPath: window.location.pathname
@@ -115,7 +114,7 @@ const MainServiceCard = ({ service }) => {
               onClick={handleClickBulkCheck}
               className="inline-flex items-center text-indigo-600 hover:text-indigo-700 font-bold"
             >
-              -> HS CODE 대량 조회 (★)
+                HS CODE 대량 조회 (★)
             </button>
           </>
         )}
@@ -125,7 +124,7 @@ const MainServiceCard = ({ service }) => {
 };
 
 // AdditionalServiceCard 컴포넌트
-const AdditionalServiceCard = ({ service }) => {
+const AdditionalServiceCard: React.FC<{ service: { title: string; description: string; icon: React.ElementType; link: string; color?: string } }> = ({ service }) => {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
 
@@ -134,7 +133,7 @@ const AdditionalServiceCard = ({ service }) => {
     purple: 'bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200 text-purple-600 text-purple-800 text-purple-700'
   };
 
-  const classes = colorClasses[service.color];
+  const classes = colorClasses[service.color as keyof typeof colorClasses] || colorClasses.blue;
   const [mainDescription, ...contactInfo] = service.description.split('\n');
 
   const handleServiceNavigation = () => {
@@ -156,7 +155,7 @@ const AdditionalServiceCard = ({ service }) => {
     handleServiceNavigation();
   };
 
-  const renderContactInfo = (info) => {
+  const renderContactInfo = (info: string[]) => {
     return info.map((line, index) => {
       if (line.includes('이연관세사무소')) {
         return (

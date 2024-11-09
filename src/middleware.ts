@@ -7,7 +7,7 @@ export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
 
   // 로그인이 필요한 보호된 경로들
-  const protectedPaths = []; //보호를 해제하려면 비워둠
+  const protectedPaths: string[] = []; // 보호를 해제하려면 비워둠
 
   // 항상 접근 가능한 public 경로들
   const publicPaths = [

@@ -32,7 +32,7 @@ const CertifiedServices = [
  }
 ];
 
-const CertifiedServiceCard: React.FC<{ service: any }> = ({ service }) => {
+const CertifiedServiceCard: React.FC<{ service: { title: string; description: string; icon: React.ElementType; link: string } }> = ({ service }) => {
  const router = useRouter();
  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 

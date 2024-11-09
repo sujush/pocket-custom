@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { signIn } from 'next-auth/react'
 import { useAuthStore } from '@/lib/store/authStore'
+import Image from 'next/image'
 
 const apiUrl = process.env.NEXT_PUBLIC_APIGATEWAY_URL;
 
@@ -154,10 +155,12 @@ export default function LoginForm() {
               onClick={() => handleSocialLogin('google')}
               className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
             >
-              <img
+              <Image
                 className="h-5 w-5 mr-2"
                 src="https://www.svgrepo.com/show/475656/google-color.svg"
                 alt="Google logo"
+                width={20}
+                height={20}
               />
               Google
             </button>
@@ -166,10 +169,12 @@ export default function LoginForm() {
               onClick={() => handleSocialLogin('naver')}
               className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
             >
-              <img
+              <Image
                 className="h-5 w-5 mr-2"
                 src="https://www.svgrepo.com/show/354927/naver.svg"
                 alt="Naver logo"
+                width={20}
+                height={20}
               />
               Naver
             </button>

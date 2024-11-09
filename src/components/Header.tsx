@@ -1,6 +1,7 @@
 // components/Header.tsx
+import Link from 'next/link';
 import { useAuthStore } from '@/lib/store/authStore'
-import LogoutButton from './LogoutButton'
+import LogoutButton from './LogoutButon';
 
 export default function Header() {
   const user = useAuthStore(state => state.user)

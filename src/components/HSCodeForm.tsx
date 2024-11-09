@@ -51,13 +51,14 @@ interface Product {
   usage: string;
   additionalDescription: string;
   additionalInput: string;
+  functions: { [key: string]: string };
 }
 
-const fetchAllPages = async (sixDigitCode: string): Promise<Array<any>> => {
+const fetchAllPages = async (sixDigitCode: string): Promise<HSCodeResult[]> => {
   const apiUrl = process.env.NEXT_PUBLIC_HSCODE_API_URL;
   const apiKey = process.env.NEXT_PUBLIC_HSCODE_API_KEY;
   const decodedKey = decodeURIComponent(apiKey!);
-  let allResults: Array<any> = [];
+  let allResults: HSCodeResult[] = [];
   let currentPage = 1;
 
   while (true) {
@@ -66,6 +67,7 @@ const fetchAllPages = async (sixDigitCode: string): Promise<Array<any>> => {
     baseUrl.searchParams.append('page', String(currentPage));
     baseUrl.searchParams.append('perPage', '5000');
     baseUrl.searchParams.append('returnType', 'JSON');
+    baseUrl.searchParams.append('sixDigitCode', sixDigitCode);
 
     const response = await fetch(baseUrl.toString());
     if (!response.ok) break;
@@ -89,7 +91,8 @@ export const HSCodeForm: React.FC = () => {
     name: '',
     usage: '',
     additionalDescription: '',
-    additionalInput: ''
+    additionalInput: '',
+    functions: {}
   });
   const [materialOptions, setMaterialOptions] = useState(defaultMaterialOptions);
   const [functions, setFunctions] = useState<{ [key: string]: string }>({});
@@ -110,7 +113,8 @@ export const HSCodeForm: React.FC = () => {
       name: '',
       usage: '',
       additionalDescription: '',
-      additionalInput: ''
+      additionalInput: '',
+      functions: {}
     });
   };
 
@@ -152,7 +156,7 @@ export const HSCodeForm: React.FC = () => {
 
     try {
         if (!product.category) {
-            throw new Error('제품 카테고리를 선택해주세요.');
+            throw new Error('제품 카테고리 선택해주세요.');
         }
 
         if (product.category === '해당사항 없음') {
@@ -193,7 +197,7 @@ export const HSCodeForm: React.FC = () => {
             throw new Error('HS CODE를 받아오지 못했습니다');
         }
 
-        const sixDigitCode = data.hsCode.trim().substring(0, 6);
+        const sixDigitCode: string = data.hsCode.trim().substring(0, 6);
 
         if (!/^\d{6}$/.test(sixDigitCode)) {
             throw new Error('유효하지 않은 HS CODE 형식입니다');
@@ -201,21 +205,21 @@ export const HSCodeForm: React.FC = () => {
 
         setHsCode(sixDigitCode);
 
-        const allResults = await fetchAllPages(sixDigitCode);
+        const allResults: HSCodeResult[] = await fetchAllPages(sixDigitCode);
 
         const filteredResults = allResults
             .filter(item => {
-                const hsCode = String(item.HS부호).padStart(10, '0');
+                const hsCode = String(item.품목번호).padStart(10, '0');
                 return hsCode.substring(0, 6) === sixDigitCode;
             })
             .map(item => ({
-                품목번호: String(item.HS부호).padStart(10, '0'),
-                품목명: item.한글품목명 || '설명 없음',
-                영문명: item.영문품목명 || '',
+                품목번호: String(item.품목번호).padStart(10, '0'),
+                품목명: item.품목명 || '설명 없음',
+                영문명: item.영문명 || '',
                 기본세율: '확인 필요',
-                단위: item.수량단위코드 || '-',
-                적용시작일: item.적용시작일자 || '-',
-                적용종료일: item.적용종료일자 || '-'
+                단위: item.단위 || '-',
+                적용시작일: item.적용시작일 || '-',
+                적용종료일: item.적용종료일 || '-'
             }));
 
         if (filteredResults.length === 0) {
