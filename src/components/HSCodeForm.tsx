@@ -69,9 +69,9 @@ const fetchAllPages = async (sixDigitCode: string): Promise<HSCodeResult[]> => {
     const baseUrl = new URL(apiUrl!);
     baseUrl.searchParams.append('serviceKey', decodedKey);
     baseUrl.searchParams.append('page', String(currentPage));
-    baseUrl.searchParams.append('perPage', '5000');
+    baseUrl.searchParams.append('perPage', '1000');
     baseUrl.searchParams.append('returnType', 'JSON');
-    baseUrl.searchParams.append('sixDigitCode', sixDigitCode);
+    
 
     console.log("Request URL:", baseUrl.toString()); // 각 페이지에 대해 생성된 URL이 올바른지 확인합니다. 추후 삭제
 
