@@ -58,6 +58,10 @@ const fetchAllPages = async (sixDigitCode: string): Promise<HSCodeResult[]> => {
   const apiUrl = process.env.NEXT_PUBLIC_HSCODE_API_URL;
   const apiKey = process.env.NEXT_PUBLIC_HSCODE_API_KEY;
   const decodedKey = decodeURIComponent(apiKey!);
+
+  console.log("API URL:", apiUrl); // API URL이 올바르게 설정되었는지 확인합니다. 추후 삭제
+  console.log("Decoded API Key:", decodedKey); // API 키가 제대로 디코딩되었는지 확인합니다. 추후 삭제
+
   let allResults: HSCodeResult[] = [];
   let currentPage = 1;
 
@@ -69,10 +73,18 @@ const fetchAllPages = async (sixDigitCode: string): Promise<HSCodeResult[]> => {
     baseUrl.searchParams.append('returnType', 'JSON');
     baseUrl.searchParams.append('sixDigitCode', sixDigitCode);
 
+    console.log("Request URL:", baseUrl.toString()); // 각 페이지에 대해 생성된 URL이 올바른지 확인합니다. 추후 삭제
+
     const response = await fetch(baseUrl.toString());
+
+    console.log("Response Status:", response.status); // API 호출 응답 상태 코드로 요청이 성공했는지 확인합니다. 추후 삭제
+
     if (!response.ok) break;
 
     const data = await response.json();
+
+    console.log("Fetched Data:", data); // API 응답 데이터가 예상한 구조인지 확인합니다. 추후 삭제
+
     if (!data.data || data.data.length === 0) break;
 
     allResults = [...allResults, ...data.data];
@@ -192,6 +204,8 @@ export const HSCodeForm: React.FC = () => {
         }
 
         const data = await response.json();
+
+        console.log("Received HS Code:", data.hsCode); // AI에서 가져온 HS Code가 6자리인지 확인합니다.
 
         if (!data.hsCode) {
             throw new Error('HS CODE를 받아오지 못했습니다');
