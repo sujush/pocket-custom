@@ -35,13 +35,18 @@ const textileMaterialOptions = [
 ];
 
 interface HSCodeResult {
-  품목번호: string;
-  품목명: string;
-  영문명: string;
+  품목번호:string,
+  품목명:string,
+  영문명:string,
+  적용시작일:string,
+  적용종료일:string,
+  HS부호: string;
+  한글품목명: string;
+  영문품목명: string;
   기본세율: string;
   단위: string;
-  적용시작일: string;
-  적용종료일: string;
+  적용시작일자: string;
+  적용종료일자: string;
 }
 
 interface Product {
@@ -71,7 +76,7 @@ const fetchAllPages = async (sixDigitCode: string): Promise<HSCodeResult[]> => {
     const baseUrl = new URL(apiUrl!);
     baseUrl.searchParams.append('serviceKey', decodedKey);
     baseUrl.searchParams.append('page', String(currentPage));
-    baseUrl.searchParams.append('perPage', '1000');
+    baseUrl.searchParams.append('perPage', '5000');
     baseUrl.searchParams.append('returnType', 'JSON');
     
 
@@ -182,7 +187,7 @@ export const HSCodeForm: React.FC = () => {
                 throw new Error('제품의 기능 및 용도에 대한 모든 질문에 답해주세요.');
             }
             if (!product.material) {
-                throw new Error('제품의 재질을 선택해주���요.');
+                throw new Error('제품의 재질을 선택해주세요.');
             }
             if (!product.name.trim()) {
                 throw new Error('제품의 명칭을 입력해주세요.');
@@ -229,20 +234,20 @@ export const HSCodeForm: React.FC = () => {
                 return hsCode.substring(0, 6) === sixDigitCode;
             })
             .map(item => ({
-                품목번호: String(item.품목번호).padStart(10, '0'),
-                품목명: item.품목명 || '설명 없음',
-                영문명: item.영문명 || '',
+                품목번호: String(item.HS부호).padStart(10, '0'),
+                품목명: item.한글품목명 || '설명 없음',
+                영문명: item.영문품목명 || '',
                 기본세율: '확인 필요',
                 단위: item.단위 || '-',
-                적용시작일: item.적용시작일 || '-',
-                적용종료일: item.적용종료일 || '-'
+                적용시작일: item.적용시작일자 || '-',
+                적용종료일: item.적용종료일자 || '-'
             }));
 
         if (filteredResults.length === 0) {
             throw new Error(`${sixDigitCode}에 해당하는 HS CODE를 찾을 수 없습니다.`);
         }
 
-        setHSCodeResults(filteredResults);
+        setHSCodeResults(filteredResults as HSCodeResult[]);
 
         // 오류가 없는 경우에만 폼 초기화
         setResetTrigger(true);
