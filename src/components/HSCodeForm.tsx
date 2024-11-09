@@ -62,6 +62,8 @@ const fetchAllPages = async (sixDigitCode: string): Promise<HSCodeResult[]> => {
   console.log("API URL:", apiUrl); // API URL이 올바르게 설정되었는지 확인합니다. 추후 삭제
   console.log("Decoded API Key:", decodedKey); // API 키가 제대로 디코딩되었는지 확인합니다. 추후 삭제
 
+  console.log("Fetching data for HS Code:", sixDigitCode); // sixDigitCode를 사용하여 로그에 출력합니다.
+
   let allResults: HSCodeResult[] = [];
   let currentPage = 1;
 
@@ -180,7 +182,7 @@ export const HSCodeForm: React.FC = () => {
                 throw new Error('제품의 기능 및 용도에 대한 모든 질문에 답해주세요.');
             }
             if (!product.material) {
-                throw new Error('제품의 재질을 선택해주세요.');
+                throw new Error('제품의 재질을 선택해주���요.');
             }
             if (!product.name.trim()) {
                 throw new Error('제품의 명칭을 입력해주세요.');
@@ -210,7 +212,7 @@ export const HSCodeForm: React.FC = () => {
         if (!data.hsCode) {
             throw new Error('HS CODE를 받아오지 못했습니다');
         }
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        
         const sixDigitCode: string = data.hsCode.trim().substring(0, 6);
 
         if (!/^\d{6}$/.test(sixDigitCode)) {
