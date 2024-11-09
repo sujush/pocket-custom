@@ -210,7 +210,7 @@ export const HSCodeForm: React.FC = () => {
         if (!data.hsCode) {
             throw new Error('HS CODE를 받아오지 못했습니다');
         }
-
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const sixDigitCode: string = data.hsCode.trim().substring(0, 6);
 
         if (!/^\d{6}$/.test(sixDigitCode)) {
