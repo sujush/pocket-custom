@@ -1,6 +1,11 @@
 // pages/cargo-location.tsx
 import CargoLocation from "@/components/CargoLocation"
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 export default function CargoLocationPage() {
-  return <CargoLocation />
+  return (
+    <ProtectedRoute>
+      <CargoLocation />
+    </ProtectedRoute>
+  );
 }

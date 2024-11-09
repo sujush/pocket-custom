@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Search, FileCheck, FileText, Calculator, Box, Phone } from 'lucide-react';
+import { useAuthStore } from '@/lib/store/authStore';
 
 const mainServices = [
   {
@@ -53,41 +54,65 @@ const additionalServices = [
 // MainServiceCard 컴포넌트
 const MainServiceCard = ({ service }) => {
   const router = useRouter();
+  const { isAuthenticated } = useAuthStore();
 
-  const handleClick = () => {
-    // 관세율 조회 코드만 동적 경로를 사용
+  const handleServiceNavigation = () => {
+    console.log('서비스 클릭 시 상태:', {
+      isAuthenticated: useAuthStore.getState().isAuthenticated,
+      token: useAuthStore.getState().token,
+      serviceTitle: service.title,
+      currentPath: window.location.pathname
+    });
+
     if (service.title === '관세율 및 수입 요건 확인') {
-      const hsCode = "0123456789"; // 예제. 필요에 따라 동적으로 할당
+      const hsCode = "0123456789";
       router.push(`${service.link}/${hsCode}`);
     } else {
-      // 정적 경로로 이동
       router.push(service.link);
     }
   };
 
-  // 'HS CODE 대량 조회' 버튼 클릭 시 이동 처리 함수
-  const handleClickBulkCheck = () => {
-    router.push('/services/hscode/bulk'); // 'HS CODE 대량 조회' 페이지 경로 설정
+  const handleBulkCheck = () => {
+    console.log('대량 조회 클릭 시 상태:', {
+      isAuthenticated: useAuthStore.getState().isAuthenticated,
+      token: useAuthStore.getState().token,
+      currentPath: window.location.pathname
+    });
+
+    router.push('/services/hscode/bulk');
   };
 
+  // 로그인 체크는 ProtectedRoute에서 처리하도록 수정
+  const handleClick = () => {
+    handleServiceNavigation();
+  };
+
+  const handleClickBulkCheck = () => {
+    handleBulkCheck();
+  };
 
   return (
-    <div className="bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg border border-indigo-200 p-6 transform hover:-translate-y-1 hover:scale-105">
+    <div className={`${!isAuthenticated ? 'opacity-75' : ''
+      } bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg border border-indigo-200 p-6 transform hover:-translate-y-1 hover:scale-105`}>
       <div className="flex items-center mb-4">
         <service.icon className="h-8 w-8 text-indigo-600 mr-4" />
         <h2 className="text-xl font-semibold text-indigo-800">{service.title}</h2>
       </div>
       <p className="text-gray-700 mb-4 text-sm">{service.description}</p>
       <div className="flex items-center">
-        <button onClick={handleClick} className="inline-flex items-center text-indigo-600 hover:text-indigo-700 font-medium text-sm">
-          자세히 보기 <ArrowRight className="ml-2 h-4 w-4" />
+        <button
+          onClick={handleClick}
+          className="inline-flex items-center text-indigo-600 hover:text-indigo-700 font-medium text-sm"
+        >
+          자세히 보기
+          <ArrowRight className="ml-2 h-4 w-4" />
         </button>
-        {/* HS CODE 조회 서비스에만 'HS CODE 대량 조회' 버튼 추가 */}
+
         {service.title === 'HS CODE 조회' && (
           <>
-            <div className="flex-grow"></div> {/* 왼쪽 버튼과 오른쪽 버튼 사이의 공간 확보 */}
-            <button 
-              onClick={handleClickBulkCheck} 
+            <div className="flex-grow"></div>
+            <button
+              onClick={handleClickBulkCheck}
               className="inline-flex items-center text-indigo-600 hover:text-indigo-700 font-bold"
             >
               -> HS CODE 대량 조회 (★)
@@ -101,24 +126,36 @@ const MainServiceCard = ({ service }) => {
 
 // AdditionalServiceCard 컴포넌트
 const AdditionalServiceCard = ({ service }) => {
+  const router = useRouter();
+  const { isAuthenticated } = useAuthStore();
+
   const colorClasses = {
     blue: 'bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200 text-blue-600 text-blue-800 text-blue-700',
     purple: 'bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200 text-purple-600 text-purple-800 text-purple-700'
   };
 
   const classes = colorClasses[service.color];
-
-  // 설명을 두 부분으로 나눔
   const [mainDescription, ...contactInfo] = service.description.split('\n');
 
-  // 링크 처리를 위한 함수
-  const handleClick = () => {
+  const handleServiceNavigation = () => {
+    console.log('추가 서비스 클릭 시 상태:', {
+      isAuthenticated: useAuthStore.getState().isAuthenticated,
+      token: useAuthStore.getState().token,
+      serviceTitle: service.title,
+      currentPath: window.location.pathname
+    });
+
     if (service.link?.startsWith('http')) {
-      window.open(service.link, '_blank'); // 외부 링크일 경우 새 탭에서 열기
+      window.open(service.link, '_blank');
+    } else {
+      router.push(service.link);
     }
   };
 
-  // 연락처 정보를 렌더링하는 함수
+  const handleClick = () => {
+    handleServiceNavigation();
+  };
+
   const renderContactInfo = (info) => {
     return info.map((line, index) => {
       if (line.includes('이연관세사무소')) {
@@ -139,7 +176,7 @@ const AdditionalServiceCard = ({ service }) => {
   };
 
   return (
-    <div className={`${classes} rounded-lg overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md border p-4 transform hover:-translate-y-1 hover:scale-105`}>
+    <div className={`${classes} ${!isAuthenticated ? 'opacity-75' : ''} rounded-lg overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md border p-4 transform hover:-translate-y-1 hover:scale-105`}>
       <service.icon className="h-8 w-8 mb-2" />
       <h2 className="text-lg font-semibold mb-2">{service.title}</h2>
       <p className="text-sm whitespace-pre-line">{mainDescription}</p>
@@ -149,15 +186,17 @@ const AdditionalServiceCard = ({ service }) => {
         </p>
       )}
       {service.link && (
-        <Link href={service.link} className={`inline-flex items-center mt-4 ${service.color === 'blue' ? 'text-blue-600 hover:text-blue-700' : 'text-purple-600 hover:text-purple-700'} font-medium text-sm`}>
-          자세히 보기 <ArrowRight className="ml-2 h-4 w-4" />
-        </Link>
+        <button
+          onClick={handleClick}
+          className="inline-flex items-center text-indigo-600 hover:text-indigo-700 font-medium text-sm"
+        >
+          자세히 보기
+          <ArrowRight className="ml-2 h-4 w-4" />
+        </button>
       )}
     </div>
   );
-};
-
-// Services 컴포넌트
+};// Services 컴포넌트
 export default function Services() {
   return (
     <div className="grid grid-cols-2 gap-8">
