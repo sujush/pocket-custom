@@ -536,19 +536,37 @@ const BulkHSCodePage = () => {
               <p className="text-sm text-gray-500">조회 중...</p>
             </div>
           ) : results.length > 0 ? (
-            // 결과가 있는 경우
             <>
-              {/* 6자리 결과 표시 */}
               {results.map((result, index) => (
-                <div key={index} className="mb-4 p-4 border rounded-md">
-                  <p className="font-bold">제품명: {result.title}</p>
+                <div key={index} className="mb-4 p-4 border rounded-md bg-white shadow-sm">
+                  <p className="font-bold text-lg mb-4">{result.title}</p>
                   {result.items?.map((item, itemIndex) => (
-                    <p key={itemIndex}>HS CODE: {item.hscode}</p>
+                    <div key={itemIndex} className="mb-2 pl-4 border-l-2 border-gray-200 flex justify-between items-center">
+                      <div>
+                        <p className="font-bold">제품명: {item.name}</p>
+                        <p className="text-gray-700">HS CODE: {item.hscode}</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const isCurrentlySelected = selectedItems[result.title]?.hscode === item.hscode;
+                          if (isCurrentlySelected) {
+                            handleItemDeselect(result.title);
+                          } else {
+                            handleItemSelect(result.title, item);
+                          }
+                        }}
+                        className={`px-3 py-1 rounded-md ${selectedItems[result.title]?.hscode === item.hscode
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                          }`}
+                      >
+                        {selectedItems[result.title]?.hscode === item.hscode ? '선택됨' : '선택'}
+                      </button>
+                    </div>
                   ))}
                 </div>
               ))}
 
-              {/* 10자리 조회 버튼 */}
               <button
                 onClick={fetch10DigitHSCode}
                 className="px-4 py-2 mt-4 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition-colors"
@@ -557,7 +575,6 @@ const BulkHSCodePage = () => {
               </button>
             </>
           ) : (
-            // 결과가 없는 경우
             <div className="flex flex-col items-center justify-center h-full text-gray-400 p-8">
               <p>제품 정보를 입력하고 조회 버튼을 클릭하세요.</p>
               <p className="text-sm mt-2">결과가 여기에 표시됩니다.</p>
