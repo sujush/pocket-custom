@@ -485,7 +485,7 @@ const BulkHSCodePage = () => {
       });
 
       const url = `${apiUrl}?${params.toString()}`;
-      console.log('Request URL:', url);  // URL 로깅 추가
+      console.log('Request URL:', url.split('?')[0]);  // 서비스 키를 제외한 URL만 로깅
 
       const response = await fetchWithTimeout(url);
 
