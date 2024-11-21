@@ -468,6 +468,69 @@ const BulkHSCodePage = () => {
     }
   };
 
+  const fetch10DigitHSCodeForSingle = async (sixDigitCode: string, productName: string) => {
+    setIsLoading(true);
+    setQueryStatus(`${productName}의 10자리 코드 조회 중...`);
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_HSCODE_API_URL;
+      const serviceKey = process.env.NEXT_PUBLIC_HSCODE_API_KEY;
+
+      const url = new URL(apiUrl!);
+      url.searchParams.append('serviceKey', serviceKey!);
+      url.searchParams.append('page', '1');
+      url.searchParams.append('perPage', '5000');
+      url.searchParams.append('returnType', 'JSON');
+      url.searchParams.append('HS부호', sixDigitCode);
+
+      const response = await fetchWithTimeout(url.toString());
+
+      if (!response.ok) {
+        throw new Error('API 호출 실패');
+      }
+
+      const data = await response.json();
+
+      if (!data || !data.data) {
+        throw new Error('유효하지 않은 응답 데이터');
+      }
+
+      const filteredItems = data.data
+        .filter((item: HSCodeItem) => {
+          const itemHsCode = String(item.HS부호 || '');
+          return itemHsCode.startsWith(sixDigitCode);
+        })
+        .map((item: HSCodeItem) => ({
+          name: item.한글품목명 || 'N/A',
+          hscode: item.HS부호 || ''
+        }));
+
+      // 결과를 현재 results에 추가
+      setResults(prev => prev.map(result => {
+        if (!('items' in result) && result.hscode === sixDigitCode) {
+          return {
+            title: result.name,
+            items: filteredItems
+          };
+        }
+        return result;
+      }));
+
+      // 해당 항목 자동으로 펼치기
+      setExpandedResults(prev => ({
+        ...prev,
+        [productName]: true
+      }));
+
+      setQueryStatus(`${productName}의 10자리 코드 조회 완료`);
+    } catch (error) {
+      console.error('Error:', error);
+      setQueryStatus('조회 실패');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   console.log('Rendering with results:', results); // 렌더링 시 results 상태 확인
 
@@ -565,6 +628,7 @@ const BulkHSCodePage = () => {
               {results.map((result, index) => (
                 <div key={index} className="mb-4 p-4 border rounded-md bg-white shadow-sm">
                   {'items' in result ? (
+                    // 10자리 결과 표시 (ProcessedResult 타입)
                     <>
                       <div className="flex justify-between items-center mb-4">
                         <p className="font-bold text-lg">{result.title}</p>
@@ -604,39 +668,49 @@ const BulkHSCodePage = () => {
                       )}
                     </>
                   ) : (
-                    <div className="flex justify-between items-center">
+                    // 6자리 결과 표시 (InitialResult 타입)
+                    <div className="flex justify-between items-center mb-4">
                       <div>
                         <p className="font-bold">제품명: {result.name}</p>
                         <p className="text-gray-700">HS CODE: {result.hscode}</p>
                       </div>
-                      {selectedItems[result.name]?.hscode === result.hscode ? (
+                      <div className="flex space-x-2">
+                        {selectedItems[result.name]?.hscode === result.hscode ? (
+                          <button
+                            onClick={() => handleItemDeselect(result.name)}
+                            className="px-3 py-1 rounded-md bg-blue-600 text-white"
+                          >
+                            선택됨
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleItemSelect(result.name, result)}
+                            className="px-3 py-1 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700"
+                          >
+                            선택
+                          </button>
+                        )}
                         <button
-                          onClick={() => handleItemDeselect(result.name)}
-                          className="px-3 py-1 rounded-md bg-blue-600 text-white"
+                          onClick={() => fetch10DigitHSCodeForSingle(result.hscode, result.name)}
+                          className="px-3 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700"
                         >
-                          선택됨
+                          10자리 조회
                         </button>
-                      ) : (
-                        <button
-                          onClick={() => handleItemSelect(result.name, result)}
-                          className="px-3 py-1 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700"
-                        >
-                          선택
-                        </button>
-                      )}
+                      </div>
                     </div>
                   )}
                 </div>
               ))}
 
-
-              {/* 전체 조회 버튼 */}
-              <button
-                onClick={fetch10DigitHSCode}
-                className="px-4 py-2 mt-4 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition-colors"
-              >
-                전체 물품에 대해 HS CODE 10자리 조회
-              </button>
+              {/* 전체 조회 버튼 추가 */}
+              {results.length > 0 && !('items' in results[0]) && (
+                <button
+                  onClick={fetch10DigitHSCode}
+                  className="px-4 py-2 mt-4 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition-colors"
+                >
+                  전체 물품에 대해 HS CODE 10자리 조회
+                </button>
+              )}
             </>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-gray-400 p-8">
@@ -647,10 +721,10 @@ const BulkHSCodePage = () => {
 
           <p className="mt-2 text-center">{queryStatus}</p>
         </div>
-      </div >
+      </div>
 
       <LoadingStatus isLoading={isLoading} status={queryStatus} />
-    </div >
+    </div>
   );
 };
 
