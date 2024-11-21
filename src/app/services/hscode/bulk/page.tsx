@@ -474,22 +474,28 @@ const BulkHSCodePage = () => {
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_HSCODE_API_URL;
-      const serviceKey = process.env.NEXT_PUBLIC_HSCODE_API_KEY;
+      const serviceKey = decodeURIComponent(process.env.NEXT_PUBLIC_HSCODE_API_KEY!);
 
-      const url = new URL(apiUrl!);
-      url.searchParams.append('serviceKey', serviceKey!);
-      url.searchParams.append('page', '1');
-      url.searchParams.append('perPage', '5000');
-      url.searchParams.append('returnType', 'JSON');
-      url.searchParams.append('HS부호', sixDigitCode);
+      const params = new URLSearchParams({
+        'serviceKey': serviceKey,
+        'page': '1',
+        'perPage': '5000',
+        'returnType': 'JSON',
+        'hsSgn': sixDigitCode  // 'HS부호' 대신 'hsSgn' 사용
+      });
 
-      const response = await fetchWithTimeout(url.toString());
+      const url = `${apiUrl}?${params.toString()}`;
+      console.log('Request URL:', url);  // URL 로깅 추가
+
+      const response = await fetchWithTimeout(url);
 
       if (!response.ok) {
+        console.error('API Response:', await response.text());  // 에러 응답 로깅 추가
         throw new Error('API 호출 실패');
       }
 
       const data = await response.json();
+      console.log('API Response Data:', data);  // 응답 데이터 로깅 추가
 
       if (!data || !data.data) {
         throw new Error('유효하지 않은 응답 데이터');
