@@ -99,7 +99,17 @@ const BulkHSCodePage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [queryStatus, setQueryStatus] = useState('');
   const [selectedItems, setSelectedItems] = useState<{ [key: string]: Item }>({});
+  const [expandedResults, setExpandedResults] = useState<{ [key: string]: boolean }>({});
+
   const MAX_PRODUCTS_LIMIT = 20;
+
+
+  const toggleExpand = (productName: string) => {
+    setExpandedResults(prev => ({
+      ...prev,
+      [productName]: !prev[productName]
+    }));
+  };
 
 
   const handleItemSelect = (groupSixDigitCode: string, item: Item) => {
@@ -555,37 +565,45 @@ const BulkHSCodePage = () => {
               {results.map((result, index) => (
                 <div key={index} className="mb-4 p-4 border rounded-md bg-white shadow-sm">
                   {'items' in result ? (
-                    // ProcessedResult 타입인 경우 (10자리)
                     <>
-                      <div className="flex justify-between items-center">
+                      <div className="flex justify-between items-center mb-4">
                         <p className="font-bold text-lg">{result.title}</p>
+                        <button
+                          onClick={() => toggleExpand(result.title)}
+                          className="px-3 py-1 rounded-md bg-gray-100 hover:bg-gray-200"
+                        >
+                          {expandedResults[result.title] ? '접기' : '펼치기'}
+                        </button>
                       </div>
-                      {result.items?.map((item, itemIndex) => (
-                        <div key={itemIndex} className="mt-2 pl-4 border-l-2 border-gray-200 flex justify-between items-center">
-                          <div>
-                            <p>제품명: {item.name}</p>
-                            <p className="text-gray-700">HS CODE: {item.hscode}</p>
-                          </div>
-                          {selectedItems[result.title]?.hscode === item.hscode ? (
-                            <button
-                              onClick={() => handleItemDeselect(result.title)}
-                              className="px-3 py-1 rounded-md bg-blue-600 text-white"
-                            >
-                              선택됨
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleItemSelect(result.title, item)}
-                              className="px-3 py-1 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700"
-                            >
-                              선택
-                            </button>
-                          )}
+                      {expandedResults[result.title] && (
+                        <div className="space-y-2">
+                          {result.items?.map((item, itemIndex) => (
+                            <div key={itemIndex} className="pl-4 border-l-2 border-gray-200 flex justify-between items-center py-2">
+                              <div>
+                                <p>제품명: {item.name}</p>
+                                <p className="text-gray-700">HS CODE: {item.hscode}</p>
+                              </div>
+                              {selectedItems[result.title]?.hscode === item.hscode ? (
+                                <button
+                                  onClick={() => handleItemDeselect(result.title)}
+                                  className="px-3 py-1 rounded-md bg-blue-600 text-white"
+                                >
+                                  선택됨
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleItemSelect(result.title, item)}
+                                  className="px-3 py-1 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700"
+                                >
+                                  선택
+                                </button>
+                              )}
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      )}
                     </>
                   ) : (
-                    // InitialResult 타입인 경우 (6자리)
                     <div className="flex justify-between items-center">
                       <div>
                         <p className="font-bold">제품명: {result.name}</p>
@@ -611,6 +629,7 @@ const BulkHSCodePage = () => {
                 </div>
               ))}
 
+
               {/* 전체 조회 버튼 */}
               <button
                 onClick={fetch10DigitHSCode}
@@ -628,10 +647,10 @@ const BulkHSCodePage = () => {
 
           <p className="mt-2 text-center">{queryStatus}</p>
         </div>
-      </div>
+      </div >
 
       <LoadingStatus isLoading={isLoading} status={queryStatus} />
-    </div>
+    </div >
   );
 };
 
