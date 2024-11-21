@@ -288,6 +288,7 @@ const BulkHSCodePage = () => {
 
       const data = await response.json();
       console.log('API Response:', data); // API 응답 확인
+      console.log('API Response Details:', JSON.stringify(data.hscodes[0], null, 2));
       if (data.hscodes && Array.isArray(data.hscodes)) {
         console.log('Setting results:', data.hscodes); // results 설정 전 데이터 확인
         setResults(data.hscodes);
