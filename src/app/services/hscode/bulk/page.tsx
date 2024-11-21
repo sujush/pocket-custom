@@ -90,7 +90,7 @@ const BulkHSCodePage = () => {
   const [queryStatus, setQueryStatus] = useState('');
   const [selectedItems, setSelectedItems] = useState<{ [key: string]: Item }>({});
   const MAX_PRODUCTS_LIMIT = 20;
-  
+
 
   const handleItemSelect = (groupSixDigitCode: string, item: Item) => {
     setSelectedItems(prev => ({
@@ -252,18 +252,18 @@ const BulkHSCodePage = () => {
       '제품명': item.name,
       'HS CODE': item.hscode,
     }));
-  
+
     const worksheet = XLSX.utils.json_to_sheet(excelData);
-    
+
     const columnWidths = [
       { wch: 30 },
       { wch: 15 },
     ];
     worksheet['!cols'] = columnWidths;
-  
+
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Selected HS CODE Results');
-  
+
     const currentDate = new Date().toISOString().split('T')[0];
     XLSX.writeFile(workbook, `Selected_HSCode_Results_${currentDate}.xlsx`);
   };
@@ -272,10 +272,10 @@ const BulkHSCodePage = () => {
     if (!validateProducts()) {
       return;
     }
-  
+
     setIsLoading(true);
     setQueryStatus("6자리 HS CODE 조회 중...");
-  
+
     try {
       console.log('Sending products to API:', products); // 요청 데이터 확인
       const response = await fetch('/api/hscode/bulk', {
@@ -285,7 +285,7 @@ const BulkHSCodePage = () => {
         },
         body: JSON.stringify({ products }),
       });
-  
+
       const data = await response.json();
       console.log('API Response:', data); // API 응답 확인
       if (data.hscodes && Array.isArray(data.hscodes)) {
@@ -308,10 +308,10 @@ const BulkHSCodePage = () => {
   const fetch10DigitHSCode = async () => {
     const apiUrl = process.env.NEXT_PUBLIC_HSCODE_API_URL;
     const serviceKey = process.env.NEXT_PUBLIC_HSCODE_API_KEY;
-  
+
     setIsLoading(true);
     setQueryStatus("10자리 HS CODE 조회 중...");
-  
+
     try {
       console.log('Current results:', results); // 현재 results 상태 확인
       // results가 없거나 비어있는 경우 처리
@@ -319,11 +319,11 @@ const BulkHSCodePage = () => {
         setQueryStatus("조회할 6자리 HS CODE가 없습니다.");
         return;
       }
-  
+
       // null 체크와 타입 가드 추가
       const hs6Codes = results
         .filter(result => result && result.items)
-        .map(result => 
+        .map(result =>
           result.items
             .filter(item => item && item.hscode)
             .map(item => item.hscode.replace(/\s+/g, ''))
@@ -331,21 +331,21 @@ const BulkHSCodePage = () => {
         .flat();
 
       console.log('Extracted HS6 Codes:', hs6Codes); // 추출된 6자리 코드 확인
-  
+
       // hs6Codes가 비어있는 경우 처리
       if (hs6Codes.length === 0) {
         setQueryStatus("유효한 HS CODE가 없습니다.");
         return;
       }
-  
+
       const allResults = [];
-  
+
       for (const hs6Code of hs6Codes) {
         try {
           let currentPage = 1;
           let totalFetched = 0;
           let totalDataCount = Infinity;
-  
+
           while (totalFetched < totalDataCount) {
             const url = new URL(apiUrl!);
             url.searchParams.append('serviceKey', serviceKey!);
@@ -353,38 +353,38 @@ const BulkHSCodePage = () => {
             url.searchParams.append('perPage', '5000');
             url.searchParams.append('returnType', 'JSON');
             url.searchParams.append('HS부호', hs6Code);
-  
+
             const response = await fetchWithTimeout(url.toString());
-  
+
             if (!response.ok) {
               console.error(`Error fetching data for HS Code ${hs6Code}:`, response.statusText);
               break;
             }
-  
+
             const data = await response.json();
-  
+
             if (!data || !data.data) {
               console.error(`Invalid response data for HS Code ${hs6Code}`);
               break;
             }
-  
+
             if (currentPage === 1) {
               totalDataCount = data.matchCount || 0;
             }
-  
+
             const filteredData = data.data
               .filter((item: { HS부호?: string }) => {
                 const itemHsCode = String(item.HS부호 || '');
                 return itemHsCode.startsWith(hs6Code);
               });
-  
+
             allResults.push(...filteredData);
-  
+
             totalFetched += data.currentCount || 0;
             if (totalFetched >= totalDataCount || data.data.length === 0) {
               break;
             }
-  
+
             currentPage++;
           }
         } catch (error) {
@@ -392,12 +392,12 @@ const BulkHSCodePage = () => {
           continue;
         }
       }
-  
+
       if (allResults.length === 0) {
         setQueryStatus("조회된 10자리 품목번호가 없습니다.");
         return;
       }
-  
+
       // 결과 처리 로직
       const groupedResults = allResults.reduce<GroupedResults>((groups, item) => {
         const hsCode = String(item.HS부호 || '');
@@ -411,28 +411,28 @@ const BulkHSCodePage = () => {
         });
         return groups;
       }, {});
-  
+
       const processedResults = Object.entries(groupedResults).map(([sixDigitCode, items]) => {
         const originalProduct = products.find(p => {
-          const result = results.find(r => 
-            r.items && r.items.some(item => 
+          const result = results.find(r =>
+            r.items && r.items.some(item =>
               item && item.hscode && item.hscode.replace(/\s+/g, '') === sixDigitCode
             )
           );
           return result && result.items.some(item => item.name === p.name);
         });
-  
+
         return {
           sixDigitCode,
           title: `${originalProduct?.name || '제품'} 에 대한 10자리 코드 목록`,
           items: items as { name: string; hscode: string }[]
         };
       });
-  
+
       setResults(processedResults);
       setSelectedItems({});
       setQueryStatus("10자리 HS CODE 조회 완료!");
-  
+
     } catch (error) {
       console.error('10자리 HS CODE 조회 실패:', error);
       setQueryStatus("조회 실패: " + (error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.'));
@@ -444,7 +444,7 @@ const BulkHSCodePage = () => {
 
 
   console.log('Rendering with results:', results); // 렌더링 시 results 상태 확인
-  
+
   return (
     <div className="flex min-h-screen bg-gray-100">
       <div className="w-1/2 p-4 bg-white">
@@ -529,97 +529,40 @@ const BulkHSCodePage = () => {
             )}
           </div>
 
-          {Array.isArray(results) && (
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center space-y-2 p-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              <p className="text-sm text-gray-500">조회 중...</p>
+            </div>
+          ) : results.length > 0 ? (
+            // 결과가 있는 경우
             <>
-              {results[0]?.items ? (
-                <>
-                  {/* 그룹화된 결과 표시 */}
-                  <div className="mb-8">
-                    {results.map((group, groupIndex) => (
-                      <div key={groupIndex} className="mb-6 p-4 border rounded-md bg-white shadow-sm">
-                        <h3 className="font-bold text-lg mb-4 text-blue-600">{group.title}</h3>
-                        {group.items?.map((item, itemIndex) => (
-                          <div key={itemIndex} className="mb-2 pl-4 border-l-2 border-gray-200 flex justify-between items-center">
-                            <div>
-                              <p className="font-bold">제품명: {item.name}</p>
-                              <p className="text-gray-700">HS CODE: {item.hscode}</p>
-                            </div>
-                            <button
-                              onClick={() => {
-                                const isCurrentlySelected = selectedItems[group.title]?.hscode === item.hscode;
-                                if (isCurrentlySelected) {
-                                  handleItemDeselect(group.title);
-                                } else {
-                                  handleItemSelect(group.title, item);
-                                }
-                              }}
-                              className={`px-3 py-1 rounded-md ${
-                                selectedItems[group.title]?.hscode === item.hscode
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                              }`}
-                            >
-                              {selectedItems[group.title]?.hscode === item.hscode ? '선택됨' : '선택'}
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* 선택된 항목들 표시 */}
-                  {Object.keys(selectedItems).length > 0 && (
-                    <div className="mt-8 p-4 border-t-2 border-gray-200">
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-bold text-lg text-green-600">선택 품목</h3>
-                        <button
-                          onClick={downloadSelectedItems}
-                          className="px-3 py-1 rounded-md bg-green-500 hover:bg-green-600 text-white transition-colors"
-                        >
-                          📥 선택 항목 다운로드
-                        </button>
-                      </div>
-                      {Object.entries(selectedItems).map(([, item], index) => (
-                        <div key={index} className="mb-4 p-3 bg-green-50 rounded-md flex justify-between items-center">
-                          <div>
-                            <p className="font-bold">제품명: {item.name}</p>
-                            <p className="text-gray-700">HS CODE: {item.hscode}</p>
-                          </div>
-                          <button
-                            onClick={() => handleItemDeselect(item.hscode)}
-                            className="px-3 py-1 rounded-md bg-red-100 hover:bg-red-200 text-red-700"
-                          >
-                            선택 해제
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              ) : (
-                // 6자리 결과 표시
-                <>
-                  {results.length > 0 && results.map((result, index) => (
-                    <div key={index} className="mb-4 p-4 border rounded-md">
-                      <p className="font-bold">제품명: {result.title}</p>
-                      {result.items?.map((item, itemIndex) => (
-                        <p key={itemIndex}>HS CODE: {item.hscode}</p>
-                      ))}
-                    </div>
+              {/* 6자리 결과 표시 */}
+              {results.map((result, index) => (
+                <div key={index} className="mb-4 p-4 border rounded-md">
+                  <p className="font-bold">제품명: {result.title}</p>
+                  {result.items?.map((item, itemIndex) => (
+                    <p key={itemIndex}>HS CODE: {item.hscode}</p>
                   ))}
+                </div>
+              ))}
 
-                  {results.length > 0 && (
-                    <button
-                      onClick={fetch10DigitHSCode}
-                      className="px-4 py-2 mt-4 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition-colors"
-                    >
-                      전체 물품에 대해 HS CODE 10자리 조회
-                    </button>
-                  )}
-                </>
-              )}
+              {/* 10자리 조회 버튼 */}
+              <button
+                onClick={fetch10DigitHSCode}
+                className="px-4 py-2 mt-4 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition-colors"
+              >
+                전체 물품에 대해 HS CODE 10자리 조회
+              </button>
             </>
+          ) : (
+            // 결과가 없는 경우
+            <div className="flex flex-col items-center justify-center h-full text-gray-400 p-8">
+              <p>제품 정보를 입력하고 조회 버튼을 클릭하세요.</p>
+              <p className="text-sm mt-2">결과가 여기에 표시됩니다.</p>
+            </div>
           )}
+
           <p className="mt-2 text-center">{queryStatus}</p>
         </div>
       </div>
