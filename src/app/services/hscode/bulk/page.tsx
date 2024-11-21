@@ -62,6 +62,14 @@ interface GroupedResults {
   }>;
 }
 
+interface ResultItem {
+  title: string;
+  items: {
+    name: string;
+    hscode: string;
+  }[];
+}
+
 const LoadingStatus: React.FC<{ isLoading: boolean; status: string }> = ({ isLoading, status }) => {
   if (!isLoading) return null;
 
@@ -77,7 +85,7 @@ const LoadingStatus: React.FC<{ isLoading: boolean; status: string }> = ({ isLoa
 
 const BulkHSCodePage = () => {
   const [products, setProducts] = useState([{ name: '', material: '', description: '' }]);
-  const [results, setResults] = useState<{ title: string; items: { name: string; hscode: string }[] }[]>([]);
+  const [results, setResults] = useState<ResultItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [queryStatus, setQueryStatus] = useState('');
   const [selectedItems, setSelectedItems] = useState<{ [key: string]: Item }>({});
@@ -264,10 +272,10 @@ const BulkHSCodePage = () => {
     if (!validateProducts()) {
       return;
     }
-
+  
     setIsLoading(true);
     setQueryStatus("6자리 HS CODE 조회 중...");
-
+  
     try {
       const response = await fetch('/api/hscode/bulk', {
         method: 'POST',
@@ -276,14 +284,14 @@ const BulkHSCodePage = () => {
         },
         body: JSON.stringify({ products }),
       });
-
+  
       const data = await response.json();
-      if (data.hscodes) {
+      if (data.hscodes && Array.isArray(data.hscodes)) {
         setResults(data.hscodes);
         setQueryStatus("6자리 HS CODE 조회 완료");
       } else {
-        console.error(data.error || 'HS CODE fetch failed');
-        setQueryStatus("조회 실패");
+        console.error('Invalid response format:', data);
+        setQueryStatus("조회 실패: 잘못된 응답 형식");
       }
     } catch (error) {
       console.error('Error:', error);
@@ -588,7 +596,7 @@ const BulkHSCodePage = () => {
                 </div>
               ))}
 
-              {/* 6리 결과가 을 때만 10자리 조회 버튼 표시 */}
+              {/* 6자리 결과가 을 때만 10자리 조회 버튼 표시 */}
               {results.length > 0 && (
                 <button
                   onClick={fetch10DigitHSCode}
