@@ -104,7 +104,6 @@ const fetchAllPages = async (sixDigitCode: string): Promise<HSCodeResult[]> => {
 
       const data: HSCodeAPIResponse = await response.json();
 
-      // 데이터 구조 로깅
       console.log('Received data structure:', JSON.stringify(data, null, 2));
 
       if (!data.data || !Array.isArray(data.data)) {
@@ -112,16 +111,30 @@ const fetchAllPages = async (sixDigitCode: string): Promise<HSCodeResult[]> => {
         break;
       }
 
-      // HS CODE 비교 로직 개선
-      const matchingResults = data.data.filter((item: HSCodeAPIItem) => {
-        const itemHsCode = String(item.품목번호 || item.HS부호 || '').replace(/\D/g, '');
-        console.log(`Comparing: ${itemHsCode} with ${sixDigitCode}`);
-        return itemHsCode.startsWith(sixDigitCode);
-      });
+      // HS CODE 비교 로직 개선과 타입 변환
+      const matchingResults = data.data
+        .filter((item: HSCodeAPIItem) => {
+          const itemHsCode = String(item.품목번호 || item.HS부호 || '').replace(/\D/g, '');
+          console.log(`Comparing: ${itemHsCode} with ${sixDigitCode}`);
+          return itemHsCode.startsWith(sixDigitCode);
+        })
+        .map((item: HSCodeAPIItem): HSCodeResult => ({
+          품목번호: String(item.품목번호 || item.HS부호 || '').padStart(10, '0'),
+          품목명: item.품목명 || item.한글품목명 || '설명 없음',
+          영문명: item.영문명 || item.영문품목명 || '',
+          HS부호: item.HS부호 || '',
+          한글품목명: item.한글품목명 || '',
+          영문품목명: item.영문품목명 || '',
+          기본세율: item.기본세율 || '확인 필요',
+          단위: item.단위 || '-',
+          적용시작일: item.적용시작일 || item.적용시작일자 || '-',
+          적용종료일: item.적용종료일 || item.적용종료일자 || '-',
+          적용시작일자: item.적용시작일자 || '-',
+          적용종료일자: item.적용종료일자 || '-'
+        }));
 
       allResults = [...allResults, ...matchingResults];
 
-      // 페이지네이션 로직 개선
       if (data.data.length === 0 || currentPage * 5000 >= (data.matchCount || 0)) {
         break;
       }
@@ -133,20 +146,11 @@ const fetchAllPages = async (sixDigitCode: string): Promise<HSCodeResult[]> => {
     }
   }
 
-  // 결과가 없는 경우 더 자세한 에러 메시지 제공
   if (allResults.length === 0) {
     throw new Error(`${sixDigitCode}에 해당하는 HS CODE를 찾을 수 없습니다. 다른 검색어로 다시 시도해주세요.`);
   }
 
-  return allResults.map(result => ({
-    품목번호: String(result.품목번호 || result.HS부호 || '').padStart(10, '0'),
-    품목명: result.품목명 || result.한글품목명 || '설명 없음',
-    영문명: result.영문명 || result.영문품목명 || '',
-    기본세율: result.기본세율 || '확인 필요',
-    단위: result.단위 || '-',
-    적용시작일: result.적용시작일 || result.적용시작일자 || '-',
-    적용종료일: result.적용종료일 || result.적용종료일자 || '-'
-  }));
+  return allResults;
 };
 
 export const HSCodeForm: React.FC = () => {
