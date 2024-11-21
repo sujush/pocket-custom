@@ -277,6 +277,7 @@ const BulkHSCodePage = () => {
     setQueryStatus("6자리 HS CODE 조회 중...");
   
     try {
+      console.log('Sending products to API:', products); // 요청 데이터 확인
       const response = await fetch('/api/hscode/bulk', {
         method: 'POST',
         headers: {
@@ -286,7 +287,9 @@ const BulkHSCodePage = () => {
       });
   
       const data = await response.json();
+      console.log('API Response:', data); // API 응답 확인
       if (data.hscodes && Array.isArray(data.hscodes)) {
+        console.log('Setting results:', data.hscodes); // results 설정 전 데이터 확인
         setResults(data.hscodes);
         setQueryStatus("6자리 HS CODE 조회 완료");
       } else {
@@ -310,6 +313,7 @@ const BulkHSCodePage = () => {
     setQueryStatus("10자리 HS CODE 조회 중...");
   
     try {
+      console.log('Current results:', results); // 현재 results 상태 확인
       // results가 없거나 비어있는 경우 처리
       if (!results || results.length === 0) {
         setQueryStatus("조회할 6자리 HS CODE가 없습니다.");
@@ -325,6 +329,8 @@ const BulkHSCodePage = () => {
             .map(item => item.hscode.replace(/\s+/g, ''))
         )
         .flat();
+
+      console.log('Extracted HS6 Codes:', hs6Codes); // 추출된 6자리 코드 확인
   
       // hs6Codes가 비어있는 경우 처리
       if (hs6Codes.length === 0) {
@@ -436,6 +442,9 @@ const BulkHSCodePage = () => {
     }
   };
 
+
+  console.log('Rendering with results:', results); // 렌더링 시 results 상태 확인
+  
   return (
     <div className="flex min-h-screen bg-gray-100">
       <div className="w-1/2 p-4 bg-white">
