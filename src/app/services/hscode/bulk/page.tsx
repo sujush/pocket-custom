@@ -23,6 +23,24 @@ const getMaterialNameByCode = (code: string): string => {
   return MATERIAL_CODES[code as keyof typeof MATERIAL_CODES] || '모르거나 해당사항 없음';
 };
 
+// fetchWithTimeout 함수를 여기에 추가
+const fetchWithTimeout = async (url: string, options = {}, timeout = 30000) => {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    clearTimeout(id);
+    return response;
+  } catch (error) {
+    clearTimeout(id);
+    throw error;
+  }
+};
+
 // Item 타입 정의 추가
 type Item = {
   name: string;
@@ -271,85 +289,130 @@ const BulkHSCodePage = () => {
   const fetch10DigitHSCode = async () => {
     const apiUrl = process.env.NEXT_PUBLIC_HSCODE_API_URL;
     const serviceKey = process.env.NEXT_PUBLIC_HSCODE_API_KEY;
-
+  
     setIsLoading(true);
     setQueryStatus("10자리 HS CODE 조회 중...");
-
+  
     try {
-      const hs6Codes = results.map(result => result.items.map(item => item.hscode.replace(/\s+/g, ''))).flat();
+      // results가 없거나 비어있는 경우 처리
+      if (!results || results.length === 0) {
+        setQueryStatus("조회할 6자리 HS CODE가 없습니다.");
+        return;
+      }
+  
+      // null 체크와 타입 가드 추가
+      const hs6Codes = results
+        .filter(result => result && result.items)
+        .map(result => 
+          result.items
+            .filter(item => item && item.hscode)
+            .map(item => item.hscode.replace(/\s+/g, ''))
+        )
+        .flat();
+  
+      // hs6Codes가 비어있는 경우 처리
+      if (hs6Codes.length === 0) {
+        setQueryStatus("유효한 HS CODE가 없습니다.");
+        return;
+      }
+  
       const allResults = [];
-
+  
       for (const hs6Code of hs6Codes) {
-        let currentPage = 1;
-        let totalFetched = 0;
-        let totalDataCount = Infinity;
-
-        while (totalFetched < totalDataCount) {
-          const url = `${apiUrl}?serviceKey=${serviceKey}&page=${currentPage}&perPage=5000&returnType=JSON&HS부호=${hs6Code}`;
-
-          const response = await fetch(url);
-
-          if (!response.ok) {
-            console.error(`Error fetching data for HS Code ${hs6Code}:`, response.statusText);
-            break;
+        try {
+          let currentPage = 1;
+          let totalFetched = 0;
+          let totalDataCount = Infinity;
+  
+          while (totalFetched < totalDataCount) {
+            const url = new URL(apiUrl!);
+            url.searchParams.append('serviceKey', serviceKey!);
+            url.searchParams.append('page', String(currentPage));
+            url.searchParams.append('perPage', '5000');
+            url.searchParams.append('returnType', 'JSON');
+            url.searchParams.append('HS부호', hs6Code);
+  
+            const response = await fetch(url.toString());
+  
+            if (!response.ok) {
+              console.error(`Error fetching data for HS Code ${hs6Code}:`, response.statusText);
+              break;
+            }
+  
+            const data = await response.json();
+  
+            if (!data || !data.data) {
+              console.error(`Invalid response data for HS Code ${hs6Code}`);
+              break;
+            }
+  
+            if (currentPage === 1) {
+              totalDataCount = data.matchCount || 0;
+            }
+  
+            const filteredData = data.data
+              .filter((item: { HS부호?: string }) => {
+                const itemHsCode = String(item.HS부호 || '');
+                return itemHsCode.startsWith(hs6Code);
+              });
+  
+            allResults.push(...filteredData);
+  
+            totalFetched += data.currentCount || 0;
+            if (totalFetched >= totalDataCount || data.data.length === 0) {
+              break;
+            }
+  
+            currentPage++;
           }
-
-          const data = await response.json();
-
-          if (currentPage === 1) {
-            totalDataCount = data.matchCount;
-          }
-
-          const filteredData = data.data.filter((item: { HS부호?: string }) => {
-            const itemHsCode = String(item.HS부호 || '');
-            return itemHsCode.startsWith(hs6Code);
-          });
-
-          allResults.push(...filteredData);
-
-          totalFetched += data.currentCount;
-          currentPage++;
+        } catch (error) {
+          console.error(`Error processing HS Code ${hs6Code}:`, error);
+          continue;
         }
       }
-
+  
       if (allResults.length === 0) {
         setQueryStatus("조회된 10자리 품목번호가 없습니다.");
-      } else {
-        setQueryStatus("10자리 HS CODE 조회 완료!");
-
-        const groupedResults = allResults.reduce((groups, item) => {
-          const hsCode = String(item.HS부호);
-          const sixDigitCode = hsCode.substring(0, 6);
-          if (!groups[sixDigitCode]) {
-            groups[sixDigitCode] = [];
-          }
-          groups[sixDigitCode].push({
-            name: item.한글품목명 || 'N/A',
-            hscode: hsCode
-          });
-          return groups;
-        }, {});
-
-        const processedResults = Object.entries(groupedResults).map(([sixDigitCode, items]) => {
-          const originalProduct = products.find(p => {
-            const result = results.find(r => r.items.some(item => item.hscode.replace(/\s+/g, '') === sixDigitCode));
-            return result && result.items.some(item => item.name === p.name);
-          });
-
-          const typedItems: { name: string; hscode: string }[] = items as { name: string; hscode: string }[];
-
-          return {
-            sixDigitCode: sixDigitCode,
-            title: `${originalProduct?.name || '제품'} 에 대한 10자리 코 목록`,
-            items: typedItems
-          };
-        });
-
-        setResults(processedResults);
-        setSelectedItems({});
+        return;
       }
+  
+      // 결과 처리 로직
+      const groupedResults = allResults.reduce((groups: any, item) => {
+        const hsCode = String(item.HS부호 || '');
+        const sixDigitCode = hsCode.substring(0, 6);
+        if (!groups[sixDigitCode]) {
+          groups[sixDigitCode] = [];
+        }
+        groups[sixDigitCode].push({
+          name: item.한글품목명 || 'N/A',
+          hscode: hsCode
+        });
+        return groups;
+      }, {});
+  
+      const processedResults = Object.entries(groupedResults).map(([sixDigitCode, items]) => {
+        const originalProduct = products.find(p => {
+          const result = results.find(r => 
+            r.items && r.items.some(item => 
+              item && item.hscode && item.hscode.replace(/\s+/g, '') === sixDigitCode
+            )
+          );
+          return result && result.items.some(item => item.name === p.name);
+        });
+  
+        return {
+          sixDigitCode,
+          title: `${originalProduct?.name || '제품'} 에 대한 10자리 코드 목록`,
+          items: items as { name: string; hscode: string }[]
+        };
+      });
+  
+      setResults(processedResults);
+      setSelectedItems({});
+      setQueryStatus("10자리 HS CODE 조회 완료!");
+  
     } catch (error) {
-      console.error('10자리 HS CODE 조회 실패:', error instanceof Error ? error : new Error(String(error)));
+      console.error('10자리 HS CODE 조회 실패:', error);
       setQueryStatus("조회 실패: " + (error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.'));
       alert('HS CODE 10자리 조회 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
     } finally {
