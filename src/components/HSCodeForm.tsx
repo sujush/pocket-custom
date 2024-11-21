@@ -35,11 +35,11 @@ const textileMaterialOptions = [
 ];
 
 interface HSCodeResult {
-  품목번호:string,
-  품목명:string,
-  영문명:string,
-  적용시작일:string,
-  적용종료일:string,
+  품목번호: string,
+  품목명: string,
+  영문명: string,
+  적용시작일: string,
+  적용종료일: string,
   HS부호: string;
   한글품목명: string;
   영문품목명: string;
@@ -61,46 +61,69 @@ interface Product {
 
 const fetchAllPages = async (sixDigitCode: string): Promise<HSCodeResult[]> => {
   const apiUrl = process.env.NEXT_PUBLIC_HSCODE_API_URL;
-  const apiKey = process.env.NEXT_PUBLIC_HSCODE_API_KEY;
-  const decodedKey = decodeURIComponent(apiKey!);
-
-  console.log("API URL:", apiUrl); // API URL이 올바르게 설정되었는지 확인합니다. 추후 삭제
-  console.log("Decoded API Key:", decodedKey); // API 키가 제대로 디코딩되었는지 확인합니다. 추후 삭제
-
-  console.log("Fetching data for HS Code:", sixDigitCode); // sixDigitCode를 사용하여 로그에 출력합니다.
+  const apiKey = decodeURIComponent(process.env.NEXT_PUBLIC_HSCODE_API_KEY!);
 
   let allResults: HSCodeResult[] = [];
   let currentPage = 1;
 
   while (true) {
-    const baseUrl = new URL(apiUrl!);
-    baseUrl.searchParams.append('serviceKey', decodedKey);
-    baseUrl.searchParams.append('page', String(currentPage));
-    baseUrl.searchParams.append('perPage', '5000');
-    baseUrl.searchParams.append('returnType', 'JSON');
-    
+    try {
+      const baseUrl = new URL(apiUrl!);
+      baseUrl.searchParams.append('serviceKey', apiKey);
+      baseUrl.searchParams.append('page', String(currentPage));
+      baseUrl.searchParams.append('perPage', '5000');
+      baseUrl.searchParams.append('returnType', 'JSON');
 
-    console.log("Request URL:", baseUrl.toString()); // 각 페이지에 대해 생성된 URL이 올바른지 확인합니다. 추후 삭제
+      console.log(`Fetching page ${currentPage} for HS Code: ${sixDigitCode}`);
 
-    const response = await fetch(baseUrl.toString());
+      const response = await fetch(baseUrl.toString());
+      if (!response.ok) break;
 
-    console.log("Response Status:", response.status); // API 호출 응답 상태 코드로 요청이 성공했는지 확인합니다. 추후 삭제
+      const data = await response.json();
 
-    if (!response.ok) break;
+      // 데이터 구조 로깅
+      console.log('Received data structure:', JSON.stringify(data, null, 2));
 
-    const data = await response.json();
+      if (!data.data || !Array.isArray(data.data)) {
+        console.error('Invalid data structure received:', data);
+        break;
+      }
 
-    console.log("Fetched Data:", data); // API 응답 데이터가 예상한 구조인지 확인합니다. 추후 삭제
+      // HS CODE 비교 로직 개선
+      const matchingResults = data.data.filter(item => {
+        const itemHsCode = String(item.품목번호 || item.HS부호 || '').replace(/\D/g, '');
+        console.log(`Comparing: ${itemHsCode} with ${sixDigitCode}`);
+        return itemHsCode.startsWith(sixDigitCode);
+      });
 
-    if (!data.data || data.data.length === 0) break;
+      allResults = [...allResults, ...matchingResults];
 
-    allResults = [...allResults, ...data.data];
+      // 페이지네이션 로직 개선
+      if (data.data.length === 0 || currentPage * 5000 >= (data.matchCount || 0)) {
+        break;
+      }
 
-    if (data.data.length < 1000 || currentPage * 1000 >= data.matchCount) break;
-    currentPage++;
+      currentPage++;
+    } catch (error) {
+      console.error(`Error fetching page ${currentPage}:`, error);
+      break;
+    }
   }
 
-  return allResults;
+  // 결과가 없는 경우 더 자세한 에러 메시지 제공
+  if (allResults.length === 0) {
+    throw new Error(`${sixDigitCode}에 해당하는 HS CODE를 찾을 수 없습니다. 다른 검색어로 다시 시도해주세요.`);
+  }
+
+  return allResults.map(result => ({
+    품목번호: String(result.품목번호 || result.HS부호 || '').padStart(10, '0'),
+    품목명: result.품목명 || result.한글품목명 || '설명 없음',
+    영문명: result.영문명 || result.영문품목명 || '',
+    기본세율: result.기본세율 || '확인 필요',
+    단위: result.단위 || '-',
+    적용시작일: result.적용시작일 || result.적용시작일자 || '-',
+    적용종료일: result.적용종료일 || result.적용종료일자 || '-'
+  }));
 };
 
 export const HSCodeForm: React.FC = () => {
@@ -153,7 +176,7 @@ export const HSCodeForm: React.FC = () => {
   const handleCategoryChange = (value: string) => {
     setProduct(prev => ({ ...prev, category: value, material: '' }));
     setFunctions({});
-    
+
     if (value === '직물제 의류 및 의류부속품' || value === '편물제 의류 및 의류부속품' || value === '모자 및 신발') {
       setMaterialOptions(textileMaterialOptions);
     } else {
@@ -174,93 +197,93 @@ export const HSCodeForm: React.FC = () => {
     setHsCode('');
 
     try {
-        if (!product.category) {
-            throw new Error('제품 카테고리 선택해주세요.');
+      if (!product.category) {
+        throw new Error('제품 카테고리 선택해주세요.');
+      }
+
+      if (product.category === '해당사항 없음') {
+        if (!product.additionalInput.trim()) {
+          throw new Error('제품에 대한 상세 정보를 입력해주세요.');
         }
-
-        if (product.category === '해당사항 없음') {
-            if (!product.additionalInput.trim()) {
-                throw new Error('제품에 대한 상세 정보를 입력해주세요.');
-            }
-        } else {
-            if (Object.keys(functions).length < functionOptions.length) {
-                throw new Error('제품의 기능 및 용도에 대한 모든 질문에 답해주세요.');
-            }
-            if (!product.material) {
-                throw new Error('제품의 재질을 선택해주세요.');
-            }
-            if (!product.name.trim()) {
-                throw new Error('제품의 명칭을 입력해주세요.');
-            }
-            if (!product.usage.trim()) {
-                throw new Error('제품의 용도를 입력해주세요.');
-            }
+      } else {
+        if (Object.keys(functions).length < functionOptions.length) {
+          throw new Error('제품의 기능 및 용도에 대한 모든 질문에 답해주세요.');
         }
-
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/hscode`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ ...product, functions }),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'AI API 요청 실패');
+        if (!product.material) {
+          throw new Error('제품의 재질을 선택해주세요.');
         }
-
-        const data = await response.json();
-
-        console.log("Received HS Code:", data.hsCode); // AI에서 가져온 HS Code가 6자리인지 확인합니다.
-
-        if (!data.hsCode) {
-            throw new Error('HS CODE를 받아오지 못했습니다');
+        if (!product.name.trim()) {
+          throw new Error('제품의 명칭을 입력해주세요.');
         }
-        
-        const sixDigitCode: string = data.hsCode.trim().substring(0, 6);
-
-        if (!/^\d{6}$/.test(sixDigitCode)) {
-            throw new Error('유효하지 않은 HS CODE 형식입니다');
+        if (!product.usage.trim()) {
+          throw new Error('제품의 용도를 입력해주세요.');
         }
+      }
 
-        setHsCode(sixDigitCode);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/hscode`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ...product, functions }),
+      });
 
-        const allResults: HSCodeResult[] = await fetchAllPages(sixDigitCode);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'AI API 요청 실패');
+      }
 
-        const filteredResults = allResults
-            .filter(item => {
-                const hsCode = String(item.품목번호).padStart(10, '0');
-                return hsCode.substring(0, 6) === sixDigitCode;
-            })
-            .map(item => ({
-                품목번호: String(item.HS부호).padStart(10, '0'),
-                품목명: item.한글품목명 || '설명 없음',
-                영문명: item.영문품목명 || '',
-                기본세율: '확인 필요',
-                단위: item.단위 || '-',
-                적용시작일: item.적용시작일자 || '-',
-                적용종료일: item.적용종료일자 || '-'
-            }));
+      const data = await response.json();
 
-        if (filteredResults.length === 0) {
-            throw new Error(`${sixDigitCode}에 해당하는 HS CODE를 찾을 수 없습니다.`);
-        }
+      console.log("Received HS Code:", data.hsCode); // AI에서 가져온 HS Code가 6자리인지 확인합니다.
 
-        setHSCodeResults(filteredResults as HSCodeResult[]);
+      if (!data.hsCode) {
+        throw new Error('HS CODE를 받아오지 못했습니다');
+      }
 
-        // 오류가 없는 경우에만 폼 초기화
-        setResetTrigger(true);
+      const sixDigitCode: string = data.hsCode.trim().substring(0, 6);
+
+      if (!/^\d{6}$/.test(sixDigitCode)) {
+        throw new Error('유효하지 않은 HS CODE 형식입니다');
+      }
+
+      setHsCode(sixDigitCode);
+
+      const allResults: HSCodeResult[] = await fetchAllPages(sixDigitCode);
+
+      const filteredResults = allResults
+        .filter(item => {
+          const hsCode = String(item.품목번호).padStart(10, '0');
+          return hsCode.substring(0, 6) === sixDigitCode;
+        })
+        .map(item => ({
+          품목번호: String(item.HS부호).padStart(10, '0'),
+          품목명: item.한글품목명 || '설명 없음',
+          영문명: item.영문품목명 || '',
+          기본세율: '확인 필요',
+          단위: item.단위 || '-',
+          적용시작일: item.적용시작일자 || '-',
+          적용종료일: item.적용종료일자 || '-'
+        }));
+
+      if (filteredResults.length === 0) {
+        throw new Error(`${sixDigitCode}에 해당하는 HS CODE를 찾을 수 없습니다.`);
+      }
+
+      setHSCodeResults(filteredResults as HSCodeResult[]);
+
+      // 오류가 없는 경우에만 폼 초기화
+      setResetTrigger(true);
 
     } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : '요청 처리 중 오류가 발생했습니다.';
-        setError(errorMessage);
-        console.error("Error:", error);
+      const errorMessage = error instanceof Error ? error.message : '요청 처리 중 오류가 발생했습니다.';
+      setError(errorMessage);
+      console.error("Error:", error);
     } finally {
-        setIsLoading(false);
-        setIsSubmitting(false);
+      setIsLoading(false);
+      setIsSubmitting(false);
     }
-};
+  };
 
   const handleNavigateToRequirements = (hsCode: string) => {
     router.push(`/services/import-requirements/${hsCode}`);
