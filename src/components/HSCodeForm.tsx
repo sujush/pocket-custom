@@ -59,6 +59,29 @@ interface Product {
   functions: { [key: string]: string };
 }
 
+interface HSCodeAPIItem {
+  품목번호?: string;
+  HS부호?: string;
+  품목명?: string;
+  한글품목명?: string;
+  영문명?: string;
+  영문품목명?: string;
+  기본세율?: string;
+  단위?: string;
+  적용시작일?: string;
+  적용시작일자?: string;
+  적용종료일?: string;
+  적용종료일자?: string;
+}
+
+interface HSCodeAPIResponse {
+  data: HSCodeAPIItem[];
+  currentCount: number;
+  matchCount: number;
+  page: number;
+  perPage: number;
+}
+
 const fetchAllPages = async (sixDigitCode: string): Promise<HSCodeResult[]> => {
   const apiUrl = process.env.NEXT_PUBLIC_HSCODE_API_URL;
   const apiKey = decodeURIComponent(process.env.NEXT_PUBLIC_HSCODE_API_KEY!);
@@ -79,7 +102,7 @@ const fetchAllPages = async (sixDigitCode: string): Promise<HSCodeResult[]> => {
       const response = await fetch(baseUrl.toString());
       if (!response.ok) break;
 
-      const data = await response.json();
+      const data: HSCodeAPIResponse = await response.json();
 
       // 데이터 구조 로깅
       console.log('Received data structure:', JSON.stringify(data, null, 2));
@@ -90,7 +113,7 @@ const fetchAllPages = async (sixDigitCode: string): Promise<HSCodeResult[]> => {
       }
 
       // HS CODE 비교 로직 개선
-      const matchingResults = data.data.filter(item => {
+      const matchingResults = data.data.filter((item: HSCodeAPIItem) => {
         const itemHsCode = String(item.품목번호 || item.HS부호 || '').replace(/\D/g, '');
         console.log(`Comparing: ${itemHsCode} with ${sixDigitCode}`);
         return itemHsCode.startsWith(sixDigitCode);
