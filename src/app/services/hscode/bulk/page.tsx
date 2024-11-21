@@ -329,14 +329,16 @@ const BulkHSCodePage = () => {
         return;
       }
 
-      const isInitialResult = (result: Result): result is InitialResult => {
-        return 'hscode' in result;
-      };
+    // 타입 가드 함수
+    const isInitialResult = (result: Result): result is InitialResult => {
+      return 'hscode' in result;
+    };
 
-      const hs6Codes = results
-        .filter(isInitialResult)
-        .map(result => result.hscode);
-
+    // 타입 체크 추가
+    const hs6Codes = results
+      .filter(isInitialResult)  // 여기서 InitialResult 타입만 필터링
+      .map(result => result.hscode);  // 이제 안전하게 hscode에 접근 가능
+      
       console.log('Extracting 6-digit codes:', hs6Codes);
 
       if (hs6Codes.length === 0) {
