@@ -54,6 +54,14 @@ type UploadedProduct = {
   description: string;
 };
 
+// 새로운 인터페이스 추가
+interface GroupedResults {
+  [key: string]: Array<{
+    name: string;
+    hscode: string;
+  }>;
+}
+
 const LoadingStatus: React.FC<{ isLoading: boolean; status: string }> = ({ isLoading, status }) => {
   if (!isLoading) return null;
 
@@ -332,7 +340,7 @@ const BulkHSCodePage = () => {
             url.searchParams.append('returnType', 'JSON');
             url.searchParams.append('HS부호', hs6Code);
   
-            const response = await fetch(url.toString());
+            const response = await fetchWithTimeout(url.toString());
   
             if (!response.ok) {
               console.error(`Error fetching data for HS Code ${hs6Code}:`, response.statusText);
@@ -377,7 +385,7 @@ const BulkHSCodePage = () => {
       }
   
       // 결과 처리 로직
-      const groupedResults = allResults.reduce((groups: any, item) => {
+      const groupedResults = allResults.reduce<GroupedResults>((groups, item) => {
         const hsCode = String(item.HS부호 || '');
         const sixDigitCode = hsCode.substring(0, 6);
         if (!groups[sixDigitCode]) {
