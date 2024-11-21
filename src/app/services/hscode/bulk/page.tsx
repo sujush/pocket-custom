@@ -520,90 +520,94 @@ const BulkHSCodePage = () => {
             )}
           </div>
 
-          {Array.isArray(results) && results[0]?.items ? (
+          {Array.isArray(results) && (
             <>
-              {/* 그룹화된 결과 표시 */}
-              <div className="mb-8">
-                {results.map((group, groupIndex) => (
-                  <div key={groupIndex} className="mb-6 p-4 border rounded-md bg-white shadow-sm">
-                    <h3 className="font-bold text-lg mb-4 text-blue-600">{group.title}</h3>
-                    {group.items.map((item, itemIndex) => (
-                      <div key={itemIndex} className="mb-2 pl-4 border-l-2 border-gray-200 flex justify-between items-center">
-                        <div>
-                          <p className="font-bold">제품명: {item.name}</p>
-                          <p className="text-gray-700">HS CODE: {item.hscode}</p>
-                        </div>
-                        <button
-                          onClick={() => {
-                            const isCurrentlySelected = selectedItems[group.title]?.hscode === item.hscode;
-                            if (isCurrentlySelected) {
-                              handleItemDeselect(group.title);
-                            } else {
-                              handleItemSelect(group.title, item);
-                            }
-                          }}
-                          className={`px-3 py-1 rounded-md ${selectedItems[group.title]?.hscode === item.hscode
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                            }`}
-                        >
-                          {selectedItems[group.title]?.hscode === item.hscode ? '선택됨' : '선택'}
-                        </button>
+              {results[0]?.items ? (
+                <>
+                  {/* 그룹화된 결과 표시 */}
+                  <div className="mb-8">
+                    {results.map((group, groupIndex) => (
+                      <div key={groupIndex} className="mb-6 p-4 border rounded-md bg-white shadow-sm">
+                        <h3 className="font-bold text-lg mb-4 text-blue-600">{group.title}</h3>
+                        {group.items?.map((item, itemIndex) => (
+                          <div key={itemIndex} className="mb-2 pl-4 border-l-2 border-gray-200 flex justify-between items-center">
+                            <div>
+                              <p className="font-bold">제품명: {item.name}</p>
+                              <p className="text-gray-700">HS CODE: {item.hscode}</p>
+                            </div>
+                            <button
+                              onClick={() => {
+                                const isCurrentlySelected = selectedItems[group.title]?.hscode === item.hscode;
+                                if (isCurrentlySelected) {
+                                  handleItemDeselect(group.title);
+                                } else {
+                                  handleItemSelect(group.title, item);
+                                }
+                              }}
+                              className={`px-3 py-1 rounded-md ${
+                                selectedItems[group.title]?.hscode === item.hscode
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                              }`}
+                            >
+                              {selectedItems[group.title]?.hscode === item.hscode ? '선택됨' : '선택'}
+                            </button>
+                          </div>
+                        ))}
                       </div>
                     ))}
                   </div>
-                ))}
-              </div>
 
-              {/* 선택된 항목들 표시 */}
-              {Object.keys(selectedItems).length > 0 && (
-                <div className="mt-8 p-4 border-t-2 border-gray-200">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-bold text-lg text-green-600">선택 품목</h3>
-                    <button
-                      onClick={downloadSelectedItems}
-                      className="px-3 py-1 rounded-md bg-green-500 hover:bg-green-600 text-white transition-colors"
-                    >
-                      📥 선택 항목 다운드
-                    </button>
-                  </div>
-                  {Object.entries(selectedItems).map(([, item], index) => (
-                    <div key={index} className="mb-4 p-3 bg-green-50 rounded-md flex justify-between items-center">
-                      <div>
-                        <p className="font-bold">제품명: {item.name}</p>
-                        <p className="text-gray-700">HS CODE: {item.hscode}</p>
+                  {/* 선택된 항목들 표시 */}
+                  {Object.keys(selectedItems).length > 0 && (
+                    <div className="mt-8 p-4 border-t-2 border-gray-200">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="font-bold text-lg text-green-600">선택 품목</h3>
+                        <button
+                          onClick={downloadSelectedItems}
+                          className="px-3 py-1 rounded-md bg-green-500 hover:bg-green-600 text-white transition-colors"
+                        >
+                          📥 선택 항목 다운로드
+                        </button>
                       </div>
-                      <button
-                        onClick={() => handleItemDeselect(item.hscode)}
-                        className="px-3 py-1 rounded-md bg-red-100 hover:bg-red-200 text-red-700"
-                      >
-                        선택 해제
-                      </button>
+                      {Object.entries(selectedItems).map(([, item], index) => (
+                        <div key={index} className="mb-4 p-3 bg-green-50 rounded-md flex justify-between items-center">
+                          <div>
+                            <p className="font-bold">제품명: {item.name}</p>
+                            <p className="text-gray-700">HS CODE: {item.hscode}</p>
+                          </div>
+                          <button
+                            onClick={() => handleItemDeselect(item.hscode)}
+                            className="px-3 py-1 rounded-md bg-red-100 hover:bg-red-200 text-red-700"
+                          >
+                            선택 해제
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                // 6자리 결과 표시
+                <>
+                  {results.length > 0 && results.map((result, index) => (
+                    <div key={index} className="mb-4 p-4 border rounded-md">
+                      <p className="font-bold">제품명: {result.title}</p>
+                      {result.items?.map((item, itemIndex) => (
+                        <p key={itemIndex}>HS CODE: {item.hscode}</p>
+                      ))}
                     </div>
                   ))}
-                </div>
-              )}
-            </>
-          ) : (
-            // 6자리 결과 표시
-            <>
-              {results.map((result, index) => (
-                <div key={index} className="mb-4 p-4 border rounded-md">
-                  <p className="font-bold">제품명: {result.title}</p>
-                  {result.items.map((item, itemIndex) => (
-                    <p key={itemIndex}>HS CODE: {item.hscode}</p>
-                  ))}
-                </div>
-              ))}
 
-              {/* 6자리 결과가 을 때만 10자리 조회 버튼 표시 */}
-              {results.length > 0 && (
-                <button
-                  onClick={fetch10DigitHSCode}
-                  className="px-4 py-2 mt-4 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition-colors"
-                >
-                  전체 물품에 대해 HS CODE 10자리 조회
-                </button>
+                  {results.length > 0 && (
+                    <button
+                      onClick={fetch10DigitHSCode}
+                      className="px-4 py-2 mt-4 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition-colors"
+                    >
+                      전체 물품에 대해 HS CODE 10자리 조회
+                    </button>
+                  )}
+                </>
               )}
             </>
           )}
