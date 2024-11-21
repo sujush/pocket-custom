@@ -64,10 +64,21 @@ interface GroupedItem {
   hscode: string;
 }
 
+// 초기 결과 타입 정의 (6자리)
+interface InitialResult {
+  name: string;
+  hscode: string;
+}
+
+// 처리된 결과 타입 정의 (10자리)
 interface ProcessedResult {
   title: string;
   items: GroupedItem[];
 }
+
+
+// 결과 타입을 유니온으로 정의
+type Result = InitialResult | ProcessedResult;
 
 const LoadingStatus: React.FC<{ isLoading: boolean; status: string }> = ({ isLoading, status }) => {
   if (!isLoading) return null;
@@ -84,7 +95,7 @@ const LoadingStatus: React.FC<{ isLoading: boolean; status: string }> = ({ isLoa
 
 const BulkHSCodePage = () => {
   const [products, setProducts] = useState([{ name: '', material: '', description: '' }]);
-  const [results, setResults] = useState<ProcessedResult[]>([]); // 수정
+  const [results, setResults] = useState<Result[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [queryStatus, setQueryStatus] = useState('');
   const [selectedItems, setSelectedItems] = useState<{ [key: string]: Item }>({});
@@ -318,10 +329,23 @@ const BulkHSCodePage = () => {
         return;
       }
 
-      const hs6Codes = results.map(result => result.hscode);
+      const isInitialResult = (result: Result): result is InitialResult => {
+        return 'hscode' in result;
+      };
+
+      const hs6Codes = results
+        .filter(isInitialResult)
+        .map(result => result.hscode);
+
       console.log('Extracting 6-digit codes:', hs6Codes);
 
+      if (hs6Codes.length === 0) {
+        setQueryStatus("유효한 6자리 HS CODE가 없습니다.");
+        return;
+      }
+
       const allResults: HSCodeItem[] = [];
+
 
       for (const hs6Code of hs6Codes) {
         try {
@@ -521,32 +545,60 @@ const BulkHSCodePage = () => {
             <>
               {results.map((result, index) => (
                 <div key={index} className="mb-4 p-4 border rounded-md bg-white shadow-sm">
-                  <div className="flex justify-between items-center">
-                    <p className="font-bold text-lg">{result.title}</p>
-                  </div>
-                  {result.items?.map((item, itemIndex) => (
-                    <div key={itemIndex} className="mt-2 pl-4 border-l-2 border-gray-200 flex justify-between items-center">
-                      <div>
-                        <p>제품명: {item.name}</p>
-                        <p className="text-gray-700">HS CODE: {item.hscode}</p>
+                  {'items' in result ? (
+                    // ProcessedResult 타입인 경우 (10자리)
+                    <>
+                      <div className="flex justify-between items-center">
+                        <p className="font-bold text-lg">{result.title}</p>
                       </div>
-                      {selectedItems[result.title]?.hscode === item.hscode ? (
+                      {result.items?.map((item, itemIndex) => (
+                        <div key={itemIndex} className="mt-2 pl-4 border-l-2 border-gray-200 flex justify-between items-center">
+                          <div>
+                            <p>제품명: {item.name}</p>
+                            <p className="text-gray-700">HS CODE: {item.hscode}</p>
+                          </div>
+                          {selectedItems[result.title]?.hscode === item.hscode ? (
+                            <button
+                              onClick={() => handleItemDeselect(result.title)}
+                              className="px-3 py-1 rounded-md bg-blue-600 text-white"
+                            >
+                              선택됨
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleItemSelect(result.title, item)}
+                              className="px-3 py-1 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700"
+                            >
+                              선택
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    // InitialResult 타입인 경우 (6자리)
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-bold">제품명: {result.name}</p>
+                        <p className="text-gray-700">HS CODE: {result.hscode}</p>
+                      </div>
+                      {selectedItems[result.name]?.hscode === result.hscode ? (
                         <button
-                          onClick={() => handleItemDeselect(result.title)}
+                          onClick={() => handleItemDeselect(result.name)}
                           className="px-3 py-1 rounded-md bg-blue-600 text-white"
                         >
                           선택됨
                         </button>
                       ) : (
                         <button
-                          onClick={() => handleItemSelect(result.title, item)}
+                          onClick={() => handleItemSelect(result.name, result)}
                           className="px-3 py-1 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700"
                         >
                           선택
                         </button>
                       )}
                     </div>
-                  ))}
+                  )}
                 </div>
               ))}
 
