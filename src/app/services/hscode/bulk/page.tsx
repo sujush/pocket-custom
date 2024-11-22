@@ -279,7 +279,7 @@ const BulkHSCodePage = () => {
     // 입력 양식 시트 생성
     const worksheet = XLSX.utils.json_to_sheet(sampleData);
 
-    // 열 너비 설정
+    // ��� 너비 설정
     const columnWidths = [
       { wch: 30 },  // 제품명
       { wch: 15 },  // 재질코드
@@ -484,7 +484,15 @@ const BulkHSCodePage = () => {
 
       console.log('Final processed results:', processedResults);
       setResults(prev => [...prev, ...processedResults]);
-      setSelectedItems({});
+
+      // 모든 항목을 펼쳐진 상태로 설정
+      const allExpanded = processedResults.reduce<Record<string, boolean>>((acc, result) => {
+        acc[result.title] = true; // 각 결과의 title을 키로 사용
+        return acc;
+      }, {});
+      setExpandedResults(allExpanded);
+      
+      
       setQueryStatus("10자리 HS CODE 조회 완료!");
 
     } catch (error) {
