@@ -695,19 +695,47 @@ const BulkHSCodePage = () => {
                       {expandedResults[result.title] && (
                         <div className="space-y-2">
                           {result.items?.map((item, itemIndex) => (
-                            <div key={itemIndex} className="pl-4 border-l-2 border-gray-200">
-                              <p>제품명: {item.name}</p>
-                              <p className="text-gray-700">HS CODE: {item.hscode}</p>
-                              <p className="text-gray-500">설명: {item.description}</p>
+                            <div key={itemIndex} className="pl-4 border-l-2 border-gray-200 flex justify-between items-center py-2">
+                              <div>
+                                <p>제품명: {item.name}</p>
+                                <p className="text-gray-700">HS CODE: {item.hscode}</p>
+                              </div>
+                              <div className="flex space-x-2">
+                                {selectedItems[result.title]?.hscode === item.hscode ? (
+                                  <button
+                                    onClick={() => handleItemDeselect(result.title)} // 선택 해제
+                                    className="px-3 py-1 rounded-md bg-blue-600 text-white"
+                                  >
+                                    선택됨
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => handleItemSelect(result.title, item)} // 선택
+                                    className="px-3 py-1 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700"
+                                  >
+                                    선택
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           ))}
                         </div>
                       )}
                     </>
                   ) : (
-                    <div>
-                      <p className="font-bold">제품명: {result.name}</p>
-                      <p className="text-gray-700">HS CODE: {result.hscode}</p>
+                    <div className="flex justify-between items-center mb-4">
+                      <div>
+                        <p className="font-bold">제품명: {result.name}</p>
+                        <p className="text-gray-700">HS CODE: {result.hscode}</p>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => fetch10DigitHSCodeForSingle(result.hscode, result.name)} // 10자리 조회
+                          className="px-3 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700"
+                        >
+                          10자리 조회
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
