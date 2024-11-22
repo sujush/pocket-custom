@@ -583,6 +583,55 @@ const BulkHSCodePage = () => {
     }
   };
 
+  // 여기서부터 수정 시작
+  const fetch10DigitHSCodeForAll = async () => {
+    setIsLoading(true);
+    setQueryStatus('전체 10자리 HS CODE 조회 중...');
+
+    try {
+      // 6자리 코드와 이름 추출
+      const sixDigitCodes = results
+        .filter((result): result is InitialResult => 'hscode' in result) // 6자리 코드만 필터링
+        .map(result => ({
+          code: result.hscode.replace(/[^\d]/g, ''), // 숫자만 포함
+          name: result.name,
+        }));
+
+      if (sixDigitCodes.length === 0) {
+        setQueryStatus('조회할 6자리 코드가 없습니다.');
+        return;
+      }
+
+      console.log('전체 조회 대상:', sixDigitCodes);
+
+      // Promise.all을 사용하여 병렬로 모든 6자리 코드에 대해 10자리 조회
+      const allResults = await Promise.all(
+        sixDigitCodes.map(async ({ code, name }) => {
+          try {
+            await fetch10DigitHSCodeForSingle(code, name); // 개별 조회 함수 호출
+            return { code, success: true }; // 성공
+          } catch (error) {
+            console.error(`Error fetching 10-digit codes for ${code}:`, error);
+            return { code, success: false }; // 실패
+          }
+        })
+      );
+
+      // 결과 로그
+      console.log('전체 조회 결과:', allResults);
+
+      setQueryStatus('전체 10자리 HS CODE 조회 완료!');
+    } catch (error) {
+      console.error('전체 조회 실패:', error);
+      setQueryStatus('전체 조회 실패');
+      alert('전체 조회 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  // 수정 끝
+
+
   console.log('Rendering with results:', results); // 렌더링 시 results 상태 확인
 
   return (
@@ -660,12 +709,23 @@ const BulkHSCodePage = () => {
           <div className="flex justify-between items-center mb-4">
             <h2 className="font-bold">조회 결과</h2>
             {results.length > 0 && (
-              <button
-                onClick={downloadSelectedItems}
-                className="px-4 py-2 mb-4 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
-              >
-                📥 선택 항목 다운로드
-              </button>
+              <div className="flex space-x-4"> {/* 수정: 두 버튼을 감싸는 컨테이너 추가 */}
+                {/* 여기서부터 수정 시작 */}
+                <button
+                  onClick={fetch10DigitHSCodeForAll} // 전체 10자리 조회 함수 연결
+                  className="px-4 py-2 mb-4 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                >
+                  10자리 전체 조회하기
+                </button>
+                {/* 수정 끝 */}
+
+                <button
+                  onClick={downloadSelectedItems} // 선택 항목 다운로드 함수 호출
+                  className="px-4 py-2 mb-4 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+                >
+                  📥 선택 항목 다운로드
+                </button>
+              </div>
             )}
           </div>
 
@@ -684,7 +744,7 @@ const BulkHSCodePage = () => {
                         <p className="font-bold text-lg">{result.title}</p>
                         <button
                           onClick={() => toggleExpand(result.title)} // 펼치기/접기 버튼에 동작 연결
-                          className="px-3 py-1 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700" //펼치기 버튼 색상수정
+                          className="px-3 py-1 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700" //펼치기 버튼 색상수정 
                         >
                           {expandedResults[result.title] ? '접기' : '펼치기'}
                         </button>
