@@ -506,6 +506,7 @@ const BulkHSCodePage = () => {
 
       const filteredItems = data.data
       .filter((item: HSCodeItem) => {
+        const itemHSCode = String(item.HS부호 || '');
         const matches = item.HS부호?.slice(0, 6) === sixDigitCode;
         // 매칭되는 항목만 로그 출력
         if (matches) {
@@ -518,7 +519,7 @@ const BulkHSCodePage = () => {
       })
       .map((item: HSCodeItem) => ({
         name: item.한글품목명 || 'N/A',
-        hscode: item.HS부호 || ''
+        hscode: String(item.HS부호 || '')
       }));
     
       console.log(`Found ${filteredItems.length} matching items for code ${sixDigitCode}`);
