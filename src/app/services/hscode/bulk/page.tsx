@@ -481,10 +481,12 @@ const BulkHSCodePage = () => {
         'page': '1',
         'perPage': '5000',
         'returnType': 'JSON',
-        'hsSgn': sixDigitCode  // 'HS부호' 대신 'hsSgn' 사용
+        'HS부호': sixDigitCode  // 'HS부호' 대신 'hsSgn' 사용
       });
 
       const url = `${apiUrl}?${params.toString()}`;
+
+      
       console.log('Request URL:', url.split('?')[0]);  // 서비스 키를 제외한 URL만 로깅
 
       const response = await fetchWithTimeout(url);
