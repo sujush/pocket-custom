@@ -54,14 +54,10 @@ type UploadedProduct = {
   description: string;
 };
 
-interface HSCodeItem {
-  HS부호?: string;
-  한글품목명?: string;
-}
-
 interface GroupedItem {
   name: string;
   hscode: string;
+  description: string;
 }
 
 // 초기 결과 타입 정의 (6자리)
@@ -76,6 +72,37 @@ interface ProcessedResult {
   items: GroupedItem[];
 }
 
+
+interface HSCodeItem {
+  HS부호: number;
+  적용시작일자: string;
+  적용종료일자: string;
+  한글품목명: string;
+  영문품목명: string;
+  한국표준무역분류명: string;
+  수량단위최대단가: number;
+  중량단위최대단가: number;
+  수량단위코드: string;
+  중량단위코드: string;
+  수출성질코드: string;
+  수입성질코드: string;
+  품목규격명: string;
+  필수규격명: string;
+  참고규격명: string;
+  규격설명: string;
+  규격사항내용: string;
+  성질통합분류코드: number;
+  성질통합분류코드명: string;
+}
+
+interface APIResponse {
+  page: number;
+  perPage: number;
+  totalCount: number;
+  currentCount: number;
+  matchCount: number;
+  data: HSCodeItem[];
+}
 
 // 결과 타입을 유니온으로 정의
 type Result = InitialResult | ProcessedResult;
@@ -432,7 +459,7 @@ const BulkHSCodePage = () => {
 
         const originalProduct = results
           .filter(isInitialResult)
-          .find(r => r.hscode === item.HS부호?.substring(0, 6));
+          .find(r => r.hscode === String(item.HS부호).slice(0, 6));
         const productName = originalProduct?.name || '알 수 없는 제품';
 
         if (!groups[productName]) {
@@ -441,7 +468,8 @@ const BulkHSCodePage = () => {
 
         groups[productName].push({
           name: item.한글품목명 || 'N/A',
-          hscode: item.HS부호 || ''
+          hscode: String(item.HS부호) || '',
+          description: item.규격사항내용 || '',
         });
 
         return groups;
@@ -476,56 +504,58 @@ const BulkHSCodePage = () => {
       const apiUrl = process.env.NEXT_PUBLIC_HSCODE_API_URL;
       const serviceKey = decodeURIComponent(process.env.NEXT_PUBLIC_HSCODE_API_KEY!);
 
-      const params = new URLSearchParams({
-        'serviceKey': serviceKey,
-        'page': '1',
-        'perPage': '5000',
-        'returnType': 'JSON',
-        'hsSgn': sixDigitCode.replace(/\./g, '')
-      });
+      const filteredItems: GroupedItem[] = []; 
+      let currentPage = 1;
+      let totalProcessed = 0;
+      let hasMoreData = true;
 
-      const url = `${apiUrl}?${params.toString()}`;
+      while (hasMoreData) {
+        const params = new URLSearchParams({
+          'serviceKey': serviceKey,
+          'page': String(currentPage),
+          'perPage': '5000',
+          'returnType': 'JSON'
+        });
 
+        const url = `${apiUrl}?${params.toString()}`;
+        console.log(`Fetching page ${currentPage}`);
 
-      console.log('Full Request URL (without serviceKey):',
-        url.replace(serviceKey, 'SERVICE_KEY_HIDDEN'));  // 전체 URL 로깅
+        const response = await fetchWithTimeout(url);
+        const pageData: APIResponse = await response.json();
 
-      const response = await fetchWithTimeout(url);
+        if (!pageData.data || pageData.data.length === 0) {
+          hasMoreData = false;
+          break;
+        }
 
-      if (!response.ok) {
-        console.error('API Response:', await response.text());  // 에러 응답 로깅 추가
-        throw new Error('API 호출 실패');
-      }
-
-      const data = await response.json();
-      console.log('API Response Structure:', {
-        dataKeys: Object.keys(data),
-        sampleItem: data.data?.[0],  // 첫 번째 아이템의 구조 확인
-        totalItems: data.data?.length
-      });
-
-      if (!data || !data.data) {
-        throw new Error('유효하지 않은 응답 데이터');
-      }
-
-      const filteredItems = data.data
+        const matchingItems = pageData.data
         .filter((item: HSCodeItem) => {
           const itemHSCode = String(item.HS부호).padStart(10, '0');
-          // 6자리만 자른 후 비교
-          const first6Digits = itemHSCode.substring(0, 6);
-          return first6Digits === sixDigitCode;
+          return itemHSCode.startsWith(sixDigitCode);
         })
         .map((item: HSCodeItem) => ({
           name: item.한글품목명 || 'N/A',
-          hscode: String(item.HS부호)
+          hscode: String(item.HS부호),
+          description: item.규격사항내용 || ''  // description 필드 추가
         }));
 
-      // 매칭된 항목들 로깅
-      if (filteredItems.length > 0) {
-        console.log('Found matches:', filteredItems);
+        filteredItems.push(...matchingItems);
+
+        totalProcessed += pageData.data.length;
+        currentPage++;
+
+        if (totalProcessed >= pageData.matchCount) {
+          hasMoreData = false;
+        }
+
+        if (matchingItems.length > 0) {
+          console.log(`Found ${matchingItems.length} matching items on page ${currentPage - 1}`);
+        }
       }
 
-      // 결과를 현재 results에 추가
+      console.log(`Total pages processed: ${currentPage - 1}`);
+      console.log(`Final results for ${sixDigitCode}:`, filteredItems);
+
       setResults(prev => prev.map(result => {
         if (!('items' in result) && result.hscode === sixDigitCode) {
           return {
@@ -536,12 +566,6 @@ const BulkHSCodePage = () => {
         return result;
       }));
 
-      // 해당 항목 자동으로 펼치기
-      setExpandedResults(prev => ({
-        ...prev,
-        [productName]: true
-      }));
-
       setQueryStatus(`${productName}의 10자리 코드 조회 완료`);
     } catch (error) {
       console.error('Error:', error);
@@ -550,7 +574,6 @@ const BulkHSCodePage = () => {
       setIsLoading(false);
     }
   };
-
 
   console.log('Rendering with results:', results); // 렌더링 시 results 상태 확인
 
