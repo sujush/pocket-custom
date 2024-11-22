@@ -510,43 +510,28 @@ const BulkHSCodePage = () => {
 
       const filteredItems = data.data
         .filter((item: HSCodeItem) => {
-
-          console.log('Filter Debug:', {
-            searchCode: {
-              value: sixDigitCode,
-              type: typeof sixDigitCode
-            },
-            firstItem: {
-              hsCode: item.HS부호,
-              type: typeof item.HS부호
-            },
-            comparison: {
-              itemHSCode: String(item.HS부호),
-              matches: String(item.HS부호).startsWith(sixDigitCode)
-            }
-          });
-          
-          const itemHSCode = String(item.HS부호).replace(/[.\s]/g, '');
+          // HS부호(number)를 문자열로 변환
+          const itemHSCode = String(item.HS부호).padStart(10, '0');
+          // 검색하는 6자리 코드에서 점과 공백 제거
           const searchCode = sixDigitCode.replace(/[.\s]/g, '');
 
-          
-          const startsWithSearchCode = itemHSCode.startsWith(searchCode);
-
-          if (startsWithSearchCode) {
-            console.log('Found matching item:', {
-              fullCode: itemHSCode,
-              searchCode: searchCode,
+          // 디버깅: 실제 매칭되는 항목만 로그
+          if (itemHSCode.startsWith(searchCode)) {
+            console.log('Found matching HSCode:', {
+              full10DigitCode: itemHSCode,
+              search6DigitCode: searchCode,
               name: item.한글품목명
             });
           }
-          return startsWithSearchCode;
+
+          return itemHSCode.startsWith(searchCode);
         })
         .map((item: HSCodeItem) => ({
           name: item.한글품목명 || 'N/A',
           hscode: String(item.HS부호)
         }));
 
-      console.log(`Found ${filteredItems.length} matching items for code ${sixDigitCode}`);
+      console.log(`Total matching items found for ${sixDigitCode}: ${filteredItems.length}`);
 
       // 결과를 현재 results에 추가
       setResults(prev => prev.map(result => {
