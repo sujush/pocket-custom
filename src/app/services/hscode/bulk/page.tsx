@@ -601,7 +601,7 @@ const BulkHSCodePage = () => {
                         <p className="font-bold text-lg">{result.title}</p>
                         <button
                           onClick={() => toggleExpand(result.title)} // 펼치기/접기 버튼에 동작 연결
-                          className="px-3 py-1 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700" //펼치기 버튼 색상수정 
+                          className="px-3 py-1 rounded-md bg-black-100 hover:bg-black-200 text-white-700" //펼치기 버튼 색상수정 
                         >
                           {expandedResults[result.title] ? '접기' : '펼치기'}
                         </button>
