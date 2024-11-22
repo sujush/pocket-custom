@@ -510,22 +510,25 @@ const BulkHSCodePage = () => {
 
       const filteredItems = data.data
         .filter((item: HSCodeItem) => {
-          // HS부호를 문자열로 변환하고 앞 6자리 추출
-          const hsCode = String(item.HS부호).padStart(10, '0');
-          const matches = hsCode.slice(0, 6) === sixDigitCode;
+          
+          const itemHSCode = String(item.HS부호).replace(/[.\s]/g, '');
+          const searchCode = sixDigitCode.replace(/[.\s]/g, '');
 
-          if (matches) {
+          
+          const startsWithSearchCode = itemHSCode.startsWith(searchCode);
+
+          if (startsWithSearchCode) {
             console.log('Found matching item:', {
-              code: hsCode,
-              searchCode: sixDigitCode,
+              fullCode: itemHSCode,
+              searchCode: searchCode,
               name: item.한글품목명
             });
           }
-          return matches;
+          return startsWithSearchCode;
         })
         .map((item: HSCodeItem) => ({
           name: item.한글품목명 || 'N/A',
-          hscode: String(item.HS부호).padStart(10, '0')  // 10자리로 패딩
+          hscode: String(item.HS부호)
         }));
 
       console.log(`Found ${filteredItems.length} matching items for code ${sixDigitCode}`);
