@@ -503,27 +503,30 @@ const BulkHSCodePage = () => {
         sampleItem: data.data?.[0],  // 첫 번째 아이템의 구조 확인
         totalItems: data.data?.length
       });
-      
+
       if (!data || !data.data) {
         throw new Error('유효하지 않은 응답 데이터');
       }
 
       const filteredItems = data.data
-      .filter((item: HSCodeItem) => {
-        console.log('Checking item:', {
-          original: item.HS부호,
-          converted: String(item.HS부호 || ''),
-          sliced: String(item.HS부호 || '').slice(0, 6),
-          comparing: sixDigitCode,
-          matches: String(item.HS부호 || '').slice(0, 6) === sixDigitCode
-        });
-        const matches = String(item.HS부호 || '').slice(0, 6) === sixDigitCode;
-        return matches;
-      })
-      .map((item: HSCodeItem) => ({
-        name: item.한글품목명 || 'N/A',
-        hscode: String(item.HS부호 || '')
-      }));
+        .filter((item: HSCodeItem) => {
+          // HS부호를 문자열로 변환하고 앞 6자리 추출
+          const hsCode = String(item.HS부호).padStart(10, '0');
+          const matches = hsCode.slice(0, 6) === sixDigitCode;
+
+          if (matches) {
+            console.log('Found matching item:', {
+              code: hsCode,
+              searchCode: sixDigitCode,
+              name: item.한글품목명
+            });
+          }
+          return matches;
+        })
+        .map((item: HSCodeItem) => ({
+          name: item.한글품목명 || 'N/A',
+          hscode: String(item.HS부호).padStart(10, '0')  // 10자리로 패딩
+        }));
 
       console.log(`Found ${filteredItems.length} matching items for code ${sixDigitCode}`);
 
