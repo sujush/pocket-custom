@@ -510,6 +510,21 @@ const BulkHSCodePage = () => {
 
       const filteredItems = data.data
         .filter((item: HSCodeItem) => {
+
+          console.log('Filter Debug:', {
+            searchCode: {
+              value: sixDigitCode,
+              type: typeof sixDigitCode
+            },
+            firstItem: {
+              hsCode: item.HS부호,
+              type: typeof item.HS부호
+            },
+            comparison: {
+              itemHSCode: String(item.HS부호),
+              matches: String(item.HS부호).startsWith(sixDigitCode)
+            }
+          });
           
           const itemHSCode = String(item.HS부호).replace(/[.\s]/g, '');
           const searchCode = sixDigitCode.replace(/[.\s]/g, '');
