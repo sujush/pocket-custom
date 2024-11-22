@@ -506,20 +506,22 @@ const BulkHSCodePage = () => {
 
       const filteredItems = data.data
       .filter((item: HSCodeItem) => {
-        console.log('Comparing:', {
-          itemCode: item.HS부호?.slice(0, 6),
-          searchCode: sixDigitCode,
-          matches: item.HS부호?.slice(0, 6) === sixDigitCode
-        });
-        // 10자리 코드의 앞 6자리가 일치하는지 확인
-        return item.HS부호?.slice(0, 6) === sixDigitCode;
+        const matches = item.HS부호?.slice(0, 6) === sixDigitCode;
+        // 매칭되는 항목만 로그 출력
+        if (matches) {
+          console.log('Found matching item:', {
+            code: item.HS부호,
+            name: item.한글품목명
+          });
+        }
+        return matches;
       })
       .map((item: HSCodeItem) => ({
         name: item.한글품목명 || 'N/A',
         hscode: item.HS부호 || ''
       }));
-
-        console.log('Filtered items:', filteredItems);
+    
+      console.log(`Found ${filteredItems.length} matching items for code ${sixDigitCode}`);
 
       // 결과를 현재 results에 추가
       setResults(prev => prev.map(result => {
