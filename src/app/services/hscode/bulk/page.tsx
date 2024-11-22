@@ -131,10 +131,10 @@ const BulkHSCodePage = () => {
   const MAX_PRODUCTS_LIMIT = 20;
 
 
-  const toggleExpand = (productName: string) => {
+  const toggleExpand = (productName: string, expand: boolean = true) => {
     setExpandedResults(prev => ({
       ...prev,
-      [productName]: !prev[productName]
+      [productName]: expand
     }));
   };
 
@@ -485,17 +485,14 @@ const BulkHSCodePage = () => {
       console.log('Final processed results:', processedResults);
       setResults(prev => [...prev, ...processedResults]);
 
-      // 모든 항목을 펼쳐진 상태로 설정
-      const allExpanded = processedResults.reduce<Record<string, boolean>>((acc, result) => {
-        acc[result.title] = true; // 각 결과의 title을 키로 사용
+      // 수정된 부분: 10자리 조회된 항목 기본으로 펼치기
+      const expandedDefaults = processedResults.reduce<Record<string, boolean>>((acc, result) => {
+        acc[result.title] = true;
         return acc;
       }, {});
-      setExpandedResults(prev => ({
-        ...prev, // 기존 상태 유지
-        ...allExpanded, // 새로운 결과 추가
-      }));
-      
-      
+      setExpandedResults(prev => ({ ...prev, ...expandedDefaults }));
+
+
       setQueryStatus("10자리 HS CODE 조회 완료!");
 
     } catch (error) {
@@ -515,7 +512,7 @@ const BulkHSCodePage = () => {
       const apiUrl = process.env.NEXT_PUBLIC_HSCODE_API_URL;
       const serviceKey = decodeURIComponent(process.env.NEXT_PUBLIC_HSCODE_API_KEY!);
 
-      const filteredItems: GroupedItem[] = []; 
+      const filteredItems: GroupedItem[] = [];
       let currentPage = 1;
       let totalProcessed = 0;
       let hasMoreData = true;
@@ -540,15 +537,15 @@ const BulkHSCodePage = () => {
         }
 
         const matchingItems = pageData.data
-        .filter((item: HSCodeItem) => {
-          const itemHSCode = String(item.HS부호).padStart(10, '0');
-          return itemHSCode.startsWith(sixDigitCode);
-        })
-        .map((item: HSCodeItem) => ({
-          name: item.한글품목명 || 'N/A',
-          hscode: String(item.HS부호),
-          description: item.규격사항내용 || ''  // description 필드 추가
-        }));
+          .filter((item: HSCodeItem) => {
+            const itemHSCode = String(item.HS부호).padStart(10, '0');
+            return itemHSCode.startsWith(sixDigitCode);
+          })
+          .map((item: HSCodeItem) => ({
+            name: item.한글품목명 || 'N/A',
+            hscode: String(item.HS부호),
+            description: item.규격사항내용 || ''  // description 필드 추가
+          }));
 
         filteredItems.push(...matchingItems);
 
