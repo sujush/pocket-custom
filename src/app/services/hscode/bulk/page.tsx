@@ -483,7 +483,7 @@ const BulkHSCodePage = () => {
       }));
 
       console.log('Final processed results:', processedResults);
-      setResults(processedResults);
+      setResults(prev => [...prev, ...processedResults]);
       setSelectedItems({});
       setQueryStatus("10자리 HS CODE 조회 완료!");
 
