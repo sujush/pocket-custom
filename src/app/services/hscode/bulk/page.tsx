@@ -481,13 +481,13 @@ const BulkHSCodePage = () => {
         'page': '1',
         'perPage': '5000',
         'returnType': 'JSON',
-        'hsSgn': sixDigitCode.replace(/\./g, '')  
+        'hsSgn': sixDigitCode.replace(/\./g, '')
       });
 
       const url = `${apiUrl}?${params.toString()}`;
 
 
-      console.log('Full Request URL (without serviceKey):', 
+      console.log('Full Request URL (without serviceKey):',
         url.replace(serviceKey, 'SERVICE_KEY_HIDDEN'));  // 전체 URL 로깅
 
       const response = await fetchWithTimeout(url);
@@ -505,23 +505,23 @@ const BulkHSCodePage = () => {
       }
 
       const filteredItems = data.data
-      .filter((item: HSCodeItem) => {
-        const itemHSCode = String(item.HS부호 || '');
-        const matches = item.HS부호?.slice(0, 6) === sixDigitCode;
-        // 매칭되는 항목만 로그 출력
-        if (matches) {
-          console.log('Found matching item:', {
-            code: item.HS부호,
-            name: item.한글품목명
-          });
-        }
-        return matches;
-      })
-      .map((item: HSCodeItem) => ({
-        name: item.한글품목명 || 'N/A',
-        hscode: String(item.HS부호 || '')
-      }));
-    
+        .filter((item: HSCodeItem) => {
+          // matches 체크에 직접 사용
+          const matches = String(item.HS부호 || '').slice(0, 6) === sixDigitCode;
+
+          if (matches) {
+            console.log('Found matching item:', {
+              code: item.HS부호,
+              name: item.한글품목명
+            });
+          }
+          return matches;
+        })
+        .map((item: HSCodeItem) => ({
+          name: item.한글품목명 || 'N/A',
+          hscode: String(item.HS부호 || '')
+        }));
+
       console.log(`Found ${filteredItems.length} matching items for code ${sixDigitCode}`);
 
       // 결과를 현재 results에 추가
