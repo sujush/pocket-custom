@@ -481,12 +481,12 @@ const BulkHSCodePage = () => {
         'page': '1',
         'perPage': '5000',
         'returnType': 'JSON',
-        'HS부호': sixDigitCode  // 'HS부호' 대신 'hsSgn' 사용
+        'HS부호': sixDigitCode.replace(/\./g, '')  
       });
 
       const url = `${apiUrl}?${params.toString()}`;
 
-      
+
       console.log('Request URL:', url.split('?')[0]);  // 서비스 키를 제외한 URL만 로깅
 
       const response = await fetchWithTimeout(url);
@@ -505,6 +505,7 @@ const BulkHSCodePage = () => {
 
       const filteredItems = data.data
         .filter((item: HSCodeItem) => {
+          console.log('Item structure:', item);
           const itemHsCode = String(item.HS부호 || '');
           return itemHsCode.startsWith(sixDigitCode);
         })
@@ -512,6 +513,8 @@ const BulkHSCodePage = () => {
           name: item.한글품목명 || 'N/A',
           hscode: item.HS부호 || ''
         }));
+
+        console.log('Filtered items:', filteredItems);
 
       // 결과를 현재 results에 추가
       setResults(prev => prev.map(result => {
