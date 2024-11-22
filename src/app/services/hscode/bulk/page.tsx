@@ -131,10 +131,10 @@ const BulkHSCodePage = () => {
   const MAX_PRODUCTS_LIMIT = 20;
 
 
-  const toggleExpand = (productName: string, expand: boolean = true) => {
+  const toggleExpand = (productName: string) => {
     setExpandedResults(prev => ({
       ...prev,
-      [productName]: expand
+      [productName]: !prev[productName], // 현재 상태를 반전시켜 접기/펼치기 설정
     }));
   };
 
@@ -487,7 +487,7 @@ const BulkHSCodePage = () => {
 
       // 수정된 부분: 10자리 조회된 항목 기본으로 펼치기
       const expandedDefaults = processedResults.reduce<Record<string, boolean>>((acc, result) => {
-        acc[result.title] = true;
+        acc[result.title] = true; // 각 결과를 기본으로 펼침
         return acc;
       }, {});
       setExpandedResults(prev => ({ ...prev, ...expandedDefaults }));
@@ -683,7 +683,7 @@ const BulkHSCodePage = () => {
                       <div className="flex justify-between items-center mb-4">
                         <p className="font-bold text-lg">{result.title}</p>
                         <button
-                          onClick={() => toggleExpand(result.title)}
+                          onClick={() => toggleExpand(result.title)} // 펼치기/접기 버튼에 동작 연결
                           className="px-3 py-1 rounded-md bg-gray-100 hover:bg-gray-200"
                         >
                           {expandedResults[result.title] ? '접기' : '펼치기'}
@@ -700,14 +700,14 @@ const BulkHSCodePage = () => {
                               <div className="flex space-x-2">
                                 {selectedItems[result.title]?.hscode === item.hscode ? (
                                   <button
-                                    onClick={() => handleItemDeselect(result.title)} // 선택 해제
+                                    onClick={() => handleItemDeselect(result.title)}
                                     className="px-3 py-1 rounded-md bg-blue-600 text-white"
                                   >
                                     선택됨
                                   </button>
                                 ) : (
                                   <button
-                                    onClick={() => handleItemSelect(result.title, item)} // 선택
+                                    onClick={() => handleItemSelect(result.title, item)}
                                     className="px-3 py-1 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700"
                                   >
                                     선택
@@ -727,7 +727,7 @@ const BulkHSCodePage = () => {
                       </div>
                       <div className="flex space-x-2">
                         <button
-                          onClick={() => fetch10DigitHSCodeForSingle(result.hscode, result.name)} // 10자리 조회
+                          onClick={() => fetch10DigitHSCodeForSingle(result.hscode, result.name)}
                           className="px-3 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700"
                         >
                           10자리 조회
