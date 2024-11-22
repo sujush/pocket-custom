@@ -353,162 +353,14 @@ const BulkHSCodePage = () => {
     }
   };
 
-  const fetch10DigitHSCode = async () => {
-    const apiUrl = process.env.NEXT_PUBLIC_HSCODE_API_URL;
-    const serviceKey = process.env.NEXT_PUBLIC_HSCODE_API_KEY;
 
-    setIsLoading(true);
-    setQueryStatus("10자리 HS CODE 조회 중...");
-
-    try {
-      if (!results || results.length === 0) {
-        setQueryStatus("조회할 6자리 HS CODE가 없습니다.");
-        return;
-      }
-
-      // 타입 가드 함수
-      const isInitialResult = (result: Result): result is InitialResult => {
-        return 'hscode' in result;
-      };
-
-      // 타입 체크 추가
-      const hs6Codes = results
-        .filter(isInitialResult)  // 여기서 InitialResult 타입만 필터링
-        .map(result => result.hscode);  // 이제 안전하게 hscode에 접근 가능
-
-      console.log('Extracting 6-digit codes:', hs6Codes);
-
-      if (hs6Codes.length === 0) {
-        setQueryStatus("유효한 6자리 HS CODE가 없습니다.");
-        return;
-      }
-
-      const allResults: HSCodeItem[] = [];
-
-
-      for (const hs6Code of hs6Codes) {
-        try {
-          let currentPage = 1;
-          let totalFetched = 0;
-          let totalDataCount = Infinity;
-
-          while (totalFetched < totalDataCount) {
-            const url = new URL(apiUrl!);
-            url.searchParams.append('serviceKey', serviceKey!);
-            url.searchParams.append('page', String(currentPage));
-            url.searchParams.append('perPage', '5000');
-            url.searchParams.append('returnType', 'JSON');
-            url.searchParams.append('HS부호', hs6Code);
-
-            console.log(`Fetching data for HS Code ${hs6Code}, page ${currentPage}`);
-
-            const response = await fetchWithTimeout(url.toString());
-
-            if (!response.ok) {
-              console.error(`Error fetching data for HS Code ${hs6Code}:`, response.statusText);
-              break;
-            }
-
-            const data = await response.json();
-
-            if (!data || !data.data) {
-              console.error(`Invalid response data for HS Code ${hs6Code}`);
-              break;
-            }
-
-            if (currentPage === 1) {
-              totalDataCount = data.matchCount || 0;
-              console.log(`Total data count for ${hs6Code}:`, totalDataCount);
-            }
-
-            const filteredData = data.data
-              .filter((item: HSCodeItem) => {
-                const itemHsCode = String(item.HS부호 || '');
-                return itemHsCode.startsWith(hs6Code);
-              });
-
-            console.log(`Filtered data count for ${hs6Code}:`, filteredData.length);
-            allResults.push(...filteredData);
-
-            totalFetched += data.currentCount || 0;
-            if (totalFetched >= totalDataCount || data.data.length === 0) {
-              break;
-            }
-
-            currentPage++;
-          }
-        } catch (error) {
-          console.error(`Error processing HS Code ${hs6Code}:`, error);
-          continue;
-        }
-      }
-
-      if (allResults.length === 0) {
-        setQueryStatus("조회된 10자리 품목번호가 없습니다.");
-        return;
-      }
-
-      console.log('Processing all results:', allResults);
-
-      // 결과를 제품별로 그룹화
-      const groupedResults = allResults.reduce<Record<string, GroupedItem[]>>((groups, item) => {
-        // 타입 가드 함수
-        const isInitialResult = (result: Result): result is InitialResult => {
-          return 'hscode' in result;
-        };
-
-        const originalProduct = results
-          .filter(isInitialResult)
-          .find(r => r.hscode === String(item.HS부호).slice(0, 6));
-        const productName = originalProduct?.name || '알 수 없는 제품';
-
-        if (!groups[productName]) {
-          groups[productName] = [];
-        }
-
-        groups[productName].push({
-          name: item.한글품목명 || 'N/A',
-          hscode: String(item.HS부호) || '',
-          description: item.규격사항내용 || '',
-        });
-
-        return groups;
-      }, {});
-
-      console.log('Grouped results:', groupedResults);
-
-      const processedResults: ProcessedResult[] = Object.entries(groupedResults).map(([productName, items]) => ({
-        title: `${productName}에 대한 10자리 코드 목록`,
-        items: items
-      }));
-
-      console.log('Final processed results:', processedResults);
-      setResults(prev => [...prev, ...processedResults]);
-
-      // 수정된 부분: 10자리 조회된 항목 기본으로 펼치기
-      const expandedDefaults = processedResults.reduce<Record<string, boolean>>((acc, result) => {
-        acc[result.title] = true; // 각 결과를 기본으로 펼침
-        return acc;
-      }, {});
-      setExpandedResults(prev => ({ ...prev, ...expandedDefaults }));
-
-
-      setQueryStatus("10자리 HS CODE 조회 완료!");
-
-    } catch (error) {
-      console.error('10자리 HS CODE 조회 실패:', error);
-      setQueryStatus("조회 실패: " + (error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.'));
-      alert('HS CODE 10자리 조회 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const fetch10DigitHSCodeForSingle = async (sixDigitCode: string, productName: string) => {
     setIsLoading(true);
     setQueryStatus(`${productName}의 10자리 코드 조회 중...`);
 
     try {
+      const cleanedSixDigitCode = sixDigitCode.replace(/[^\d]/g, ''); // 숫자만 남기도록 수정
       const apiUrl = process.env.NEXT_PUBLIC_HSCODE_API_URL;
       const serviceKey = decodeURIComponent(process.env.NEXT_PUBLIC_HSCODE_API_KEY!);
 
@@ -519,14 +371,15 @@ const BulkHSCodePage = () => {
 
       while (hasMoreData) {
         const params = new URLSearchParams({
-          'serviceKey': serviceKey,
-          'page': String(currentPage),
-          'perPage': '5000',
-          'returnType': 'JSON'
+          serviceKey: serviceKey,
+          page: String(currentPage),
+          perPage: '5000',
+          returnType: 'JSON',
+          HS부호: cleanedSixDigitCode, // 수정: 클린된 코드 사용
         });
 
         const url = `${apiUrl}?${params.toString()}`;
-        console.log(`Fetching page ${currentPage}`);
+        console.log(`Fetching page ${currentPage} for HS Code ${cleanedSixDigitCode}`);
 
         const response = await fetchWithTimeout(url);
         const pageData: APIResponse = await response.json();
@@ -536,16 +389,11 @@ const BulkHSCodePage = () => {
           break;
         }
 
-        const matchingItems = pageData.data
-          .filter((item: HSCodeItem) => {
-            const itemHSCode = String(item.HS부호).padStart(10, '0');
-            return itemHSCode.startsWith(sixDigitCode);
-          })
-          .map((item: HSCodeItem) => ({
-            name: item.한글품목명 || 'N/A',
-            hscode: String(item.HS부호),
-            description: item.규격사항내용 || ''  // description 필드 추가
-          }));
+        const matchingItems = pageData.data.map((item: HSCodeItem) => ({
+          name: item.한글품목명 || 'N/A',
+          hscode: String(item.HS부호),
+          description: item.규격사항내용 || '',
+        }));
 
         filteredItems.push(...matchingItems);
 
@@ -556,34 +404,34 @@ const BulkHSCodePage = () => {
           hasMoreData = false;
         }
 
-        if (matchingItems.length > 0) {
-          console.log(`Found ${matchingItems.length} matching items on page ${currentPage - 1}`);
-        }
+        console.log(`Fetched ${matchingItems.length} items on page ${currentPage - 1}`);
       }
 
       console.log(`Total pages processed: ${currentPage - 1}`);
-      console.log(`Final results for ${sixDigitCode}:`, filteredItems);
+      console.log(`Final results for ${cleanedSixDigitCode}:`, filteredItems);
 
-      setResults(prev => prev.map(result => {
-        if (!('items' in result) && result.hscode === sixDigitCode) {
-          return {
-            title: result.name,
-            items: filteredItems
-          };
-        }
-        return result;
-      }));
+      setResults(prev =>
+        prev.map(result => {
+          if (!('items' in result) && result.hscode === sixDigitCode) {
+            return {
+              title: result.name,
+              items: filteredItems,
+            };
+          }
+          return result;
+        })
+      );
 
       setQueryStatus(`${productName}의 10자리 코드 조회 완료`);
     } catch (error) {
-      console.error('Error:', error);
+      console.error(`Error fetching 10-digit codes for ${sixDigitCode}:`, error);
       setQueryStatus('조회 실패');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // 여기서부터 수정 시작
+
   const fetch10DigitHSCodeForAll = async () => {
     setIsLoading(true);
     setQueryStatus('전체 10자리 HS CODE 조회 중...');
@@ -591,7 +439,7 @@ const BulkHSCodePage = () => {
     try {
       // 6자리 코드와 이름 추출
       const sixDigitCodes = results
-        .filter((result): result is InitialResult => 'hscode' in result) // 6자리 코드만 필터링
+        .filter((result): result is InitialResult => 'hscode' in result)
         .map(result => ({
           code: result.hscode.replace(/[^\d]/g, ''), // 숫자만 포함
           name: result.name,
@@ -604,22 +452,18 @@ const BulkHSCodePage = () => {
 
       console.log('전체 조회 대상:', sixDigitCodes);
 
-      // Promise.all을 사용하여 병렬로 모든 6자리 코드에 대해 10자리 조회
-      const allResults = await Promise.all(
-        sixDigitCodes.map(async ({ code, name }) => {
-          try {
-            await fetch10DigitHSCodeForSingle(code, name); // 개별 조회 함수 호출
-            return { code, success: true }; // 성공
-          } catch (error) {
-            console.error(`Error fetching 10-digit codes for ${code}:`, error);
-            return { code, success: false }; // 실패
-          }
-        })
+      // 병렬로 10자리 조회 수행
+      const allResults = await Promise.allSettled(
+        sixDigitCodes.map(({ code, name }) =>
+          fetch10DigitHSCodeForSingle(code, name)
+        )
       );
 
-      // 결과 로그
-      console.log('전체 조회 결과:', allResults);
+      // 처리 결과 정리
+      const successCount = allResults.filter(result => result.status === 'fulfilled').length;
+      const failureCount = allResults.length - successCount;
 
+      console.log(`전체 조회 성공: ${successCount}, 실패: ${failureCount}`);
       setQueryStatus('전체 10자리 HS CODE 조회 완료!');
     } catch (error) {
       console.error('전체 조회 실패:', error);
@@ -629,7 +473,7 @@ const BulkHSCodePage = () => {
       setIsLoading(false);
     }
   };
-  // 수정 끝
+
 
 
   console.log('Rendering with results:', results); // 렌더링 시 results 상태 확인
@@ -798,15 +642,7 @@ const BulkHSCodePage = () => {
                 </div>
               ))}
 
-              {/* 전체 조회 버튼 추가 */}
-              {results.length > 0 && !('items' in results[0]) && (
-                <button
-                  onClick={fetch10DigitHSCode}
-                  className="px-4 py-2 mt-4 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition-colors"
-                >
-                  전체 물품에 대해 HS CODE 10자리 조회
-                </button>
-              )}
+
             </>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-gray-400 p-8">
