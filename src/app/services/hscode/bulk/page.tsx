@@ -358,79 +358,92 @@ const BulkHSCodePage = () => {
   const fetch10DigitHSCodeForSingle = async (sixDigitCode: string, productName: string) => {
     setIsLoading(true);
     setQueryStatus(`${productName}의 10자리 코드 조회 중...`);
-
+  
     try {
-      const cleanedSixDigitCode = sixDigitCode.replace(/[^\d]/g, ''); // 숫자만 남기도록 수정
       const apiUrl = process.env.NEXT_PUBLIC_HSCODE_API_URL;
       const serviceKey = decodeURIComponent(process.env.NEXT_PUBLIC_HSCODE_API_KEY!);
-
+  
+      // 6자리 코드를 정리: 숫자만 포함하고, 길이가 정확히 6자리인지 확인
+      const cleanCode = sixDigitCode.replace(/[^\d]/g, '').slice(0, 6);
+  
+      if (cleanCode.length !== 6) {
+        console.error(`잘못된 6자리 코드: ${sixDigitCode}`);
+        setQueryStatus(`${productName}의 6자리 코드가 잘못되었습니다.`);
+        return;
+      }
+  
       const filteredItems: GroupedItem[] = [];
       let currentPage = 1;
       let totalProcessed = 0;
       let hasMoreData = true;
-
+  
       while (hasMoreData) {
         const params = new URLSearchParams({
-          serviceKey: serviceKey,
-          page: String(currentPage),
-          perPage: '5000',
-          returnType: 'JSON',
-          HS부호: cleanedSixDigitCode, // 수정: 클린된 코드 사용
+          'serviceKey': serviceKey,
+          'page': String(currentPage),
+          'perPage': '5000',
+          'returnType': 'JSON',
+          'HS부호': cleanCode, // 정리된 6자리 코드를 사용
         });
-
+  
         const url = `${apiUrl}?${params.toString()}`;
-        console.log(`Fetching page ${currentPage} for HS Code ${cleanedSixDigitCode}`);
-
+        console.log(`Fetching page ${currentPage} with code ${cleanCode}`);
+  
         const response = await fetchWithTimeout(url);
         const pageData: APIResponse = await response.json();
-
+  
         if (!pageData.data || pageData.data.length === 0) {
           hasMoreData = false;
           break;
         }
-
-        const matchingItems = pageData.data.map((item: HSCodeItem) => ({
-          name: item.한글품목명 || 'N/A',
-          hscode: String(item.HS부호),
-          description: item.규격사항내용 || '',
-        }));
-
+  
+        const matchingItems = pageData.data
+          .filter((item: HSCodeItem) => {
+            const itemHSCode = String(item.HS부호).padStart(10, '0');
+            return itemHSCode.startsWith(cleanCode); // 정확히 6자리로 시작하는지 확인
+          })
+          .map((item: HSCodeItem) => ({
+            name: item.한글품목명 || 'N/A',
+            hscode: String(item.HS부호),
+            description: item.규격사항내용 || '', // description 필드 추가
+          }));
+  
         filteredItems.push(...matchingItems);
-
+  
         totalProcessed += pageData.data.length;
         currentPage++;
-
+  
         if (totalProcessed >= pageData.matchCount) {
           hasMoreData = false;
         }
-
-        console.log(`Fetched ${matchingItems.length} items on page ${currentPage - 1}`);
+  
+        if (matchingItems.length > 0) {
+          console.log(`Found ${matchingItems.length} matching items on page ${currentPage - 1}`);
+        }
       }
-
+  
       console.log(`Total pages processed: ${currentPage - 1}`);
-      console.log(`Final results for ${cleanedSixDigitCode}:`, filteredItems);
-
-      setResults(prev =>
-        prev.map(result => {
-          if (!('items' in result) && result.hscode === sixDigitCode) {
-            return {
-              title: result.name,
-              items: filteredItems,
-            };
-          }
-          return result;
-        })
-      );
-
+      console.log(`Final results for ${sixDigitCode}:`, filteredItems);
+  
+      setResults(prev => prev.map(result => {
+        if (!('items' in result) && result.hscode === sixDigitCode) {
+          return {
+            title: result.name,
+            items: filteredItems,
+          };
+        }
+        return result;
+      }));
+  
       setQueryStatus(`${productName}의 10자리 코드 조회 완료`);
     } catch (error) {
-      console.error(`Error fetching 10-digit codes for ${sixDigitCode}:`, error);
+      console.error('Error:', error);
       setQueryStatus('조회 실패');
     } finally {
       setIsLoading(false);
     }
   };
-
+  
 
   const fetch10DigitHSCodeForAll = async () => {
     setIsLoading(true);
