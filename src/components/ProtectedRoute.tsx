@@ -1,5 +1,3 @@
-// src/components/ProtectedRoute.tsx
-
 "use client";
 
 import { useEffect } from 'react';
@@ -14,23 +12,15 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const router = useRouter();
   const { isAuthenticated, checkAuth } = useAuthStore();
 
-  // 여기부터 코드 수정
   useEffect(() => {
     console.log("ProtectedRoute 시작, isAuthenticated:", isAuthenticated);
     checkAuth(); // 페이지 접근 시 쿠키에서 토큰 확인
+  }, [isAuthenticated, checkAuth]);
 
-    if (!isAuthenticated) {
-      console.log("isAuthenticated가 false여도 리다이렉트는 비활성화되었습니다.");
-      // router.push('/login'); // 리다이렉션 제거
-    }
-  }, [isAuthenticated, router, checkAuth]);
-  // 여기까지 코드 수정완료
-  if (!isAuthenticated) {
-    console.log("ProtectedRoute에서 isAuthenticated false로 반환");
-    return null;
-  }
-
+  // 수정 시작: 로그인 여부에 상관없이 children 렌더링
+  console.log("isAuthenticated가 false여도 콘텐츠를 렌더링합니다.");
   return <>{children}</>;
+  // 수정 끝
 };
 
 export default ProtectedRoute;

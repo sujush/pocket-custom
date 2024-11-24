@@ -1,11 +1,8 @@
-// pages/cargo-location.tsx
-import CargoLocation from "@/components/CargoLocation"
-import ProtectedRoute from "@/components/ProtectedRoute";
+import CargoLocation from "@/components/CargoLocation";
 
+// 수정 시작: ProtectedRoute 제거
 export default function CargoLocationPage() {
   return (
-    <ProtectedRoute>
-      <CargoLocation />
-    </ProtectedRoute>
+    <CargoLocation />
   );
 }
