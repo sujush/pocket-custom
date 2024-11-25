@@ -53,24 +53,31 @@ export default function CargoLocation() {
             time: item.처리일시
         })) || [];
         
+        // 시간 순서대로 정렬
         const sortedProcess = [...processStatus].sort((a, b) => 
             parseInt(a.time) - parseInt(b.time)
         );
         
-        const clearanceIndex = sortedProcess.findIndex(p => p.type === "수입신고수리");
-        const releaseIndex = sortedProcess.findIndex(p => p.type === "반출신고");
+        // 마지막 수입신고수리와 마지막 반출신고 찾기
+        const lastClearance = [...sortedProcess]
+            .reverse()
+            .find(p => p.type === "수입신고수리");
+        const lastRelease = [...sortedProcess]
+            .reverse()
+            .find(p => p.type === "반출신고");
         
-        // 수입신고수리 이후의 반출신고 여부 체크
-        const hasSecondRelease = clearanceIndex !== -1 && 
-                                releaseIndex !== -1 && 
-                                parseInt(sortedProcess[releaseIndex].time) > 
-                                parseInt(sortedProcess[clearanceIndex].time);
+        // 마지막 수입신고수리 이후에 반출신고가 있는지 확인
+        const hasSecondRelease = Boolean(
+            lastClearance && 
+            lastRelease && 
+            parseInt(lastRelease.time) > parseInt(lastClearance.time)
+        );
         
-        // 수정: 수입신고수리는 있지만 이후 반출신고가 없는 경우에만 true
-        const hasImportClearance = clearanceIndex !== -1 && 
-                                  (releaseIndex === -1 || 
-                                  parseInt(sortedProcess[releaseIndex].time) < 
-                                  parseInt(sortedProcess[clearanceIndex].time));
+        // 마지막 수입신고수리 이후에 반출신고가 없는 경우
+        const hasImportClearance = Boolean(
+            lastClearance && 
+            (!lastRelease || parseInt(lastRelease.time) < parseInt(lastClearance.time))
+        );
         
         return {
             hasImportDeclaration: processStatus.some(p => p.type === "수입신고"),
