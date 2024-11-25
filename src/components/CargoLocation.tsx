@@ -4,6 +4,9 @@ import Navigation from "@/components/Navigation";
 import { Item } from "aws-sdk/clients/simpledb";
 import React, { useState } from "react";
 
+// 화물 반출 상태 타입 정의
+type ReleaseStatus = "반출불가" | "반출불가-세관심사통과" | "반출가능" | "반출완료";
+
 interface CargoData {
     cargCsclPrgsInfoDtlQryVo?: Array<{
         장치장명: string;
@@ -23,7 +26,16 @@ interface CargoData {
     컨테이너번호?: string;
     입항세관?: string;
     포워더명?: string;
-    // 필요한 다른 필드 추가
+}
+
+// 화물 진행 상태 인터페이스 추가
+interface ProcessStatus {
+    hasImportDeclaration: boolean;
+    hasImportInspection: boolean;
+    hasImportApproval: boolean;
+    hasSecondEntry: boolean;
+    hasImportClearance: boolean;
+    hasSecondRelease: boolean;
 }
 
 export default function CargoLocation() {
@@ -33,6 +45,105 @@ export default function CargoLocation() {
     const [blType, setBlType] = useState("mbl");
     const [blNumber, setBlNumber] = useState("");
     const blYy = "2024";
+
+    // 처리구분 기반 진행 상태 확인 함수
+    const checkProcessStatus = (data: CargoData): ProcessStatus => {
+        const processStatus = data.cargCsclPrgsInfoDtlQryVo?.map(item => item.처리구분) || [];
+        
+        return {
+            hasImportDeclaration: processStatus.includes("수입신고"),
+            hasImportInspection: processStatus.includes("수입(사용소비) 심사진행"),
+            hasImportApproval: processStatus.includes("수입(사용소비) 결재통보"),
+            hasSecondEntry: processStatus.includes("반입신고") && processStatus.filter(status => status === "반입신고").length >= 2,
+            hasImportClearance: processStatus.includes("수입신고수리"),
+            hasSecondRelease: processStatus.includes("반출신고") && processStatus.indexOf("반출신고") > processStatus.lastIndexOf("반입신고")
+        };
+    };
+
+    // 화물 반출 상태 판단 함수
+    const determineReleaseStatus = (processStatus: ProcessStatus): ReleaseStatus => {
+        const {
+            hasImportDeclaration,
+            hasImportInspection,
+            hasImportApproval,
+            hasSecondEntry,
+            hasImportClearance,
+            hasSecondRelease
+        } = processStatus;
+
+        if (hasSecondRelease) {
+            return "반출완료";
+        }
+        
+        if (hasImportClearance && hasSecondEntry) {
+            return "반출가능";
+        }
+        
+        if (hasImportApproval) {
+            return "반출불가-세관심사통과";
+        }
+        
+        return "반출불가";
+    };
+
+    // 상태별 설명 텍스트 반환 함수
+    const getStatusDescription = (status: ReleaseStatus, processStatus: ProcessStatus): string => {
+        switch (status) {
+            case "반출불가":
+                return "현재 통관 절차가 진행 중입니다.";
+            case "반출불가-세관심사통과":
+                return processStatus.hasSecondEntry
+                    ? "세관 심사는 완료되었으나, 관세/부가세 납부가 필요합니다."
+                    : "세관 심사는 완료되었으나, 관세/부가세 납부 및 보세창고 반입이 필요합니다.";
+            case "반출가능":
+                return "화물 수령이 가능합니다. 당일 또는 영업일 기준 최대 2일 내 수령 가능합니다.";
+            case "반출완료":
+                return "화물이 반출 완료되었습니다.";
+        }
+    };
+
+    // 상태별 아이콘 반환 함수
+    const getStatusIcon = (status: ReleaseStatus): string => {
+        switch (status) {
+            case "반출불가":
+                return "🔴";
+            case "반출불가-세관심사통과":
+                return "🟡";
+            case "반출가능":
+                return "🟢";
+            case "반출완료":
+                return "✅";
+        }
+    };
+
+    // 진행 상태 표시줄 렌더링 함수
+    const renderProgressBar = (processStatus: ProcessStatus) => {
+        const steps = [
+            { label: "통관진행", completed: processStatus.hasImportDeclaration },
+            { label: "세관심사", completed: processStatus.hasImportApproval },
+            { label: "보세창고반입", completed: processStatus.hasSecondEntry },
+            { label: "수입신고수리", completed: processStatus.hasImportClearance },
+            { label: "반출가능", completed: processStatus.hasSecondRelease }
+        ];
+
+        return (
+            <div className="mt-4 mb-6">
+                <div className="flex justify-between items-center">
+                    {steps.map((step, index) => (
+                        <React.Fragment key={index}>
+                            <div className="flex flex-col items-center">
+                                <div className={`w-6 h-6 rounded-full ${step.completed ? 'bg-blue-500' : 'bg-gray-300'} mb-2`}></div>
+                                <span className="text-sm">{step.label}</span>
+                            </div>
+                            {index < steps.length - 1 && (
+                                <div className={`flex-1 h-1 mx-2 ${step.completed ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
+                            )}
+                        </React.Fragment>
+                    ))}
+                </div>
+            </div>
+        );
+    };
 
     const fetchCargoInfo = async () => {
         setLoading(true);
@@ -70,6 +181,47 @@ export default function CargoLocation() {
         fetchCargoInfo();
     };
 
+    const getSummaryText = () => {
+        if (!cargoData) return "";
+
+        const {
+            품명 = "N/A",
+            통관진행상태 = "N/A",
+            총중량 = "N/A",
+            중량단위 = "N/A",
+            용적 = "N/A",
+            컨테이너번호 = "N/A",
+            입항세관 = "N/A",
+            포워더명 = "N/A",
+            cargCsclPrgsInfoDtlQryVo = []
+        } = cargoData;
+
+        const firstStorage = cargCsclPrgsInfoDtlQryVo[0] || {};
+        const 장치장명 = firstStorage.장치장명 || "N/A";
+        const 처리구분 = firstStorage.처리구분 || "N/A";
+
+        return `${품명} 화물은 현재 ${통관진행상태} 상태에 있으며 ${총중량}${중량단위}, ${용적} CBM입니다. ${컨테이너번호} 컨테이너에 적입되어 ${입항세관}에서 처리됩니다. 현재 위치는 ${장치장명}이며 ${처리구분} 상태입니다. 운송 관련해서는 ${포워더명}에 연락하시기 바랍니다.`;
+    };
+
+    // 화물 상태 정보 컴포넌트
+    const CargoStatus = ({ data }: { data: CargoData }) => {
+        const processStatus = checkProcessStatus(data);
+        const releaseStatus = determineReleaseStatus(processStatus);
+        const description = getStatusDescription(releaseStatus, processStatus);
+        const icon = getStatusIcon(releaseStatus);
+
+        return (
+            <div className="mb-6 p-4 border rounded-lg bg-white shadow-sm">
+                <div className="flex items-center mb-4">
+                    <span className="text-2xl mr-2">{icon}</span>
+                    <h3 className="text-xl font-semibold">{releaseStatus}</h3>
+                </div>
+                <p className="text-gray-700">{description}</p>
+                {renderProgressBar(processStatus)}
+            </div>
+        );
+    };
+
     const orderedFields = [
         { key: "통관진행상태", label: "통관진행상태" },
         { key: "항차", label: "항차" },
@@ -105,28 +257,6 @@ export default function CargoLocation() {
     const formatDate = (datetimeStr: string) => {
         if (!datetimeStr) return "N/A";
         return `${datetimeStr.slice(0, 4)}.${datetimeStr.slice(4, 6)}.${datetimeStr.slice(6, 8)} ${datetimeStr.slice(8, 10)}:${datetimeStr.slice(10, 12)}`;
-    };
-
-    const getSummaryText = () => {
-        if (!cargoData) return "";
-
-        const {
-            품명 = "N/A",
-            통관진행상태 = "N/A",
-            총중량 = "N/A",
-            중량단위 = "N/A",
-            용적 = "N/A",
-            컨테이너번호 = "N/A",
-            입항세관 = "N/A",
-            포워더명 = "N/A",
-            cargCsclPrgsInfoDtlQryVo = []
-        } = cargoData;
-
-        const firstStorage = cargCsclPrgsInfoDtlQryVo[0] || {};
-        const 장치장명 = firstStorage.장치장명 || "N/A";
-        const 처리구분 = firstStorage.처리구분 || "N/A";
-
-        return `${품명} 화물은 현재 ${통관진행상태} 상태에 있으며 ${총중량}${중량단위}, ${용적} CBM입니다. ${컨테이너번호} 컨테이너에 적입되어 ${입항세관}의 심사에 따라 통관되었거나 통관될 예정입니다. 현재 위치는 ${장치장명}이며 ${처리구분} 상태입니다. 운송 관련해서는 ${포워더명}에 연락하시기 바랍니다.`;
     };
 
     return (
@@ -193,22 +323,21 @@ export default function CargoLocation() {
             {error && <p className="text-red-500">{error}</p>}
             {cargoData && (
                 <div>
+                    <CargoStatus data={cargoData} />
                     <h2 className="text-xl font-semibold">조회 결과:</h2>
                     <table className="w-full border-collapse border border-gray-300">
                         <tbody>
                             {groupedFields.map((fieldGroup, rowIndex) => (
                                 <tr key={rowIndex}>
                                     {fieldGroup.map(({ key, label }) => (
-                                        <React.Fragment key={key}> {/* Fragment에 key 추가 */}
+                                        <React.Fragment key={key}>
                                             <td className="border px-4 py-2 font-semibold">{label}</td>
                                             <td className="border px-4 py-2">
                                                 {Array.isArray(cargoData[key as keyof CargoData]) ? (
-                                                    // `cargoData[key]`가 배열인 경우 `map`을 사용하여 항목을 렌더링
                                                     (cargoData[key as keyof CargoData] as unknown as Array<Item>).map((item, idx) => (
                                                         <div key={idx}>{JSON.stringify(item)}</div>
                                                     ))
                                                 ) : (
-                                                    // `cargoData[key]`가 배열이 아닌 경우, `string`, `number`, 또는 `null` 값으로 출력
                                                     (typeof cargoData[key as keyof CargoData] === 'string' ||
                                                     typeof cargoData[key as keyof CargoData] === 'number' ||
                                                     cargoData[key as keyof CargoData] === null) ? (
