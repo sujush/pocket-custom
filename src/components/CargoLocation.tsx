@@ -177,18 +177,36 @@ export default function CargoLocation() {
     };
 
     const getStatusDescription = (status: ReleaseStatus, processStatus: ProcessStatus): string => {
+        // FCL 여부 확인 (Master B/L이거나 House B/L의 FCL)
+        const isFCL = formData.blType === "mbl" || (formData.blType === "hbl" && formData.cargoType === "fcl");
+        
+        // 하선신고 여부 확인
+        const hasUnloadingDeclaration = cargoData?.cargCsclPrgsInfoDtlQryVo?.some(
+            item => item.처리구분 === "하선신고수리"
+        );
+    
+        let description = '';
         switch (status) {
             case "반출불가":
-                return "현재 통관 절차가 진행 중입니다.";
+                description = "현재 통관 절차가 진행 중입니다.";
+                // FCL이면서 하선신고가 없는 경우 추가 메시지
+                if (isFCL && !hasUnloadingDeclaration) {
+                    description += "\n현재 입항 전 신고가 가능합니다. 하선신고 전에 빠르게 신고하세요.";
+                }
+                break;
             case "반출불가-세관심사통과":
-                return processStatus.hasSecondEntry
+                description = processStatus.hasSecondEntry
                     ? "세관 심사는 완료되었으나, 관세/부가세 납부가 필요합니다."
                     : "세관 심사는 완료되었으나, 관세/부가세 납부 및 보세창고 반입이 필요합니다.";
+                break;
             case "반출가능":
-                return "화물 수령이 가능합니다. 당일 또는 영업일 기준 최대 2일 내 수령 가능합니다.";
+                description = "화물 수령이 가능합니다. 당일 또는 영업일 기준 최대 2일 내 수령 가능합니다.";
+                break;
             case "반출완료":
-                return "화물이 반출 완료되었습니다.";
+                description = "화물이 반출 완료되었습니다.";
+                break;
         }
+        return description;
     };
 
     const renderProgressBar = (processStatus: ProcessStatus, formData: CargoFormData) => {
@@ -255,6 +273,7 @@ export default function CargoLocation() {
         const 장치장명 = firstStorage.장치장명 || "N/A";
         const 처리구분 = firstStorage.처리구분 || "N/A";
 
+
         return `${품명} 화물은 현재 ${통관진행상태} 상태에 있으며 ${총중량}${중량단위}, ${용적} CBM입니다. ${컨테이너번호} 컨테이너에 적입되어 ${입항세관}에서 처리됩니다. 현재 위치는 ${장치장명}이며 ${처리구분} 상태입니다. 운송 관련해서는 ${포워더명}에 연락하시기 바랍니다.`;
     };
 
@@ -310,7 +329,7 @@ export default function CargoLocation() {
                     <span className="text-2xl mr-2">{icon}</span>
                     <h3 className="text-xl font-semibold">{releaseStatus}</h3>
                 </div>
-                <p className="text-gray-700">{description}</p>
+                <p className="text-gray-700 whitespace-pre-line">{description}</p>
                 {renderProgressBar(processStatus, formData)}
             </div>
         );
