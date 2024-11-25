@@ -50,13 +50,21 @@ export default function CargoLocation() {
     const checkProcessStatus = (data: CargoData): ProcessStatus => {
         const processStatus = data.cargCsclPrgsInfoDtlQryVo?.map(item => item.처리구분) || [];
         
+        const hasSecondEntry = processStatus.includes("반입신고") && 
+            processStatus.filter(status => status === "반입신고").length >= 2;
+        
+        const lastEntryIndex = processStatus.lastIndexOf("반입신고");
+        const hasSecondRelease = processStatus.includes("반출신고") && 
+            processStatus.includes("수입신고수리") &&
+            processStatus.indexOf("반출신고", lastEntryIndex) > lastEntryIndex;
+        
         return {
             hasImportDeclaration: processStatus.includes("수입신고"),
             hasImportInspection: processStatus.includes("수입(사용소비) 심사진행"),
             hasImportApproval: processStatus.includes("수입(사용소비) 결재통보"),
-            hasSecondEntry: processStatus.includes("반입신고") && processStatus.filter(status => status === "반입신고").length >= 2,
+            hasSecondEntry,
             hasImportClearance: processStatus.includes("수입신고수리"),
-            hasSecondRelease: processStatus.includes("반출신고") && processStatus.indexOf("반출신고") > processStatus.lastIndexOf("반입신고")
+            hasSecondRelease
         };
     };
 
