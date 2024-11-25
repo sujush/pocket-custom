@@ -50,18 +50,21 @@ export default function CargoLocation() {
     const checkProcessStatus = (data: CargoData): ProcessStatus => {
         const processStatus = data.cargCsclPrgsInfoDtlQryVo?.map(item => item.처리구분) || [];
         
-        // 수입신고수리와 반출신고 인덱스 체크
-        const clearanceIndex = processStatus.indexOf("수입신고수리");
-        const releaseIndex = processStatus.lastIndexOf("반출신고");
+        // 시간 순서대로 처리하기 위해 배열을 뒤집음
+        const chronologicalProcess = [...processStatus].reverse();
         
-        // 수정 시작
-        const hasImportClearance = clearanceIndex !== -1 && 
-                                  (releaseIndex === -1 || releaseIndex < clearanceIndex);
+        // 시간 순서로 정렬된 배열에서 인덱스 체크
+        const clearanceIndex = chronologicalProcess.indexOf("수입신고수리");
+        const releaseIndex = chronologicalProcess.indexOf("반출신고");
         
+        // 수입신고수리가 있고, 그 이후에 반출신고가 있는 경우
         const hasSecondRelease = clearanceIndex !== -1 && 
                                 releaseIndex !== -1 && 
                                 releaseIndex > clearanceIndex;
-        // 수정 끝
+        
+        // 수입신고수리가 있고, 이후에 반출신고가 없는 경우
+        const hasImportClearance = clearanceIndex !== -1 && 
+                                  (releaseIndex === -1 || releaseIndex < clearanceIndex);
         
         return {
             hasImportDeclaration: processStatus.includes("수입신고"),
