@@ -49,20 +49,20 @@ export default function CargoLocation() {
     // 처리구분 기반 진행 상태 확인 함수
     const checkProcessStatus = (data: CargoData): ProcessStatus => {
         const processStatus = data.cargCsclPrgsInfoDtlQryVo?.map(item => item.처리구분) || [];
-
+        
         // 수정 시작
         const clearanceIndex = processStatus.indexOf("수입신고수리");
-        const hasSecondRelease = clearanceIndex !== -1 &&
-            processStatus.some((status, index) =>
-                status === "반출신고" && index > clearanceIndex
-            );
+        const releaseIndex = processStatus.lastIndexOf("반출신고");
+        const hasSecondRelease = clearanceIndex !== -1 && 
+                                releaseIndex !== -1 && 
+                                releaseIndex > clearanceIndex;
         // 수정 끝
-
+        
         return {
             hasImportDeclaration: processStatus.includes("수입신고"),
             hasImportInspection: processStatus.includes("수입(사용소비) 심사진행"),
             hasImportApproval: processStatus.includes("수입(사용소비) 결재통보"),
-            hasSecondEntry: processStatus.includes("반입신고") &&
+            hasSecondEntry: processStatus.includes("반입신고") && 
                 processStatus.filter(status => status === "반입신고").length >= 2,
             hasImportClearance: processStatus.includes("수입신고수리"),
             hasSecondRelease
