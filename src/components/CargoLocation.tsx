@@ -48,30 +48,34 @@ export default function CargoLocation() {
 
     // 처리구분 기반 진행 상태 확인 함수
     const checkProcessStatus = (data: CargoData): ProcessStatus => {
-        const processStatus = data.cargCsclPrgsInfoDtlQryVo?.map(item => item.처리구분) || [];
+        const processStatus = data.cargCsclPrgsInfoDtlQryVo?.map(item => ({
+            type: item.처리구분,
+            time: item.처리일시
+        })) || [];
         
-        // 시간 순서대로 처리하기 위해 배열을 뒤집음
-        const chronologicalProcess = [...processStatus].reverse();
+        // 처리일시를 기준으로 정렬
+        const sortedProcess = [...processStatus].sort((a, b) => 
+            parseInt(a.time) - parseInt(b.time)
+        );
         
-        // 시간 순서로 정렬된 배열에서 인덱스 체크
-        const clearanceIndex = chronologicalProcess.indexOf("수입신고수리");
-        const releaseIndex = chronologicalProcess.indexOf("반출신고");
+        const clearanceIndex = sortedProcess.findIndex(p => p.type === "수입신고수리");
+        const releaseIndex = sortedProcess.findIndex(p => p.type === "반출신고");
         
-        // 수입신고수리가 있고, 그 이후에 반출신고가 있는 경우
+        // 수입신고수리 이후의 반출신고 여부 체크
         const hasSecondRelease = clearanceIndex !== -1 && 
                                 releaseIndex !== -1 && 
-                                releaseIndex > clearanceIndex;
+                                parseInt(sortedProcess[releaseIndex].time) > 
+                                parseInt(sortedProcess[clearanceIndex].time);
         
-        // 수입신고수리가 있고, 이후에 반출신고가 없는 경우
+        // 수입신고수리는 있지만 이후 반출신고가 없는 경우
         const hasImportClearance = clearanceIndex !== -1 && 
-                                  (releaseIndex === -1 || releaseIndex < clearanceIndex);
+                                  !hasSecondRelease;
         
         return {
-            hasImportDeclaration: processStatus.includes("수입신고"),
-            hasImportInspection: processStatus.includes("수입(사용소비) 심사진행"),
-            hasImportApproval: processStatus.includes("수입(사용소비) 결재통보"),
-            hasSecondEntry: processStatus.includes("반입신고") && 
-                processStatus.filter(status => status === "반입신고").length >= 2,
+            hasImportDeclaration: processStatus.some(p => p.type === "수입신고"),
+            hasImportInspection: processStatus.some(p => p.type === "수입(사용소비) 심사진행"),
+            hasImportApproval: processStatus.some(p => p.type === "수입(사용소비) 결재통보"),
+            hasSecondEntry: processStatus.filter(p => p.type === "반입신고").length >= 2,
             hasImportClearance,
             hasSecondRelease
         };
