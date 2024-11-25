@@ -53,7 +53,6 @@ export default function CargoLocation() {
             time: item.처리일시
         })) || [];
         
-        // 처리일시를 기준으로 정렬
         const sortedProcess = [...processStatus].sort((a, b) => 
             parseInt(a.time) - parseInt(b.time)
         );
@@ -67,9 +66,11 @@ export default function CargoLocation() {
                                 parseInt(sortedProcess[releaseIndex].time) > 
                                 parseInt(sortedProcess[clearanceIndex].time);
         
-        // 수입신고수리는 있지만 이후 반출신고가 없는 경우
+        // 수정: 수입신고수리는 있지만 이후 반출신고가 없는 경우에만 true
         const hasImportClearance = clearanceIndex !== -1 && 
-                                  !hasSecondRelease;
+                                  (releaseIndex === -1 || 
+                                  parseInt(sortedProcess[releaseIndex].time) < 
+                                  parseInt(sortedProcess[clearanceIndex].time));
         
         return {
             hasImportDeclaration: processStatus.some(p => p.type === "수입신고"),
