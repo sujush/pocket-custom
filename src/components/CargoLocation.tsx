@@ -54,9 +54,12 @@ export default function CargoLocation() {
             processStatus.filter(status => status === "반입신고").length >= 2;
         
         const lastEntryIndex = processStatus.lastIndexOf("반입신고");
+        const lastClearanceIndex = processStatus.lastIndexOf("수입신고수리");
+        
+        // 반출신고 확인 로직 수정
         const hasSecondRelease = processStatus.includes("반출신고") && 
             processStatus.includes("수입신고수리") &&
-            processStatus.indexOf("반출신고", lastEntryIndex) > lastEntryIndex;
+            processStatus.lastIndexOf("반출신고") > Math.max(lastEntryIndex, lastClearanceIndex);
         
         return {
             hasImportDeclaration: processStatus.includes("수입신고"),
@@ -129,7 +132,7 @@ export default function CargoLocation() {
             { label: "세관심사", completed: processStatus.hasImportApproval },
             { label: "보세창고반입", completed: processStatus.hasSecondEntry },
             { label: "수입신고수리", completed: processStatus.hasImportClearance },
-            { label: "반출가능", completed: processStatus.hasSecondRelease }
+            { label: "반출완료", completed: processStatus.hasSecondRelease }
         ];
 
         return (
