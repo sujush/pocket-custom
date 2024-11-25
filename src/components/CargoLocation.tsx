@@ -63,8 +63,6 @@ export default function CargoLocation() {
     // 화물 반출 상태 판단 함수
     const determineReleaseStatus = (processStatus: ProcessStatus): ReleaseStatus => {
         const {
-            hasImportDeclaration,
-            hasImportInspection,
             hasImportApproval,
             hasSecondEntry,
             hasImportClearance,
