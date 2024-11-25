@@ -47,7 +47,7 @@ export default function CargoLocation() {
     const blYy = "2024";
 
     // 처리구분 기반 진행 상태 확인 함수
-    const checkProcessStatus = (data: CargoData): ProcessStatus => {
+    const checkProcessStatus = (data: CargoData, blType: string): ProcessStatus => {
         const processStatus = data.cargCsclPrgsInfoDtlQryVo?.map(item => ({
             type: item.처리구분,
             time: item.처리일시
@@ -57,36 +57,91 @@ export default function CargoLocation() {
         const sortedProcess = [...processStatus].sort((a, b) => 
             parseInt(a.time) - parseInt(b.time)
         );
+    
+        // 공통 상태 체크
+        const hasImportDeclaration = processStatus.some(p => p.type === "수입신고");
+        const hasImportInspection = processStatus.some(p => p.type === "수입(사용소비) 심사진행");
+        const hasImportApproval = processStatus.some(p => p.type === "수입(사용소비) 결재통보");
         
-        // 마지막 수입신고수리와 마지막 반출신고 찾기
+        // 보세운송 여부 체크
+        const hasCustomsTransit = processStatus.some(p => p.type === "보세운송 신고" || p.type === "보세운송 수리");
+    
+        // 수입신고수리와 반출신고 시점 체크
         const lastClearance = [...sortedProcess]
             .reverse()
             .find(p => p.type === "수입신고수리");
         const lastRelease = [...sortedProcess]
             .reverse()
             .find(p => p.type === "반출신고");
-        
-        // 마지막 수입신고수리 이후에 반출신고가 있는지 확인
-        const hasSecondRelease = Boolean(
-            lastClearance && 
-            lastRelease && 
-            parseInt(lastRelease.time) > parseInt(lastClearance.time)
-        );
-        
-        // 마지막 수입신고수리 이후에 반출신고가 없는 경우
-        const hasImportClearance = Boolean(
-            lastClearance && 
-            (!lastRelease || parseInt(lastRelease.time) < parseInt(lastClearance.time))
-        );
-        
-        return {
-            hasImportDeclaration: processStatus.some(p => p.type === "수입신고"),
-            hasImportInspection: processStatus.some(p => p.type === "수입(사용소비) 심사진행"),
-            hasImportApproval: processStatus.some(p => p.type === "수입(사용소비) 결재통보"),
-            hasSecondEntry: processStatus.filter(p => p.type === "반입신고").length >= 2,
-            hasImportClearance,
-            hasSecondRelease
-        };
+    
+        if (blType === "mbl") {  // FCL 처리
+            const entryCount = processStatus.filter(p => p.type === "반입신고").length;
+            const hasUnloadingDeclaration = processStatus.some(p => p.type === "하선신고수리");
+            
+            const hasSecondRelease = Boolean(
+                lastClearance && 
+                lastRelease && 
+                parseInt(lastRelease.time) > parseInt(lastClearance.time)
+            );
+    
+            if (hasCustomsTransit) {
+                // 보세운송이 있는 FCL은 LCL과 같은 방식으로 처리
+                const hasSecondEntry = entryCount >= 2;
+                const hasImportClearance = Boolean(
+                    lastClearance && 
+                    (!lastRelease || parseInt(lastRelease.time) < parseInt(lastClearance.time))
+                );
+    
+                return {
+                    hasImportDeclaration,
+                    hasImportInspection,
+                    hasImportApproval,
+                    hasSecondEntry,
+                    hasImportClearance,
+                    hasSecondRelease
+                };
+            } else {
+                // 일반 FCL 처리
+                const hasEntry = entryCount >= 1;
+                // Boolean 타입으로 명시적 변환
+                const isPreEntryCleared = Boolean(lastClearance && !hasUnloadingDeclaration);
+                const hasImportClearance = Boolean(
+                    lastClearance && 
+                    (!lastRelease || parseInt(lastRelease.time) < parseInt(lastClearance.time))
+                );
+    
+                return {
+                    hasImportDeclaration,
+                    hasImportInspection,
+                    hasImportApproval,
+                    hasSecondEntry: hasEntry, // FCL은 1회 반입도 OK
+                    hasImportClearance: Boolean(hasImportClearance || isPreEntryCleared),
+                    hasSecondRelease
+                };
+            }
+        } else {  // LCL 처리
+            const hasSecondEntry = processStatus.filter(p => p.type === "반입신고").length >= 2;
+            
+            const hasSecondRelease = Boolean(
+                lastClearance && 
+                lastRelease && 
+                parseInt(lastRelease.time) > parseInt(lastClearance.time)
+            );
+    
+            const hasImportClearance = Boolean(
+                lastClearance && 
+                (!lastRelease || parseInt(lastRelease.time) < parseInt(lastClearance.time))
+            );
+    
+            return {
+                hasImportDeclaration,
+                hasImportInspection,
+                hasImportApproval,
+                hasSecondEntry,
+                hasImportClearance,
+                hasSecondRelease
+            };
+        }
     };
 
     // 화물 반출 상태 판단 함수
@@ -144,13 +199,29 @@ export default function CargoLocation() {
     };
 
     // 진행 상태 표시줄 렌더링 함수
-    const renderProgressBar = (processStatus: ProcessStatus) => {
+    // 상태 표시줄 렌더링 함수도 수정
+    const renderProgressBar = (processStatus: ProcessStatus, blType: string) => {
         const steps = [
-            { label: "통관진행", completed: processStatus.hasImportDeclaration },
-            { label: "세관심사", completed: processStatus.hasImportApproval },
-            { label: "보세창고반입", completed: processStatus.hasSecondEntry },
-            { label: "수입신고수리", completed: processStatus.hasImportClearance || processStatus.hasSecondRelease },
-            { label: "반출완료", completed: processStatus.hasSecondRelease }
+            {
+                label: "통관진행",
+                completed: processStatus.hasImportDeclaration
+            },
+            {
+                label: "세관심사",
+                completed: processStatus.hasImportApproval
+            },
+            {
+                label: blType === "mbl" ? "반입신고" : "보세창고반입",
+                completed: processStatus.hasSecondEntry
+            },
+            {
+                label: "수입신고수리",
+                completed: processStatus.hasImportClearance || processStatus.hasSecondRelease
+            },
+            {
+                label: "반출완료",
+                completed: processStatus.hasSecondRelease
+            }
         ];
 
         return (
@@ -231,8 +302,8 @@ export default function CargoLocation() {
     };
 
     // 화물 상태 정보 컴포넌트
-    const CargoStatus = ({ data }: { data: CargoData }) => {
-        const processStatus = checkProcessStatus(data);
+    const CargoStatus = ({ data, blType }: { data: CargoData; blType: string }) => {
+        const processStatus = checkProcessStatus(data, blType);
         const releaseStatus = determineReleaseStatus(processStatus);
         const description = getStatusDescription(releaseStatus, processStatus);
         const icon = getStatusIcon(releaseStatus);
@@ -244,7 +315,7 @@ export default function CargoLocation() {
                     <h3 className="text-xl font-semibold">{releaseStatus}</h3>
                 </div>
                 <p className="text-gray-700">{description}</p>
-                {renderProgressBar(processStatus)}
+                {renderProgressBar(processStatus, blType)}
             </div>
         );
     };
@@ -350,7 +421,7 @@ export default function CargoLocation() {
             {error && <p className="text-red-500">{error}</p>}
             {cargoData && (
                 <div>
-                    <CargoStatus data={cargoData} />
+                   <CargoStatus data={cargoData} blType={blType} />
                     <h2 className="text-xl font-semibold">조회 결과:</h2>
                     <table className="w-full border-collapse border border-gray-300">
                         <tbody>
