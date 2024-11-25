@@ -149,7 +149,7 @@ export default function CargoLocation() {
             { label: "통관진행", completed: processStatus.hasImportDeclaration },
             { label: "세관심사", completed: processStatus.hasImportApproval },
             { label: "보세창고반입", completed: processStatus.hasSecondEntry },
-            { label: "수입신고수리", completed: processStatus.hasImportClearance },
+            { label: "수입신고수리", completed: processStatus.hasImportClearance || processStatus.hasSecondRelease },
             { label: "반출완료", completed: processStatus.hasSecondRelease }
         ];
 
