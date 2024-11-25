@@ -264,8 +264,7 @@ export default function CargoLocation() {
             중량단위 = "N/A",
             용적 = "N/A",
             컨테이너번호 = "N/A",
-            입항세관 = "N/A",
-            포워더명 = "N/A",
+            입항세관 = "N/A",            
             cargCsclPrgsInfoDtlQryVo = []
         } = cargoData;
 
