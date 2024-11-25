@@ -49,23 +49,21 @@ export default function CargoLocation() {
     // 처리구분 기반 진행 상태 확인 함수
     const checkProcessStatus = (data: CargoData): ProcessStatus => {
         const processStatus = data.cargCsclPrgsInfoDtlQryVo?.map(item => item.처리구분) || [];
-        
-        const hasSecondEntry = processStatus.includes("반입신고") && 
-            processStatus.filter(status => status === "반입신고").length >= 2;
-        
-        const lastEntryIndex = processStatus.lastIndexOf("반입신고");
-        const lastClearanceIndex = processStatus.lastIndexOf("수입신고수리");
-        
-        // 반출신고 확인 로직 수정
-        const hasSecondRelease = processStatus.includes("반출신고") && 
-            processStatus.includes("수입신고수리") &&
-            processStatus.lastIndexOf("반출신고") > Math.max(lastEntryIndex, lastClearanceIndex);
-        
+
+        // 수정 시작
+        const clearanceIndex = processStatus.indexOf("수입신고수리");
+        const hasSecondRelease = clearanceIndex !== -1 &&
+            processStatus.some((status, index) =>
+                status === "반출신고" && index > clearanceIndex
+            );
+        // 수정 끝
+
         return {
             hasImportDeclaration: processStatus.includes("수입신고"),
             hasImportInspection: processStatus.includes("수입(사용소비) 심사진행"),
             hasImportApproval: processStatus.includes("수입(사용소비) 결재통보"),
-            hasSecondEntry,
+            hasSecondEntry: processStatus.includes("반입신고") &&
+                processStatus.filter(status => status === "반입신고").length >= 2,
             hasImportClearance: processStatus.includes("수입신고수리"),
             hasSecondRelease
         };
@@ -83,15 +81,15 @@ export default function CargoLocation() {
         if (hasSecondRelease) {
             return "반출완료";
         }
-        
+
         if (hasImportClearance && hasSecondEntry) {
             return "반출가능";
         }
-        
+
         if (hasImportApproval) {
             return "반출불가-세관심사통과";
         }
-        
+
         return "반출불가";
     };
 
@@ -348,8 +346,8 @@ export default function CargoLocation() {
                                                     ))
                                                 ) : (
                                                     (typeof cargoData[key as keyof CargoData] === 'string' ||
-                                                    typeof cargoData[key as keyof CargoData] === 'number' ||
-                                                    cargoData[key as keyof CargoData] === null) ? (
+                                                        typeof cargoData[key as keyof CargoData] === 'number' ||
+                                                        cargoData[key as keyof CargoData] === null) ? (
                                                         cargoData[key as keyof CargoData] as React.ReactNode
                                                     ) : null
                                                 )}
