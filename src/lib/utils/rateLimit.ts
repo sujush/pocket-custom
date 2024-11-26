@@ -1,38 +1,33 @@
 // src/lib/utils/rateLimit.ts
-import { NextApiRequest } from 'next';
 
-
-// 메모리에 IP 제한 정보 저장
 const ipLimitStore = new Map<string, {
   singleSearchCount: number;
   bulkSearchCount: number;
   lastReset: Date;
 }>();
 
-// IP 주소 추출 함수
-const getClientIP = (req: NextApiRequest): string => {
-  const forwarded = req.headers['x-forwarded-for'];
-  const ip = forwarded 
-    ? (Array.isArray(forwarded) ? forwarded[0] : forwarded.split(',')[0])
-    : req.socket.remoteAddress;
-  
-  return ip || 'unknown';
+// IP 주소 추출 함수 수정
+const getClientIP = (request: Request): string => {
+  const forwardedFor = request.headers.get('x-forwarded-for');
+  if (forwardedFor) {
+    return forwardedFor.split(',')[0].trim();
+  }
+  return 'unknown';
 };
 
 export const checkIPLimit = async (
-  req: NextApiRequest, 
+  request: Request, 
   searchType: 'single' | 'bulk'
 ): Promise<boolean> => {
   const RATE_LIMIT_ENABLED = process.env.NEXT_PUBLIC_RATE_LIMIT_ENABLED === 'true';
   if (!RATE_LIMIT_ENABLED) return true;
 
-  const ip = getClientIP(req);
+  const ip = getClientIP(request);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   let limitInfo = ipLimitStore.get(ip);
 
-  // 새로운 날이거나 정보가 없으면 초기화
   if (!limitInfo || limitInfo.lastReset < today) {
     limitInfo = {
       singleSearchCount: 0,
@@ -53,7 +48,6 @@ export const checkIPLimit = async (
     throw new Error(`${searchType === 'single' ? '개별' : '벌크'} 검색 일일 한도를 초과했습니다.`);
   }
 
-  // 카운트 증가
   if (searchType === 'single') {
     limitInfo.singleSearchCount++;
   } else {
@@ -64,7 +58,7 @@ export const checkIPLimit = async (
   return true;
 };
 
-export const getRemainingSearches = (req: NextApiRequest) => {
+export const getRemainingSearches = (request: Request) => {
   const RATE_LIMIT_ENABLED = process.env.NEXT_PUBLIC_RATE_LIMIT_ENABLED === 'true';
   if (!RATE_LIMIT_ENABLED) {
     return {
@@ -74,7 +68,7 @@ export const getRemainingSearches = (req: NextApiRequest) => {
     };
   }
 
-  const ip = getClientIP(req);
+  const ip = getClientIP(request);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
