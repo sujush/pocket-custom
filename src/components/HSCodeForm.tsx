@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { useRouter } from 'next/navigation';
+import { RemainingSearchesDisplay } from '@/components/RemainingSearchesDisplay';
 
 const categoryOptions = [
   '가구', '조명', '컴퓨터용 제품', '공구', '농업용 또는 원예용 제품', '전기용품',
@@ -172,7 +173,27 @@ export const HSCodeForm: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resetTrigger, setResetTrigger] = useState(false);
 
+  const [remainingSearches, setRemainingSearches] = useState({
+    single: 0,
+    bulk: 0,
+    isLimited: true
+  });
+
   const router = useRouter();
+
+  const fetchRemainingSearches = async () => {
+    try {
+      const response = await fetch('/api/hscode/remaining-searches');
+      const data = await response.json();
+      setRemainingSearches(data);
+    } catch (error) {
+      console.error('Error fetching remaining searches:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchRemainingSearches();
+  }, []);
 
   const resetForm = () => {
     setFunctions({});
@@ -316,6 +337,8 @@ export const HSCodeForm: React.FC = () => {
       // 오류가 없는 경우에만 폼 초기화
       setResetTrigger(true);
 
+      await fetchRemainingSearches();
+
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '요청 처리 중 오류가 발생했습니다.';
       setError(errorMessage);
@@ -334,6 +357,8 @@ export const HSCodeForm: React.FC = () => {
     <div className="flex h-screen overflow-hidden">
       <div className="w-1/2 p-4 flex flex-col overflow-auto">
         <h1 className="text-2xl font-bold mb-4">10단위 조회</h1>
+
+        <RemainingSearchesDisplay remaining={remainingSearches} />
 
         <Card className="mb-4 flex-shrink-0">
           <CardHeader>
