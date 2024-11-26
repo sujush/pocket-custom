@@ -115,7 +115,7 @@ const fetchAllPages = async (searchCode: string): Promise<HSCodeResult[]> => {
           const itemHsCode = String(item.품목번호 || item.HS부호 || '').replace(/\D/g, '');
           console.log(`Comparing: ${itemHsCode} with ${searchCode}`);
           // 5단위 또는 6단위 검색 로직
-          return searchCode.length === 5 
+          return searchCode.length === 5
             ? itemHsCode.substring(0, 5) === searchCode
             : itemHsCode.substring(0, 6) === searchCode;
         })
@@ -173,21 +173,58 @@ export const HSCodeForm: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resetTrigger, setResetTrigger] = useState(false);
 
-  const [remainingSearches, setRemainingSearches] = useState({
-    single: 0,
-    bulk: 0,
-    isLimited: true
+  const [remainingSearches, setRemainingSearches] = useState<{
+    single: number | null;
+    bulk: number | null;
+    isLimited: boolean;
+  }>({
+    single: null,
+    bulk: null,
+    isLimited: true,
   });
 
   const router = useRouter();
 
-  const fetchRemainingSearches = async () => {
+  const fetchRemainingSearches = async (): Promise<void> => {
     try {
-      const response = await fetch('/api/hscode/remaining-searches');
-      const data = await response.json();
-      setRemainingSearches(data);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_RATE_LIMIT_API_URL}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            queryStringParameters: { type: 'single' },
+            requestContext: { identity: { sourceIp: '192.168.0.1' } }, // 실제 IP는 프록시가 추가되면 동적으로 변경 가능
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      // 응답 데이터를 타입으로 명확히 지정
+      const data: {
+        message: string;
+        remainingSingleSearches: number;
+        remainingBulkSearches: number;
+      } = await response.json();
+
+      // 상태 업데이트
+      setRemainingSearches({
+        single: data.remainingSingleSearches,
+        bulk: data.remainingBulkSearches,
+        isLimited: true,
+      });
     } catch (error) {
       console.error('Error fetching remaining searches:', error);
+      setRemainingSearches({
+        single: null, // 오류 발생 시 null로 초기화
+        bulk: null,
+        isLimited: true,
+      });
     }
   };
 
@@ -300,7 +337,7 @@ export const HSCodeForm: React.FC = () => {
       const handleHSCodeSearch = (sixDigitCode: string) => {
         // 마지막 숫자가 0인지 확인
         const lastDigit = sixDigitCode[5];
-        const searchCode = lastDigit === '0' 
+        const searchCode = lastDigit === '0'
           ? sixDigitCode.substring(0, 5)  // 9405.40 → 94054
           : sixDigitCode;                 // 9403.82 → 940382
 
@@ -313,7 +350,7 @@ export const HSCodeForm: React.FC = () => {
       const filteredResults = allResults
         .filter(item => {
           const hsCode = String(item.품목번호).padStart(10, '0');
-          const searchPattern = searchCode.length === 5 
+          const searchPattern = searchCode.length === 5
             ? hsCode.substring(0, 5) === searchCode  // 5단위 검색일 경우
             : hsCode.substring(0, 6) === searchCode; // 6단위 검색일 경우
           return searchPattern;
@@ -358,7 +395,13 @@ export const HSCodeForm: React.FC = () => {
       <div className="w-1/2 p-4 flex flex-col overflow-auto">
         <h1 className="text-2xl font-bold mb-4">10단위 조회</h1>
 
-        <RemainingSearchesDisplay remaining={remainingSearches} />
+        <RemainingSearchesDisplay
+          remaining={{
+            single: remainingSearches.single ?? 0,
+            bulk: remainingSearches.bulk ?? 0,
+            isLimited: remainingSearches.isLimited,
+          }}
+        />
 
         <Card className="mb-4 flex-shrink-0">
           <CardHeader>

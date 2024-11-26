@@ -1,112 +1,113 @@
 // src/lib/utils/rateLimit.ts
+import AWS from 'aws-sdk';
+
+AWS.config.update({ region: 'your-region' }); // AWS 리전 설정
+const dynamoDB = new AWS.DynamoDB.DocumentClient();
+
+// DynamoDB 테이블 이름
+const TABLE_NAME = 'IPLimitStore';
+
 interface LimitInfo {
-    singleSearchCount: number;
-    bulkSearchCount: number;
-    lastReset: Date;
-  }
-  
-  interface LimitCheckResult {
-    success: boolean;
-    message?: string;
-  }
-  
-  interface RemainingSearches {
-    single: number;
-    bulk: number;
-    isLimited: boolean;
-  }
-  
-  // 글로벌 저장소 설정
-  const globalForIPLimit = global as { ipLimitStore?: Map<string, LimitInfo> };
-  if (!globalForIPLimit.ipLimitStore) {
-    globalForIPLimit.ipLimitStore = new Map<string, LimitInfo>();
-  }
-  
-  const ipLimitStore = globalForIPLimit.ipLimitStore;
-  
-  const getClientIP = (request: Request): string => {
-    const forwardedFor = request.headers.get('x-forwarded-for');
-    if (forwardedFor) {
-      return forwardedFor.split(',')[0].trim();
-    }
-    return 'unknown';
+  singleSearchCount: number;
+  bulkSearchCount: number;
+  lastReset: string; // DynamoDB는 ISO 형식의 문자열로 날짜를 저장
+}
+
+interface LimitCheckResult {
+  success: boolean;
+  message?: string;
+}
+
+interface RemainingSearches {
+  single: number;
+  bulk: number;
+  isLimited: boolean;
+}
+
+// DynamoDB에서 IP 정보 조회
+const getIPLimitInfo = async (ip: string): Promise<LimitInfo | null> => {
+  const params = {
+    TableName: TABLE_NAME,
+    Key: { ip },
   };
-  
-  export const checkIPLimit = async (
-    request: Request, 
-    searchType: 'single' | 'bulk'
-  ): Promise<LimitCheckResult> => {
-    const RATE_LIMIT_ENABLED = process.env.NEXT_PUBLIC_RATE_LIMIT_ENABLED === 'true';
-    if (!RATE_LIMIT_ENABLED) return { success: true };
-  
-    const ip = getClientIP(request);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-  
-    let limitInfo = ipLimitStore.get(ip);
-  
-    if (!limitInfo || limitInfo.lastReset < today) {
-      limitInfo = {
-        singleSearchCount: 0,
-        bulkSearchCount: 0,
-        lastReset: today
-      };
-    }
-  
-    const limit = searchType === 'single' 
-      ? Number(process.env.NEXT_PUBLIC_SINGLE_SEARCH_DAILY_LIMIT || '10')
-      : Number(process.env.NEXT_PUBLIC_BULK_SEARCH_DAILY_LIMIT || '100');
-  
-    const count = searchType === 'single' 
-      ? limitInfo.singleSearchCount 
-      : limitInfo.bulkSearchCount;
-  
-    if (count >= limit) {
-      return {
-        success: false,
-        message: `${searchType === 'single' ? '개별' : '벌크'} 검색 일일 한도를 초과했습니다.`
-      };
-    }
-  
-    if (searchType === 'single') {
-      limitInfo.singleSearchCount++;
-    } else {
-      limitInfo.bulkSearchCount++;
-    }
-  
-    ipLimitStore.set(ip, limitInfo);
-    return { success: true };
+  const result = await dynamoDB.get(params).promise();
+  return result.Item as LimitInfo | null;
+};
+
+// DynamoDB에 IP 정보 저장
+const updateIPLimitInfo = async (ip: string, limitInfo: LimitInfo): Promise<void> => {
+  const params = {
+    TableName: TABLE_NAME,
+    Item: { ip, ...limitInfo },
   };
-  
-  export const getRemainingSearches = (request: Request): RemainingSearches => {
-    const RATE_LIMIT_ENABLED = process.env.NEXT_PUBLIC_RATE_LIMIT_ENABLED === 'true';
-    if (!RATE_LIMIT_ENABLED) {
-      return {
-        single: Infinity,
-        bulk: Infinity,
-        isLimited: false
-      };
-    }
-  
-    const ip = getClientIP(request);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-  
-    const limitInfo = ipLimitStore.get(ip);
-    const singleLimit = Number(process.env.NEXT_PUBLIC_SINGLE_SEARCH_DAILY_LIMIT || '10');
-    const bulkLimit = Number(process.env.NEXT_PUBLIC_BULK_SEARCH_DAILY_LIMIT || '100');
-  
-    if (!limitInfo || limitInfo.lastReset < today) {
-      return {
-        single: singleLimit,
-        bulk: bulkLimit,
-        isLimited: true
-      };
-    }
-  
+  await dynamoDB.put(params).promise();
+};
+
+// 검색 한도 확인
+export const checkIPLimit = async (
+  request: Request,
+  searchType: 'single' | 'bulk',
+): Promise<LimitCheckResult> => {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  const today = new Date().toISOString().split('T')[0]; // 날짜만 비교
+  const limitInfo = (await getIPLimitInfo(ip)) || {
+    singleSearchCount: 0,
+    bulkSearchCount: 0,
+    lastReset: today,
+  };
+
+  if (limitInfo.lastReset !== today) {
+    // 날짜가 변경된 경우 초기화
+    limitInfo.singleSearchCount = 0;
+    limitInfo.bulkSearchCount = 0;
+    limitInfo.lastReset = today;
+  }
+
+  const limit = searchType === 'single'
+    ? Number(process.env.NEXT_PUBLIC_SINGLE_SEARCH_DAILY_LIMIT || '10')
+    : Number(process.env.NEXT_PUBLIC_BULK_SEARCH_DAILY_LIMIT || '100');
+
+  const count = searchType === 'single'
+    ? limitInfo.singleSearchCount
+    : limitInfo.bulkSearchCount;
+
+  if (count >= limit) {
     return {
-      single: Math.max(0, singleLimit - limitInfo.singleSearchCount),
-      bulk: Math.max(0, bulkLimit - limitInfo.bulkSearchCount),
-      isLimited: true
+      success: false,
+      message: `${searchType === 'single' ? '개별' : '벌크'} 검색 일일 한도를 초과했습니다.`,
     };
+  }
+
+  if (searchType === 'single') {
+    limitInfo.singleSearchCount++;
+  } else {
+    limitInfo.bulkSearchCount++;
+  }
+
+  await updateIPLimitInfo(ip, limitInfo);
+  return { success: true };
+};
+
+// 남은 검색 횟수 반환
+export const getRemainingSearches = async (request: Request): Promise<RemainingSearches> => {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  const today = new Date().toISOString().split('T')[0];
+  const limitInfo = (await getIPLimitInfo(ip)) || {
+    singleSearchCount: 0,
+    bulkSearchCount: 0,
+    lastReset: today,
   };
+
+  const singleLimit = Number(process.env.NEXT_PUBLIC_SINGLE_SEARCH_DAILY_LIMIT || '10');
+  const bulkLimit = Number(process.env.NEXT_PUBLIC_BULK_SEARCH_DAILY_LIMIT || '100');
+
+  if (limitInfo.lastReset !== today) {
+    return { single: singleLimit, bulk: bulkLimit, isLimited: true };
+  }
+
+  return {
+    single: Math.max(0, singleLimit - limitInfo.singleSearchCount),
+    bulk: Math.max(0, bulkLimit - limitInfo.bulkSearchCount),
+    isLimited: true,
+  };
+};
