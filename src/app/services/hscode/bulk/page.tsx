@@ -337,107 +337,46 @@ const BulkHSCodePage = () => {
     fetchRemainingSearches();
   }, []);
 
-  const fetchRateLimit = async (type: 'single' | 'bulk'): Promise<{ remainingSingleSearches: number; remainingBulkSearches: number }> => {
+  const fetchHSCode = async () => {
+    if (!validateProducts()) {
+      return;
+    }
+
+    setIsLoading(true);
+    setQueryStatus("6자리 HS CODE 조회 중...");
+
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_RATE_LIMIT_API_URL; // 환경변수에서 API URL 가져오기
-      if (!apiUrl) {
-        throw new Error("Rate Limit API URL이 정의되지 않았습니다. 환경변수를 확인해주세요.");
-      }
-  
-      // API 요청
-      const response = await fetch(apiUrl, {
+      console.log('Sending products to API:', products); // 요청 데이터 확인
+      const response = await fetch('${process.env.NEXT_PUBLIC_BULK_HSCODE_API_URL}', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ type }),
-      });
-  
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Rate Limit API 요청 실패");
-      }
-  
-      const data = await response.json();
-      return {
-        remainingSingleSearches: data.remainingSingleSearches,
-        remainingBulkSearches: data.remainingBulkSearches,
-      };
-    } catch (error) {
-      console.error("Rate Limit 확인 실패:", error);
-      throw error;
-    }
-  };
-
-  const fetchHSCode = async () => {
-    // 제품 입력 검증
-    if (!validateProducts()) {
-      return;
-    }
-  
-    setIsLoading(true);
-    setQueryStatus("6자리 HS CODE 조회 중...");
-  
-    try {
-      // ====== IP 기반 횟수 차감 API 호출 ======
-      console.log("Checking remaining bulk search limit...");
-      const rateLimitData = await fetchRateLimit("bulk"); // 'bulk' 타입 조회
-      const { remainingBulkSearches } = rateLimitData;
-  
-      // 남은 횟수 확인
-      if (remainingBulkSearches <= 0) {
-        throw new Error("대량 조회 횟수를 모두 소진하였습니다.");
-      }
-  
-      console.log("남은 대량 조회 횟수:", remainingBulkSearches);
-  
-      // ====== 6자리 HS CODE API 호출 ======
-      const bulkApiUrl = process.env.NEXT_PUBLIC_BULK_HSCODE_API_URL; // 환경변수에서 API URL 가져오기
-      if (!bulkApiUrl) {
-        throw new Error("6자리 HS CODE API URL이 정의되지 않았습니다. 환경변수를 확인해주세요.");
-      }
-  
-      console.log("Sending products to API:", products); // 요청 데이터 확인
-      const response = await fetch(bulkApiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({ products }),
       });
-  
-      // 응답 처리
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "6자리 HS CODE API 요청 실패");
-      }
-  
+
       const data = await response.json();
-      console.log("API Response:", data); // API 응답 확인
-  
-      // 결과 처리
+      console.log('API Response:', data); // API 응답 확인
+      
       if (data.hscodes && Array.isArray(data.hscodes)) {
-        console.log("Setting results:", data.hscodes); // results 설정 전 데이터 확인
+        console.log('Setting results:', data.hscodes); // results 설정 전 데이터 확인
         setResults(data.hscodes);
         setQueryStatus("6자리 HS CODE 조회 완료");
       } else {
-        console.error("Invalid response format:", data);
+        console.error('Invalid response format:', data);
         setQueryStatus("조회 실패: 잘못된 응답 형식");
       }
-  
-      // 남은 횟수 업데이트
+
       await fetchRemainingSearches();
+
     } catch (error) {
-      // 오류 처리
-      console.error("Error:", error);
+      console.error('Error:', error);
       setQueryStatus("조회 실패");
-      alert(error instanceof Error ? error.message : "HS CODE 조회 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      alert('HS CODE 조회 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
     } finally {
       setIsLoading(false);
     }
   };
-
-
 
   const fetch10DigitHSCodeForSingle = async (sixDigitCode: string, productName: string) => {
     setIsLoading(true);
