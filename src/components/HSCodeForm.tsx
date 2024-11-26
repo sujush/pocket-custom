@@ -82,7 +82,7 @@ interface HSCodeAPIResponse {
   perPage: number;
 }
 
-const fetchAllPages = async (sixDigitCode: string): Promise<HSCodeResult[]> => {
+const fetchAllPages = async (searchCode: string): Promise<HSCodeResult[]> => {
   const apiUrl = process.env.NEXT_PUBLIC_HSCODE_API_URL;
   const apiKey = decodeURIComponent(process.env.NEXT_PUBLIC_HSCODE_API_KEY!);
 
@@ -97,26 +97,26 @@ const fetchAllPages = async (sixDigitCode: string): Promise<HSCodeResult[]> => {
       baseUrl.searchParams.append('perPage', '5000');
       baseUrl.searchParams.append('returnType', 'JSON');
 
-      console.log(`Fetching page ${currentPage} for HS Code: ${sixDigitCode}`);
+      console.log(`Fetching page ${currentPage} for HS Code: ${searchCode}`);
 
       const response = await fetch(baseUrl.toString());
       if (!response.ok) break;
 
       const data: HSCodeAPIResponse = await response.json();
 
-      console.log('Received data structure:', JSON.stringify(data, null, 2));
-
       if (!data.data || !Array.isArray(data.data)) {
         console.error('Invalid data structure received:', data);
         break;
       }
 
-      // HS CODE 비교 로직 개선과 타입 변환
       const matchingResults = data.data
         .filter((item: HSCodeAPIItem) => {
           const itemHsCode = String(item.품목번호 || item.HS부호 || '').replace(/\D/g, '');
-          console.log(`Comparing: ${itemHsCode} with ${sixDigitCode}`);
-          return itemHsCode.startsWith(sixDigitCode);
+          console.log(`Comparing: ${itemHsCode} with ${searchCode}`);
+          // 5단위 또는 6단위 검색 로직
+          return searchCode.length === 5 
+            ? itemHsCode.substring(0, 5) === searchCode
+            : itemHsCode.substring(0, 6) === searchCode;
         })
         .map((item: HSCodeAPIItem): HSCodeResult => ({
           품목번호: String(item.품목번호 || item.HS부호 || '').padStart(10, '0'),
@@ -147,7 +147,7 @@ const fetchAllPages = async (sixDigitCode: string): Promise<HSCodeResult[]> => {
   }
 
   if (allResults.length === 0) {
-    throw new Error(`${sixDigitCode}에 해당하는 HS CODE를 찾을 수 없습니다. 다른 검색어로 다시 시도해주세요.`);
+    throw new Error(`${searchCode}에 해당하는 HS CODE를 찾을 수 없습니다. 다른 검색어로 다시 시도해주세요.`);
   }
 
   return allResults;
@@ -276,12 +276,26 @@ export const HSCodeForm: React.FC = () => {
 
       setHsCode(sixDigitCode);
 
-      const allResults: HSCodeResult[] = await fetchAllPages(sixDigitCode);
+      const handleHSCodeSearch = (sixDigitCode: string) => {
+        // 마지막 숫자가 0인지 확인
+        const lastDigit = sixDigitCode[5];
+        const searchCode = lastDigit === '0' 
+          ? sixDigitCode.substring(0, 5)  // 9405.40 → 94054
+          : sixDigitCode;                 // 9403.82 → 940382
+
+        return searchCode;
+      };
+
+      const searchCode = handleHSCodeSearch(sixDigitCode);
+      const allResults: HSCodeResult[] = await fetchAllPages(searchCode);
 
       const filteredResults = allResults
         .filter(item => {
           const hsCode = String(item.품목번호).padStart(10, '0');
-          return hsCode.substring(0, 6) === sixDigitCode;
+          const searchPattern = searchCode.length === 5 
+            ? hsCode.substring(0, 5) === searchCode  // 5단위 검색일 경우
+            : hsCode.substring(0, 6) === searchCode; // 6단위 검색일 경우
+          return searchPattern;
         })
         .map(item => ({
           품목번호: String(item.HS부호).padStart(10, '0'),
