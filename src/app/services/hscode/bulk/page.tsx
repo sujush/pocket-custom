@@ -363,14 +363,14 @@ const BulkHSCodePage = () => {
       const apiUrl = process.env.NEXT_PUBLIC_HSCODE_API_URL;
       const serviceKey = decodeURIComponent(process.env.NEXT_PUBLIC_HSCODE_API_KEY!);
   
-      // 6자리 코드를 정리: 숫자만 포함하고, 길이가 정확히 6자리인지 확인
+      // 6자리 코드를 정리하고 검색 코드 결정
       const cleanCode = sixDigitCode.replace(/[^\d]/g, '').slice(0, 6);
+      const lastDigit = cleanCode[5];
+      const searchCode = lastDigit === '0' 
+        ? cleanCode.slice(0, 5)  // 마지막 숫자가 0이면 5자리로 검색
+        : cleanCode;             // 아니면 6자리 그대로 검색
   
-      if (cleanCode.length !== 6) {
-        console.error(`잘못된 6자리 코드: ${sixDigitCode}`);
-        setQueryStatus(`${productName}의 6자리 코드가 잘못되었습니다.`);
-        return;
-      }
+      console.log(`Original code: ${sixDigitCode}, Search code: ${searchCode}`);
   
       const filteredItems: GroupedItem[] = [];
       let currentPage = 1;
@@ -383,11 +383,11 @@ const BulkHSCodePage = () => {
           'page': String(currentPage),
           'perPage': '5000',
           'returnType': 'JSON',
-          'HS부호': cleanCode, // 정리된 6자리 코드를 사용
+          'HS부호': searchCode,
         });
   
         const url = `${apiUrl}?${params.toString()}`;
-        console.log(`Fetching page ${currentPage} with code ${cleanCode}`);
+        console.log(`Fetching page ${currentPage} with code ${searchCode}`);
   
         const response = await fetchWithTimeout(url);
         const pageData: APIResponse = await response.json();
@@ -400,12 +400,15 @@ const BulkHSCodePage = () => {
         const matchingItems = pageData.data
           .filter((item: HSCodeItem) => {
             const itemHSCode = String(item.HS부호).padStart(10, '0');
-            return itemHSCode.startsWith(cleanCode); // 정확히 6자리로 시작하는지 확인
+            // 검색 코드 길이에 따라 다른 매칭 로직 적용
+            return searchCode.length === 5 
+              ? itemHSCode.substring(0, 5) === searchCode  // 5자리 검색일 경우
+              : itemHSCode.substring(0, 6) === cleanCode;  // 6자리 검색일 경우
           })
           .map((item: HSCodeItem) => ({
             name: item.한글품목명 || 'N/A',
             hscode: String(item.HS부호),
-            description: item.규격사항내용 || '', // description 필드 추가
+            description: item.규격사항내용 || '',
           }));
   
         filteredItems.push(...matchingItems);
@@ -425,6 +428,11 @@ const BulkHSCodePage = () => {
       console.log(`Total pages processed: ${currentPage - 1}`);
       console.log(`Final results for ${sixDigitCode}:`, filteredItems);
   
+      // 결과가 없는 경우 에러 처리
+      if (filteredItems.length === 0) {
+        throw new Error(`${productName}에 대한 10자리 HS CODE를 찾을 수 없습니다.`);
+      }
+  
       setResults(prev => prev.map(result => {
         if (!('items' in result) && result.hscode === sixDigitCode) {
           return {
@@ -438,12 +446,11 @@ const BulkHSCodePage = () => {
       setQueryStatus(`${productName}의 10자리 코드 조회 완료`);
     } catch (error) {
       console.error('Error:', error);
-      setQueryStatus('조회 실패');
+      setQueryStatus(`${productName} 조회 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
     } finally {
       setIsLoading(false);
     }
   };
-  
 
   const fetch10DigitHSCodeForAll = async () => {
     setIsLoading(true);
