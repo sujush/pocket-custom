@@ -279,36 +279,39 @@ const BulkHSCodePage = () => {
     if (!validateProducts()) {
       return;
     }
-
+  
     setIsLoading(true);
     setQueryStatus("6자리 HS CODE 조회 중...");
-
+  
     try {
-      console.log('Sending products to API:', products);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BULK_HSCODE_API_URL}`, {
+      const response = await fetch('/api/hscode/bulk', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ products }),
       });
-
+  
       const data = await response.json();
+      
+      // 응답 구조 확인
       console.log('API Response:', data);
-
-      // 응답 구조를 로그로 확인
-      console.log('Response structure:', JSON.stringify(data, null, 2));
-
-      // 직접 data 사용 시도
-      if (data && Array.isArray(data)) {
-        console.log('Setting results:', data);
-        setResults(data);
+  
+      // data.body가 문자열인 경우 파싱
+      let result;
+      if (typeof data.body === 'string') {
+        result = JSON.parse(data.body);
+      } else {
+        result = data;
+      }
+  
+      if (result.hscodes) {
+        setResults(result.hscodes);
         setQueryStatus("6자리 HS CODE 조회 완료");
       } else {
-        console.error('Invalid response format:', data);
+        console.error('Invalid response format:', result);
         setQueryStatus("조회 실패: 잘못된 응답 형식");
       }
-
     } catch (error) {
       console.error('Error:', error);
       setQueryStatus("조회 실패");
