@@ -347,7 +347,7 @@ const BulkHSCodePage = () => {
 
     try {
       console.log('Sending products to API:', products); // 요청 데이터 확인
-      const response = await fetch('${process.env.NEXT_PUBLIC_BULK_HSCODE_API_URL}', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BULK_HSCODE_API_URL}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
