@@ -296,24 +296,18 @@ const BulkHSCodePage = () => {
       const data = await response.json();
       console.log('API Response:', data);
 
-      if (data.body) {
-        const parsedBody = JSON.parse(data.body);
-        console.log('Parsed body:', parsedBody);
+      // 응답 구조를 로그로 확인
+      console.log('Response structure:', JSON.stringify(data, null, 2));
 
-        if (parsedBody.hscodes && Array.isArray(parsedBody.hscodes)) {
-          console.log('Setting results:', parsedBody.hscodes);
-          setResults(parsedBody.hscodes);
-          setQueryStatus("6자리 HS CODE 조회 완료");
-        } else {
-          console.error('Invalid response format:', parsedBody);
-          setQueryStatus("조회 실패: 잘못된 응답 형식");
-        }
+      // 직접 data 사용 시도
+      if (data && Array.isArray(data)) {
+        console.log('Setting results:', data);
+        setResults(data);
+        setQueryStatus("6자리 HS CODE 조회 완료");
       } else {
         console.error('Invalid response format:', data);
         setQueryStatus("조회 실패: 잘못된 응답 형식");
       }
-
-      await fetchRemainingSearches();
 
     } catch (error) {
       console.error('Error:', error);
