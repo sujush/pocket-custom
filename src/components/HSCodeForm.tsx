@@ -295,7 +295,7 @@ export const HSCodeForm: React.FC = () => {
         }
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/hscode`, {
+      const response = await fetch('/api/hscode', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
