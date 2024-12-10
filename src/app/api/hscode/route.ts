@@ -21,8 +21,8 @@ export async function POST(request: Request) {
 
     const data = await response.json();
     return NextResponse.json(data, { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error calling Lambda:', error);
-    return NextResponse.json({ error: true, message: error.message || 'Server Error' }, { status: 500 });
+    return NextResponse.json({ error: true, message: (error as Error).message || 'Server Error' }, { status: 500 });
   }
 }
