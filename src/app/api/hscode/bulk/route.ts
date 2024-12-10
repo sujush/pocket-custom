@@ -1,49 +1,63 @@
+// src/app/api/hscode/bulk/route.ts
+
 import { NextResponse } from 'next/server';
-import { checkIPLimit, getRemainingSearches } from '@/lib/utils/rateLimit';
+
+// 최대 제품 개수 제한을 설정합니다. 이 값을 바꾸면 조회 가능한 제품 개수가 변경됩니다.
+const MAX_PRODUCTS_LIMIT = 10;
 
 export async function POST(request: Request) {
-  try {
-    // 검색 횟수 제한 확인
-    const limitCheck = await checkIPLimit(request, 'bulk');
-    if (!limitCheck.success) {
-      return NextResponse.json(
-        { message: limitCheck.message },
-        { status: 429 }
-      );
-    }
+  const { products } = await request.json();
 
-    // 클라이언트 요청 데이터 처리
-    const { products } = await request.json();
-    if (!products || !Array.isArray(products)) {
-      return NextResponse.json(
-        { message: '잘못된 요청 데이터입니다.' },
-        { status: 400 }
-      );
-    }
-
-    // Lambda 함수를 호출해 OpenAI API를 통해 6자리 HS CODE 조회
-    const lambdaResponse = await fetch(process.env.LAMBDA_BULK_ENDPOINT!, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ products }),
-    });
-
-    if (!lambdaResponse.ok) {
-      throw new Error('Lambda 함수 호출 실패');
-    }
-
-    const responseData = await lambdaResponse.json();
-
-    // 남은 검색 횟수 계산 및 반환
-    const remainingSearches = await getRemainingSearches(request);
-    return NextResponse.json({
-      hscodes: responseData,
-      remaining: remainingSearches,
-    });
-  } catch (error) {
+  // 입력된 제품 개수가 최대 개수를 초과하면 에러를 반환합니다.
+  if (products.length > MAX_PRODUCTS_LIMIT) {
     return NextResponse.json(
-      { message: error instanceof Error ? error.message : '서버 오류가 발생했습니다.' },
-      { status: 500 }
+      { error: `제품의 개수가 너무 많습니다. 최대 ${MAX_PRODUCTS_LIMIT}개까지 조회할 수 있습니다.` },
+      { status: 400 }
     );
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
+  }
+
+  try {
+    // 각 제품별로 독립적인 API 요청을 보내고, 모든 요청이 완료될 때까지 기다립니다.
+    const hscodes = await Promise.all(products.map(async (product: { name: string; material: string; description: string; }) => {
+      const prompt = `
+        너는 무역을 전공한 사람이고, HS CODE 품목분류의 전문가야. 제품의 상세사항에 기반해서
+        오직 6자리의 HS CODE를 제공해. 다른 부가적인 말은 필요없이 6자리의 HS CODE 값만 도출해.
+
+        해당 제품의 이름은 ${product.name} 입니다.
+        해당 제품의 재질은 ${product.material} 입니다.
+        해당 제품에 대해 설명할 기타 내용은 ${product.description} 입니다.
+      `;
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4',
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 100,
+          temperature: 0.5,
+        }),
+      });
+
+      const data = await response.json();
+      const hscode = data.choices[0].message.content.trim();
+
+      // 제품명과 HS CODE를 함께 반환
+      return { name: product.name, hscode };
+    }));
+
+    // 모든 HS CODE 응답을 JSON 형태로 반환
+    return NextResponse.json({ hscodes });
+  } catch (error) {
+    console.error('Error fetching data from OpenAI:', error);  // 상세 오류 로그
+    return NextResponse.json({ error: 'Failed to fetch HS CODE' }, { status: 500 });
   }
 }
