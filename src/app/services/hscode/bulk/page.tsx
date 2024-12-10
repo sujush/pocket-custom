@@ -307,6 +307,7 @@ const BulkHSCodePage = () => {
   
       if (result.hscodes) {
         setResults(result.hscodes);
+        setRemainingSearches(data.remaining); // 남은 검색 횟수 갱신
         setQueryStatus("6자리 HS CODE 조회 완료");
       } else {
         console.error('Invalid response format:', result);
