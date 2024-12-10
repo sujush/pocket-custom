@@ -296,6 +296,10 @@ const BulkHSCodePage = () => {
       
       // 응답 구조 확인
       console.log('API Response:', data);
+
+      if (data.remaining) {
+        setRemainingSearches(data.remaining); // 남은 검색 횟수 갱신
+      }
   
       // data.body가 문자열인 경우 파싱
       let result;

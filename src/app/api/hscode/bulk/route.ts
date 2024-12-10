@@ -1,14 +1,13 @@
 // src/app/api/hscode/bulk/route.ts
-
 import { NextResponse } from 'next/server';
+import { getRemainingSearches, checkIPLimit } from '@/lib/utils/rateLimit';
 
-// 최대 제품 개수 제한을 설정합니다. 이 값을 바꾸면 조회 가능한 제품 개수가 변경됩니다.
 const MAX_PRODUCTS_LIMIT = 10;
 
 export async function POST(request: Request) {
   const { products } = await request.json();
 
-  // 입력된 제품 개수가 최대 개수를 초과하면 에러를 반환합니다.
+  // 입력된 제품 개수 제한 확인
   if (products.length > MAX_PRODUCTS_LIMIT) {
     return NextResponse.json(
       { error: `제품의 개수가 너무 많습니다. 최대 ${MAX_PRODUCTS_LIMIT}개까지 조회할 수 있습니다.` },
@@ -22,7 +21,15 @@ export async function POST(request: Request) {
   }
 
   try {
-    // 각 제품별로 독립적인 API 요청을 보내고, 모든 요청이 완료될 때까지 기다립니다.
+    // 검색 제한 확인
+    const limitCheck = await checkIPLimit(request, 'bulk');
+    if (!limitCheck.success) {
+      return NextResponse.json(
+        { message: limitCheck.message },
+        { status: 429 }
+      );
+    }
+
     const hscodes = await Promise.all(products.map(async (product: { name: string; material: string; description: string; }) => {
       const prompt = `
         너는 무역을 전공한 사람이고, HS CODE 품목분류의 전문가야. 제품의 상세사항에 기반해서
@@ -40,7 +47,7 @@ export async function POST(request: Request) {
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: 'gpt-4',
+          model: 'gpt-3.5-turbo-0125',
           messages: [{ role: 'user', content: prompt }],
           max_tokens: 100,
           temperature: 0.5,
@@ -50,14 +57,18 @@ export async function POST(request: Request) {
       const data = await response.json();
       const hscode = data.choices[0].message.content.trim();
 
-      // 제품명과 HS CODE를 함께 반환
       return { name: product.name, hscode };
     }));
 
-    // 모든 HS CODE 응답을 JSON 형태로 반환
-    return NextResponse.json({ hscodes });
+    // 남은 검색 횟수 확인 및 응답에 포함
+    const remainingSearches = await getRemainingSearches(request);
+
+    return NextResponse.json({
+      hscodes,
+      remaining: remainingSearches, // 남은 검색 횟수 포함
+    });
   } catch (error) {
-    console.error('Error fetching data from OpenAI:', error);  // 상세 오류 로그
+    console.error('Error fetching data from OpenAI:', error);
     return NextResponse.json({ error: 'Failed to fetch HS CODE' }, { status: 500 });
   }
 }
