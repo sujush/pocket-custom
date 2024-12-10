@@ -4,7 +4,7 @@ import { getRemainingSearches } from '@/lib/utils/rateLimit';
 
 export async function GET(request: Request) {
   try {
-    const remaining = getRemainingSearches(request);
+    const remaining = await getRemainingSearches(request);
     return NextResponse.json(remaining);
   } catch (error) {
     return NextResponse.json(
