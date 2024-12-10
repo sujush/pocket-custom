@@ -187,19 +187,9 @@ export const HSCodeForm: React.FC = () => {
 
   const fetchRemainingSearches = async (): Promise<void> => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_RATE_LIMIT_API_URL}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            queryStringParameters: { type: 'single' },
-            requestContext: { identity: { sourceIp: '192.168.0.1' } }, // 실제 IP는 프록시가 추가되면 동적으로 변경 가능
-          }),
-        }
-      );
+      const response = await fetch('/api/hscode/remaining-searches', {
+        method: 'GET',
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
@@ -312,28 +302,45 @@ export const HSCodeForm: React.FC = () => {
         },
         body: JSON.stringify({ ...product, functions }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'AI API 요청 실패');
+      
+      // 검색 한도 초과 처리
+      if (response.status === 429) {
+        const data = await response.json();
+        setError(data.message || '검색 한도를 초과했습니다.'); // 한도 초과 메시지 표시
+        setIsSubmitting(false); // 버튼 비활성화 해제
+        return;
       }
-
+      
+      // 검색 실패 처리
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || '검색에 실패했습니다.');
+      }
+      
       const data = await response.json();
-
+      
       console.log("Received HS Code:", data.hsCode); // AI에서 가져온 HS Code가 6자리인지 확인합니다.
-
+      
       if (!data.hsCode) {
         throw new Error('HS CODE를 받아오지 못했습니다');
       }
-
+      
       const sixDigitCode: string = data.hsCode.trim().substring(0, 6);
-
+      
       if (!/^\d{6}$/.test(sixDigitCode)) {
         throw new Error('유효하지 않은 HS CODE 형식입니다');
       }
-
+      
       setHsCode(sixDigitCode);
-
+      
+      // 남은 검색 횟수 갱신 추가
+      if (data.remainingSearches) {
+        setRemainingSearches((prev) => ({
+          ...prev,
+          single: data.remainingSearches, // 응답에서 반환된 남은 검색 횟수 갱신
+        }));
+      }
+      
       const handleHSCodeSearch = (sixDigitCode: string) => {
         // 마지막 숫자가 0인지 확인
         const lastDigit = sixDigitCode[5];
