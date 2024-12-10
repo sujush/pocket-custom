@@ -346,7 +346,7 @@ const BulkHSCodePage = () => {
     setQueryStatus("6자리 HS CODE 조회 중...");
 
     try {
-      console.log('Sending products to API:', products); // 요청 데이터 확인
+      console.log('Sending products to API:', products);
       const response = await fetch(`${process.env.NEXT_PUBLIC_BULK_HSCODE_API_URL}`, {
         method: 'POST',
         headers: {
@@ -356,14 +356,17 @@ const BulkHSCodePage = () => {
       });
 
       const data = await response.json();
-      console.log('API Response:', data); // API 응답 확인
-      
-      if (data.hscodes && Array.isArray(data.hscodes)) {
-        console.log('Setting results:', data.hscodes); // results 설정 전 데이터 확인
-        setResults(data.hscodes);
+      console.log('API Response:', data);
+
+      const parsedBody = JSON.parse(data.body);  // 추가된 부분
+      console.log('Parsed body:', parsedBody);   // 디버깅용
+
+      if (parsedBody.hscodes && Array.isArray(parsedBody.hscodes)) {
+        console.log('Setting results:', parsedBody.hscodes);
+        setResults(parsedBody.hscodes);
         setQueryStatus("6자리 HS CODE 조회 완료");
       } else {
-        console.error('Invalid response format:', data);
+        console.error('Invalid response format:', parsedBody);
         setQueryStatus("조회 실패: 잘못된 응답 형식");
       }
 
@@ -376,334 +379,333 @@ const BulkHSCodePage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
 
-  const fetch10DigitHSCodeForSingle = async (sixDigitCode: string, productName: string) => {
-    setIsLoading(true);
-    setQueryStatus(`${productName}의 10자리 코드 조회 중...`);
+    const fetch10DigitHSCodeForSingle = async (sixDigitCode: string, productName: string) => {
+      setIsLoading(true);
+      setQueryStatus(`${productName}의 10자리 코드 조회 중...`);
 
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_HSCODE_API_URL;
-      const serviceKey = decodeURIComponent(process.env.NEXT_PUBLIC_HSCODE_API_KEY!);
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_HSCODE_API_URL;
+        const serviceKey = decodeURIComponent(process.env.NEXT_PUBLIC_HSCODE_API_KEY!);
 
-      // 6자리 코드를 정리하고 검색 코드 결정
-      const cleanCode = sixDigitCode.replace(/[^\d]/g, '').slice(0, 6);
-      const lastDigit = cleanCode[5];
-      const searchCode = lastDigit === '0'
-        ? cleanCode.slice(0, 5)  // 마지막 숫자가 0이면 5자리로 검색
-        : cleanCode;             // 아니면 6자리 그대로 검색
+        // 6자리 코드를 정리하고 검색 코드 결정
+        const cleanCode = sixDigitCode.replace(/[^\d]/g, '').slice(0, 6);
+        const lastDigit = cleanCode[5];
+        const searchCode = lastDigit === '0'
+          ? cleanCode.slice(0, 5)  // 마지막 숫자가 0이면 5자리로 검색
+          : cleanCode;             // 아니면 6자리 그대로 검색
 
-      console.log(`Original code: ${sixDigitCode}, Search code: ${searchCode}`);
+        console.log(`Original code: ${sixDigitCode}, Search code: ${searchCode}`);
 
-      const filteredItems: GroupedItem[] = [];
-      let currentPage = 1;
-      let totalProcessed = 0;
-      let hasMoreData = true;
+        const filteredItems: GroupedItem[] = [];
+        let currentPage = 1;
+        let totalProcessed = 0;
+        let hasMoreData = true;
 
-      while (hasMoreData) {
-        const params = new URLSearchParams({
-          'serviceKey': serviceKey,
-          'page': String(currentPage),
-          'perPage': '5000',
-          'returnType': 'JSON',
-          'HS부호': searchCode,
-        });
+        while (hasMoreData) {
+          const params = new URLSearchParams({
+            'serviceKey': serviceKey,
+            'page': String(currentPage),
+            'perPage': '5000',
+            'returnType': 'JSON',
+            'HS부호': searchCode,
+          });
 
-        const url = `${apiUrl}?${params.toString()}`;
-        console.log(`Fetching page ${currentPage} with code ${searchCode}`);
+          const url = `${apiUrl}?${params.toString()}`;
+          console.log(`Fetching page ${currentPage} with code ${searchCode}`);
 
-        const response = await fetchWithTimeout(url);
-        const pageData: APIResponse = await response.json();
+          const response = await fetchWithTimeout(url);
+          const pageData: APIResponse = await response.json();
 
-        if (!pageData.data || pageData.data.length === 0) {
-          hasMoreData = false;
-          break;
+          if (!pageData.data || pageData.data.length === 0) {
+            hasMoreData = false;
+            break;
+          }
+
+          const matchingItems = pageData.data
+            .filter((item: HSCodeItem) => {
+              const itemHSCode = String(item.HS부호).padStart(10, '0');
+              // 검색 코드 길이에 따라 다른 매칭 로직 적용
+              return searchCode.length === 5
+                ? itemHSCode.substring(0, 5) === searchCode  // 5자리 검색일 경우
+                : itemHSCode.substring(0, 6) === cleanCode;  // 6자리 검색일 경우
+            })
+            .map((item: HSCodeItem) => ({
+              name: item.한글품목명 || 'N/A',
+              hscode: String(item.HS부호),
+              description: item.규격사항내용 || '',
+            }));
+
+          filteredItems.push(...matchingItems);
+
+          totalProcessed += pageData.data.length;
+          currentPage++;
+
+          if (totalProcessed >= pageData.matchCount) {
+            hasMoreData = false;
+          }
+
+          if (matchingItems.length > 0) {
+            console.log(`Found ${matchingItems.length} matching items on page ${currentPage - 1}`);
+          }
         }
 
-        const matchingItems = pageData.data
-          .filter((item: HSCodeItem) => {
-            const itemHSCode = String(item.HS부호).padStart(10, '0');
-            // 검색 코드 길이에 따라 다른 매칭 로직 적용
-            return searchCode.length === 5
-              ? itemHSCode.substring(0, 5) === searchCode  // 5자리 검색일 경우
-              : itemHSCode.substring(0, 6) === cleanCode;  // 6자리 검색일 경우
-          })
-          .map((item: HSCodeItem) => ({
-            name: item.한글품목명 || 'N/A',
-            hscode: String(item.HS부호),
-            description: item.규격사항내용 || '',
-          }));
+        console.log(`Total pages processed: ${currentPage - 1}`);
+        console.log(`Final results for ${sixDigitCode}:`, filteredItems);
 
-        filteredItems.push(...matchingItems);
-
-        totalProcessed += pageData.data.length;
-        currentPage++;
-
-        if (totalProcessed >= pageData.matchCount) {
-          hasMoreData = false;
+        // 결과가 없는 경우 에러 처리
+        if (filteredItems.length === 0) {
+          throw new Error(`${productName}에 대한 10자리 HS CODE를 찾을 수 없습니다.`);
         }
 
-        if (matchingItems.length > 0) {
-          console.log(`Found ${matchingItems.length} matching items on page ${currentPage - 1}`);
-        }
-      }
-
-      console.log(`Total pages processed: ${currentPage - 1}`);
-      console.log(`Final results for ${sixDigitCode}:`, filteredItems);
-
-      // 결과가 없는 경우 에러 처리
-      if (filteredItems.length === 0) {
-        throw new Error(`${productName}에 대한 10자리 HS CODE를 찾을 수 없습니다.`);
-      }
-
-      setResults(prev => prev.map(result => {
-        if (!('items' in result) && result.hscode === sixDigitCode) {
-          return {
-            title: result.name,
-            items: filteredItems,
-          };
-        }
-        return result;
-      }));
-
-      setQueryStatus(`${productName}의 10자리 코드 조회 완료`);
-      await fetchRemainingSearches();
-    } catch (error) {
-      console.error('Error:', error);
-      setQueryStatus(`${productName} 조회 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetch10DigitHSCodeForAll = async () => {
-    setIsLoading(true);
-    setQueryStatus('전체 10자리 HS CODE 조회 중...');
-
-    try {
-      // 6자리 코드와 이름 추출
-      const sixDigitCodes = results
-        .filter((result): result is InitialResult => 'hscode' in result)
-        .map(result => ({
-          code: result.hscode.replace(/[^\d]/g, ''), // 숫자만 포함
-          name: result.name,
+        setResults(prev => prev.map(result => {
+          if (!('items' in result) && result.hscode === sixDigitCode) {
+            return {
+              title: result.name,
+              items: filteredItems,
+            };
+          }
+          return result;
         }));
 
-      if (sixDigitCodes.length === 0) {
-        setQueryStatus('조회할 6자리 코드가 없습니다.');
-        return;
+        setQueryStatus(`${productName}의 10자리 코드 조회 완료`);
+        await fetchRemainingSearches();
+      } catch (error) {
+        console.error('Error:', error);
+        setQueryStatus(`${productName} 조회 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-      console.log('전체 조회 대상:', sixDigitCodes);
+    const fetch10DigitHSCodeForAll = async () => {
+      setIsLoading(true);
+      setQueryStatus('전체 10자리 HS CODE 조회 중...');
 
-      // 병렬로 10자리 조회 수행
-      const allResults = await Promise.allSettled(
-        sixDigitCodes.map(({ code, name }) =>
-          fetch10DigitHSCodeForSingle(code, name)
-        )
-      );
+      try {
+        // 6자리 코드와 이름 추출
+        const sixDigitCodes = results
+          .filter((result): result is InitialResult => 'hscode' in result)
+          .map(result => ({
+            code: result.hscode.replace(/[^\d]/g, ''), // 숫자만 포함
+            name: result.name,
+          }));
 
-      // 처리 결과 정리
-      const successCount = allResults.filter(result => result.status === 'fulfilled').length;
-      const failureCount = allResults.length - successCount;
+        if (sixDigitCodes.length === 0) {
+          setQueryStatus('조회할 6자리 코드가 없습니다.');
+          return;
+        }
 
-      console.log(`전체 조회 성공: ${successCount}, 실패: ${failureCount}`);
-      setQueryStatus('전체 10자리 HS CODE 조회 완료!');
-      await fetchRemainingSearches();
-    } catch (error) {
-      console.error('전체 조회 실패:', error);
-      setQueryStatus('전체 조회 실패');
-      alert('전체 조회 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        console.log('전체 조회 대상:', sixDigitCodes);
+
+        // 병렬로 10자리 조회 수행
+        const allResults = await Promise.allSettled(
+          sixDigitCodes.map(({ code, name }) =>
+            fetch10DigitHSCodeForSingle(code, name)
+          )
+        );
+
+        // 처리 결과 정리
+        const successCount = allResults.filter(result => result.status === 'fulfilled').length;
+        const failureCount = allResults.length - successCount;
+
+        console.log(`전체 조회 성공: ${successCount}, 실패: ${failureCount}`);
+        setQueryStatus('전체 10자리 HS CODE 조회 완료!');
+        await fetchRemainingSearches();
+      } catch (error) {
+        console.error('전체 조회 실패:', error);
+        setQueryStatus('전체 조회 실패');
+        alert('전체 조회 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
 
 
-  console.log('Rendering with results:', results); // 렌더링 시 results 상태 확인
+    console.log('Rendering with results:', results); // 렌더링 시 results 상태 확인
 
-  return (
-    <div className="flex min-h-screen bg-gray-100">
-      <div className="w-1/2 p-4 bg-white">
-        <RemainingSearchesDisplay remaining={remainingSearches} />
-        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md shadow-sm">
-          <p>이곳은 사용자가 제품별로 HS CODE를 조회할 수 있는 기능입니다.</p>
-          <p>좌측에서 제품 정보를 입력하고, 조회 버튼을 클릭하세요.</p>
-          <p>최대 10개까지 입력 가능합니다. 엑셀 양식을 활용하세요</p>
-          <p>엑셀 파일을 업로드하면 파일의 내용이 자동 입력됩니다.</p>
-          <p>조회된 HS CODE는 우측 결과 창에 표시됩니다.</p>
-        </div>
+    return (
+      <div className="flex min-h-screen bg-gray-100">
+        <div className="w-1/2 p-4 bg-white">
+          <RemainingSearchesDisplay remaining={remainingSearches} />
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md shadow-sm">
+            <p>이곳은 사용자가 제품별로 HS CODE를 조회할 수 있는 기능입니다.</p>
+            <p>좌측에서 제품 정보를 입력하고, 조회 버튼을 클릭하세요.</p>
+            <p>최대 10개까지 입력 가능합니다. 엑셀 양식을 활용하세요</p>
+            <p>엑셀 파일을 업로드하면 파일의 내용이 자동 입력됩니다.</p>
+            <p>조회된 HS CODE는 우측 결과 창에 표시됩니다.</p>
+          </div>
 
-        <div className="mb-4 flex items-center justify-between">
-          <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="block" />
-          <button
-            onClick={downloadSampleExcel}
-            className="text-blue-500 hover:text-blue-600 flex items-center"
-          >
-            <span className="mr-1">📥</span>
-            엑셀 입력 양식 다운로드
-          </button>
-        </div>
-
-        <div className="bg-white p-4 rounded-md shadow-sm">
-          {products.map((product, index) => (
-            <div key={index} className="mb-4 border p-4 rounded-md">
-              <label className="block mb-2">제품명</label>
-              <input
-                type="text"
-                value={product.name}
-                onChange={(e) => handleProductChange(index, 'name', e.target.value)}
-                className="w-full p-2 mb-4 border rounded-md"
-                placeholder="제품명을 입력하세요"
-              />
-
-              <label className="block mb-2">재질</label>
-              <select
-                value={product.material}
-                onChange={(e) => handleProductChange(index, 'material', e.target.value)}
-                className="w-full p-2 mb-4 border rounded-md"
-              >
-                <option value="">재질을 선택하세요</option>
-                {Object.entries(MATERIAL_CODES).map(([code, name]) => (
-                  <option key={code} value={name}>{name}</option>
-                ))}
-              </select>
-
-              <label className="block mb-2">기타</label>
-              <textarea
-                value={product.description}
-                onChange={(e) => handleProductChange(index, 'description', e.target.value)}
-                className="w-full p-2 border rounded-md"
-                placeholder="추가 설명을 입력하세요"
-              />
-              <button onClick={() => removeProduct(index)} className="text-red-500 mt-2">
-                삭제
-              </button>
-            </div>
-          ))}
-
-          <div className="flex items-center justify-between">
-            <button onClick={addProduct} className="px-4 py-2 bg-blue-500 text-white rounded-md">
-              + 제품 추가
-            </button>
-            <button onClick={fetchHSCode} className="px-4 py-2 bg-green-500 text-white rounded-md">
-              조회
+          <div className="mb-4 flex items-center justify-between">
+            <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="block" />
+            <button
+              onClick={downloadSampleExcel}
+              className="text-blue-500 hover:text-blue-600 flex items-center"
+            >
+              <span className="mr-1">📥</span>
+              엑셀 입력 양식 다운로드
             </button>
           </div>
-        </div>
-      </div>
 
-      <div className="w-1/2 p-4 bg-white">
-        <div className="bg-white p-4 rounded-md shadow-sm">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="font-bold">조회 결과</h2>
-            {results.length > 0 && (
-              <div className="flex space-x-4"> {/* 수정: 두 버튼을 감싸는 컨테이너 추가 */}
-                {/* 여기서부터 수정 시작 */}
-                <button
-                  onClick={fetch10DigitHSCodeForAll} // 전체 10자리 조회 함수 연결
-                  className="px-4 py-2 mb-4 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-                >
-                  10자리 전체 조회하기
-                </button>
-                {/* 수정 끝 */}
+          <div className="bg-white p-4 rounded-md shadow-sm">
+            {products.map((product, index) => (
+              <div key={index} className="mb-4 border p-4 rounded-md">
+                <label className="block mb-2">제품명</label>
+                <input
+                  type="text"
+                  value={product.name}
+                  onChange={(e) => handleProductChange(index, 'name', e.target.value)}
+                  className="w-full p-2 mb-4 border rounded-md"
+                  placeholder="제품명을 입력하세요"
+                />
 
-                <button
-                  onClick={downloadSelectedItems} // 선택 항목 다운로드 함수 호출
-                  className="px-4 py-2 mb-4 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+                <label className="block mb-2">재질</label>
+                <select
+                  value={product.material}
+                  onChange={(e) => handleProductChange(index, 'material', e.target.value)}
+                  className="w-full p-2 mb-4 border rounded-md"
                 >
-                  📥 선택 항목 다운로드
+                  <option value="">재질을 선택하세요</option>
+                  {Object.entries(MATERIAL_CODES).map(([code, name]) => (
+                    <option key={code} value={name}>{name}</option>
+                  ))}
+                </select>
+
+                <label className="block mb-2">기타</label>
+                <textarea
+                  value={product.description}
+                  onChange={(e) => handleProductChange(index, 'description', e.target.value)}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="추가 설명을 입력하세요"
+                />
+                <button onClick={() => removeProduct(index)} className="text-red-500 mt-2">
+                  삭제
                 </button>
               </div>
-            )}
+            ))}
+
+            <div className="flex items-center justify-between">
+              <button onClick={addProduct} className="px-4 py-2 bg-blue-500 text-white rounded-md">
+                + 제품 추가
+              </button>
+              <button onClick={fetchHSCode} className="px-4 py-2 bg-green-500 text-white rounded-md">
+                조회
+              </button>
+            </div>
           </div>
-
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center space-y-2 p-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              <p className="text-sm text-gray-500">조회 중...</p>
-            </div>
-          ) : results && results.length > 0 ? (
-            <>
-              {results.map((result, index) => (
-                <div key={index} className="mb-4 p-4 border rounded-md bg-white shadow-sm">
-                  {'items' in result ? (
-                    <>
-                      <div className="flex justify-between items-center mb-4">
-                        <p className="font-bold text-lg">{result.title}</p>
-                        <button
-                          onClick={() => toggleExpand(result.title)} // 펼치기/접기 버튼에 동작 연결
-                          className="px-3 py-1 rounded-md bg-black-100 hover:bg-black-200 text-white-700" //펼치기 버튼 색상수정 
-                        >
-                          {expandedResults[result.title] ? '접기' : '펼치기'}
-                        </button>
-                      </div>
-                      {expandedResults[result.title] && (
-                        <div className="space-y-2">
-                          {result.items?.map((item, itemIndex) => (
-                            <div key={itemIndex} className="pl-4 border-l-2 border-gray-200 flex justify-between items-center py-2">
-                              <div>
-                                <p>제품명: {item.name}</p>
-                                <p className="text-gray-700">HS CODE: {item.hscode}</p>
-                              </div>
-                              <div className="flex space-x-2">
-                                {selectedItems[result.title]?.hscode === item.hscode ? (
-                                  <button
-                                    onClick={() => handleItemDeselect(result.title)}
-                                    className="px-3 py-1 rounded-md bg-blue-600 text-white"
-                                  >
-                                    선택됨
-                                  </button>
-                                ) : (
-                                  <button
-                                    onClick={() => handleItemSelect(result.title, item)}
-                                    className="px-3 py-1 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700"
-                                  >
-                                    선택
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="flex justify-between items-center mb-4">
-                      <div>
-                        <p className="font-bold">제품명: {result.name}</p>
-                        <p className="text-gray-700">HS CODE: {result.hscode}</p>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => fetch10DigitHSCodeForSingle(result.hscode, result.name)}
-                          className="px-3 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700"
-                        >
-                          10자리 조회
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-
-
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400 p-8">
-              <p>제품 정보를 입력하고 조회 버튼을 클릭하세요.</p>
-              <p className="text-sm mt-2">결과가 여기에 표시됩니다.</p>
-            </div>
-          )}
-
-          <p className="mt-2 text-center">{queryStatus}</p>
         </div>
+
+        <div className="w-1/2 p-4 bg-white">
+          <div className="bg-white p-4 rounded-md shadow-sm">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="font-bold">조회 결과</h2>
+              {results.length > 0 && (
+                <div className="flex space-x-4"> {/* 수정: 두 버튼을 감싸는 컨테이너 추가 */}
+                  {/* 여기서부터 수정 시작 */}
+                  <button
+                    onClick={fetch10DigitHSCodeForAll} // 전체 10자리 조회 함수 연결
+                    className="px-4 py-2 mb-4 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                  >
+                    10자리 전체 조회하기
+                  </button>
+                  {/* 수정 끝 */}
+
+                  <button
+                    onClick={downloadSelectedItems} // 선택 항목 다운로드 함수 호출
+                    className="px-4 py-2 mb-4 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+                  >
+                    📥 선택 항목 다운로드
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center space-y-2 p-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                <p className="text-sm text-gray-500">조회 중...</p>
+              </div>
+            ) : results && results.length > 0 ? (
+              <>
+                {results.map((result, index) => (
+                  <div key={index} className="mb-4 p-4 border rounded-md bg-white shadow-sm">
+                    {'items' in result ? (
+                      <>
+                        <div className="flex justify-between items-center mb-4">
+                          <p className="font-bold text-lg">{result.title}</p>
+                          <button
+                            onClick={() => toggleExpand(result.title)} // 펼치기/접기 버튼에 동작 연결
+                            className="px-3 py-1 rounded-md bg-black-100 hover:bg-black-200 text-white-700" //펼치기 버튼 색상수정 
+                          >
+                            {expandedResults[result.title] ? '접기' : '펼치기'}
+                          </button>
+                        </div>
+                        {expandedResults[result.title] && (
+                          <div className="space-y-2">
+                            {result.items?.map((item, itemIndex) => (
+                              <div key={itemIndex} className="pl-4 border-l-2 border-gray-200 flex justify-between items-center py-2">
+                                <div>
+                                  <p>제품명: {item.name}</p>
+                                  <p className="text-gray-700">HS CODE: {item.hscode}</p>
+                                </div>
+                                <div className="flex space-x-2">
+                                  {selectedItems[result.title]?.hscode === item.hscode ? (
+                                    <button
+                                      onClick={() => handleItemDeselect(result.title)}
+                                      className="px-3 py-1 rounded-md bg-blue-600 text-white"
+                                    >
+                                      선택됨
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleItemSelect(result.title, item)}
+                                      className="px-3 py-1 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700"
+                                    >
+                                      선택
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="flex justify-between items-center mb-4">
+                        <div>
+                          <p className="font-bold">제품명: {result.name}</p>
+                          <p className="text-gray-700">HS CODE: {result.hscode}</p>
+                        </div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => fetch10DigitHSCodeForSingle(result.hscode, result.name)}
+                            className="px-3 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700"
+                          >
+                            10자리 조회
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-gray-400 p-8">
+                <p>제품 정보를 입력하고 조회 버튼을 클릭하세요.</p>
+                <p className="text-sm mt-2">결과가 여기에 표시됩니다.</p>
+              </div>
+            )}
+
+            <p className="mt-2 text-center">{queryStatus}</p>
+          </div>
+        </div>
+
+        <LoadingStatus isLoading={isLoading} status={queryStatus} />
       </div>
+    );
+  };
 
-      <LoadingStatus isLoading={isLoading} status={queryStatus} />
-    </div>
-  );
-};
-
-export default BulkHSCodePage;
+  export default BulkHSCodePage;
