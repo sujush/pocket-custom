@@ -187,11 +187,13 @@ export const HSCodeForm: React.FC = () => {
 
   const fetchRemainingSearches = async (): Promise<void> => {
     try {
+      console.log('Fetching remaining searches...');
       const response = await fetch('/api/hscode/remaining-searches', {
         method: 'GET',
       });
 
       if (!response.ok) {
+        console.error(`HTTP error fetching remaining searches! Status: ${response.status}`);
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
 
@@ -201,6 +203,8 @@ export const HSCodeForm: React.FC = () => {
         remainingSingleSearches: number;
         remainingBulkSearches: number;
       } = await response.json();
+
+      console.log('Remaining searches:', data);
 
       // 상태 업데이트
       setRemainingSearches({

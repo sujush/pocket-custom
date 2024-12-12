@@ -97,24 +97,34 @@ export const checkIPLimit = async (
 
 // 남은 검색 횟수 반환
 export const getRemainingSearches = async (request: Request): Promise<RemainingSearches> => {
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-  const today = new Date().toISOString().split('T')[0];
-  const limitInfo = (await getIPLimitInfo(ip)) || {
-    singleSearchCount: 0,
-    bulkSearchCount: 0,
-    lastReset: today,
-  };
+  try {
+    console.log('Getting remaining searches...');
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const today = new Date().toISOString().split('T')[0];
+    const limitInfo = (await getIPLimitInfo(ip)) || {
+      singleSearchCount: 0,
+      bulkSearchCount: 0,
+      lastReset: today,
+    };
 
-  const singleLimit = Number(process.env.NEXT_PUBLIC_SINGLE_SEARCH_DAILY_LIMIT || '10');
-  const bulkLimit = Number(process.env.NEXT_PUBLIC_BULK_SEARCH_DAILY_LIMIT || '100');
+    const singleLimit = Number(process.env.NEXT_PUBLIC_SINGLE_SEARCH_DAILY_LIMIT || '10');
+    const bulkLimit = Number(process.env.NEXT_PUBLIC_BULK_SEARCH_DAILY_LIMIT || '100');
 
-  if (limitInfo.lastReset !== today) {
-    return { single: singleLimit, bulk: bulkLimit, isLimited: true };
+    if (limitInfo.lastReset !== today) {
+      console.log('Resetting search counts for new day');
+      return { single: singleLimit, bulk: bulkLimit, isLimited: true };
+    }
+
+    console.log(`Current single search count: ${limitInfo.singleSearchCount}`);
+    console.log(`Current bulk search count: ${limitInfo.bulkSearchCount}`);
+
+    return {
+      single: Math.max(0, singleLimit - limitInfo.singleSearchCount),
+      bulk: Math.max(0, bulkLimit - limitInfo.bulkSearchCount),
+      isLimited: true,
+    };
+  } catch (error) {
+    console.error('Error getting remaining searches:', error);
+    throw error;
   }
-
-  return {
-    single: Math.max(0, singleLimit - limitInfo.singleSearchCount),
-    bulk: Math.max(0, bulkLimit - limitInfo.bulkSearchCount),
-    isLimited: true,
-  };
 };
