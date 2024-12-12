@@ -41,8 +41,8 @@ const getIPLimitInfo = async (ip: string): Promise<LimitInfo | null> => {
   return result.Item as LimitInfo | null;
 };
 
-// DynamoDB에 IP 정보 저장
 const updateIPLimitInfo = async (ip: string, limitInfo: LimitInfo): Promise<void> => {
+  console.log('Updating IP limit info:', { ip, ...limitInfo });
   const params = {
     TableName: TABLE_NAME,
     Item: { ip, ...limitInfo },
@@ -107,16 +107,20 @@ export const getRemainingSearches = async (request: Request): Promise<RemainingS
       lastReset: today,
     };
 
-    const singleLimit = Number(process.env.NEXT_PUBLIC_SINGLE_SEARCH_DAILY_LIMIT || '10');
-    const bulkLimit = Number(process.env.NEXT_PUBLIC_BULK_SEARCH_DAILY_LIMIT || '100');
+    console.log('IP limit info:', limitInfo);
 
     if (limitInfo.lastReset !== today) {
       console.log('Resetting search counts for new day');
-      return { single: singleLimit, bulk: bulkLimit, isLimited: true };
+      return { single: Number(process.env.NEXT_PUBLIC_SINGLE_SEARCH_DAILY_LIMIT || '10'), 
+               bulk: Number(process.env.NEXT_PUBLIC_BULK_SEARCH_DAILY_LIMIT || '100'), 
+               isLimited: true };
     }
 
     console.log(`Current single search count: ${limitInfo.singleSearchCount}`);
     console.log(`Current bulk search count: ${limitInfo.bulkSearchCount}`);
+
+    const singleLimit = Number(process.env.NEXT_PUBLIC_SINGLE_SEARCH_DAILY_LIMIT || '10');
+    const bulkLimit = Number(process.env.NEXT_PUBLIC_BULK_SEARCH_DAILY_LIMIT || '100');
 
     return {
       single: Math.max(0, singleLimit - limitInfo.singleSearchCount),
