@@ -113,7 +113,7 @@ const fetchAllPages = async (searchCode: string): Promise<HSCodeResult[]> => {
       const matchingResults = data.data
         .filter((item: HSCodeAPIItem) => {
           const itemHsCode = String(item.품목번호 || item.HS부호 || '').replace(/\D/g, '');
-          console.log(`Comparing: ${itemHsCode} with ${searchCode}`);
+          
           // 5단위 또는 6단위 검색 로직
           return searchCode.length === 5
             ? itemHsCode.substring(0, 5) === searchCode
