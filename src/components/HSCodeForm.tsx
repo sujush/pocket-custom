@@ -416,7 +416,7 @@ export const HSCodeForm: React.FC = () => {
           bulk: data.remainingSearches.bulk,
           isLimited: true
         });
-      }
+      };
 
 
     } catch (error) {
