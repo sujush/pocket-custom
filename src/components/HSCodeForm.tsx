@@ -285,9 +285,13 @@ export const HSCodeForm: React.FC = () => {
         body: JSON.stringify({ searchType: 'single' }),
       });
 
-      if (!limitResponse.ok) {
-        const data = await limitResponse.json();
-        throw new Error(data.message || '검색 한도 확인 중 오류가 발생했습니다.');
+      const limitData = await limitResponse.json();
+      if (limitData.remainingSearches) {  // 서버에서 남은 검색 횟수를 반환하도록 수정 필요
+        setRemainingSearches({
+          single: limitData.remainingSearches.single,
+          bulk: limitData.remainingSearches.bulk,
+          isLimited: true
+        });
       }
 
       if (!product.category) {
