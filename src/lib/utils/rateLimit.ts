@@ -100,35 +100,53 @@ export const getRemainingSearches = async (request: Request): Promise<RemainingS
   try {
     console.log('Getting remaining searches...');
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    console.log('Client IP:', ip);
+ 
     const today = new Date().toISOString().split('T')[0];
+    console.log('Today:', today);
+ 
+    console.log('Attempting to fetch IP limit info from DynamoDB...');
     const limitInfo = (await getIPLimitInfo(ip)) || {
       singleSearchCount: 0,
       bulkSearchCount: 0,
       lastReset: today,
     };
-
+    console.log('DynamoDB response:', JSON.stringify(limitInfo, null, 2));
+ 
     console.log('IP limit info:', limitInfo);
-
+ 
+    console.log('Environment variables:', {
+      singleLimit: process.env.NEXT_PUBLIC_SINGLE_SEARCH_DAILY_LIMIT,
+      bulkLimit: process.env.NEXT_PUBLIC_BULK_SEARCH_DAILY_LIMIT
+    });
+ 
     if (limitInfo.lastReset !== today) {
       console.log('Resetting search counts for new day');
-      return { single: Number(process.env.NEXT_PUBLIC_SINGLE_SEARCH_DAILY_LIMIT || '10'), 
-               bulk: Number(process.env.NEXT_PUBLIC_BULK_SEARCH_DAILY_LIMIT || '100'), 
-               isLimited: true };
+      return { 
+        single: Number(process.env.NEXT_PUBLIC_SINGLE_SEARCH_DAILY_LIMIT || '10'), 
+        bulk: Number(process.env.NEXT_PUBLIC_BULK_SEARCH_DAILY_LIMIT || '100'), 
+        isLimited: true 
+      };
     }
-
+ 
     console.log(`Current single search count: ${limitInfo.singleSearchCount}`);
     console.log(`Current bulk search count: ${limitInfo.bulkSearchCount}`);
-
+ 
     const singleLimit = Number(process.env.NEXT_PUBLIC_SINGLE_SEARCH_DAILY_LIMIT || '10');
     const bulkLimit = Number(process.env.NEXT_PUBLIC_BULK_SEARCH_DAILY_LIMIT || '100');
-
+ 
     return {
       single: Math.max(0, singleLimit - limitInfo.singleSearchCount),
       bulk: Math.max(0, bulkLimit - limitInfo.bulkSearchCount),
       isLimited: true,
     };
-  } catch (error) {
+  } catch (error: any) { // error를 any로 타입 지정
     console.error('Error getting remaining searches:', error);
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
     throw error;
   }
-};
+ };
