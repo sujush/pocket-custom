@@ -55,16 +55,22 @@ export const checkIPLimit = async (
   request: Request,
   searchType: 'single' | 'bulk',
 ): Promise<LimitCheckResult> => {
+  console.log('Checking IP limit for search type:', searchType);
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-  const today = new Date().toISOString().split('T')[0]; // 날짜만 비교
+  console.log('Request IP:', ip);
+  
+  const today = new Date().toISOString().split('T')[0];
+  console.log('Today:', today);
+  
   const limitInfo = (await getIPLimitInfo(ip)) || {
     singleSearchCount: 0,
     bulkSearchCount: 0,
     lastReset: today,
   };
+  console.log('Current limit info:', limitInfo);
 
   if (limitInfo.lastReset !== today) {
-    // 날짜가 변경된 경우 초기화
+    console.log('Resetting counts for new day');
     limitInfo.singleSearchCount = 0;
     limitInfo.bulkSearchCount = 0;
     limitInfo.lastReset = today;
@@ -73,12 +79,15 @@ export const checkIPLimit = async (
   const limit = searchType === 'single'
     ? Number(process.env.NEXT_PUBLIC_SINGLE_SEARCH_DAILY_LIMIT || '10')
     : Number(process.env.NEXT_PUBLIC_BULK_SEARCH_DAILY_LIMIT || '100');
+  console.log(`${searchType} search limit:`, limit);
 
   const count = searchType === 'single'
     ? limitInfo.singleSearchCount
     : limitInfo.bulkSearchCount;
+  console.log(`Current ${searchType} search count:`, count);
 
   if (count >= limit) {
+    console.log(`${searchType} search limit exceeded`);
     return {
       success: false,
       message: `${searchType === 'single' ? '개별' : '벌크'} 검색 일일 한도를 초과했습니다.`,
@@ -90,6 +99,7 @@ export const checkIPLimit = async (
   } else {
     limitInfo.bulkSearchCount++;
   }
+  console.log('Updated limit info:', limitInfo);
 
   await updateIPLimitInfo(ip, limitInfo);
   return { success: true };
