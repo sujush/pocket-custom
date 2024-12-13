@@ -197,7 +197,7 @@ export const HSCodeForm: React.FC = () => {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
 
-      // 응답 데이터를 타입으로 명확히 지정
+      // 기존 타입 정의 유지
       const data: {
         message: string;
         remainingSingleSearches: number;
@@ -206,7 +206,6 @@ export const HSCodeForm: React.FC = () => {
 
       console.log('Remaining searches:', data);
 
-      // 상태 업데이트
       setRemainingSearches({
         single: data.remainingSingleSearches,
         bulk: data.remainingBulkSearches,
@@ -215,7 +214,7 @@ export const HSCodeForm: React.FC = () => {
     } catch (error) {
       console.error('Error fetching remaining searches:', error);
       setRemainingSearches({
-        single: null, // 오류 발생 시 null로 초기화
+        single: null,
         bulk: null,
         isLimited: true,
       });
@@ -402,6 +401,19 @@ export const HSCodeForm: React.FC = () => {
 
       // 오류가 없는 경우에만 폼 초기화
       setResetTrigger(true);
+
+      // 여기에 남은 검색 횟수 업데이트 코드 추가
+      const remainingResponse = await fetch('/api/hscode/remaining-searches', {
+        method: 'GET',
+      });
+      if (remainingResponse.ok) {
+        const data = await remainingResponse.json();
+        setRemainingSearches({
+          single: data.remainingSearches.single,
+          bulk: data.remainingSearches.bulk,
+          isLimited: true
+        });
+      }
 
       await fetchRemainingSearches();
 
