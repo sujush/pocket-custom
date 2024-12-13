@@ -402,6 +402,9 @@ export const HSCodeForm: React.FC = () => {
       // 오류가 없는 경우에만 폼 초기화
       setResetTrigger(true);
 
+      
+      await fetchRemainingSearches();
+
       // 여기에 남은 검색 횟수 업데이트 코드 추가
       const remainingResponse = await fetch('/api/hscode/remaining-searches', {
         method: 'GET',
@@ -415,7 +418,6 @@ export const HSCodeForm: React.FC = () => {
         });
       }
 
-      await fetchRemainingSearches();
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '요청 처리 중 오류가 발생했습니다.';
