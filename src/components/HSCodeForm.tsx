@@ -185,37 +185,30 @@ export const HSCodeForm: React.FC = () => {
 
   const router = useRouter();
 
+  // 검색횟수 확인(남은횟수가져오기)
+
   const fetchRemainingSearches = async (): Promise<void> => {
     try {
-      console.log('Fetching remaining searches...');
-      const response = await fetch('/api/hscode/remaining-searches', {
-        method: 'GET',
-      });
-
+      const response = await fetch('/api/hscode/remaining-searches', { method: 'GET' });
       if (!response.ok) {
-        console.error(`HTTP error fetching remaining searches! Status: ${response.status}`);
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
-
-      // 기존 타입 정의 유지
-      const data: {
-        message: string;
-        remainingSingleSearches: number;
-        remainingBulkSearches: number;
-      } = await response.json();
-
-      console.log('Remaining searches:', data);
-
+  
+      const data = await response.json();
+      // 응답 데이터에서 값이 없을 경우 0으로 처리
+      const singleVal = typeof data.remainingSingleSearches === 'number' ? data.remainingSingleSearches : 0;
+      const bulkVal = typeof data.remainingBulkSearches === 'number' ? data.remainingBulkSearches : 0;
+  
       setRemainingSearches({
-        single: data.remainingSingleSearches,
-        bulk: data.remainingBulkSearches,
+        single: singleVal,
+        bulk: bulkVal,
         isLimited: true,
       });
     } catch (error) {
       console.error('Error fetching remaining searches:', error);
       setRemainingSearches({
-        single: null,
-        bulk: null,
+        single: 0,
+        bulk: 0,
         isLimited: true,
       });
     }
@@ -275,7 +268,7 @@ export const HSCodeForm: React.FC = () => {
     setHsCode('');
 
     try {
-      // 검색 제한 확인을 위한 API 호출
+      // 검색 시 횟수 제한 확인
       const limitResponse = await fetch('/api/hscode/check-limit', {
         method: 'POST',
         headers: {
