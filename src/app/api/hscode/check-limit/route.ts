@@ -18,9 +18,12 @@ export async function POST(request: Request) {
     const remaining = await getRemainingSearches(request);
 
     return NextResponse.json({ 
-      success: true,
-      remainingSearches: remaining
+      "success": true,
+      "remainingSingleSearches": 9,
+      "remainingBulkSearches": 50,
+      "isLimited": true
     });
+    
   } catch (error) {
     if (error instanceof Error) {
       return NextResponse.json(

@@ -190,19 +190,14 @@ export const HSCodeForm: React.FC = () => {
   const fetchRemainingSearches = async (): Promise<void> => {
     try {
       const response = await fetch('/api/hscode/remaining-searches', { method: 'GET' });
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
       const data = await response.json();
-      // 응답 데이터에서 값이 없을 경우 0으로 처리
-      const singleVal = typeof data.remainingSingleSearches === 'number' ? data.remainingSingleSearches : 0;
-      const bulkVal = typeof data.remainingBulkSearches === 'number' ? data.remainingBulkSearches : 0;
-
+      // 서버 응답이 항상 remainingSingleSearches, remainingBulkSearches, isLimited를 포함하도록 서버 코드 수정 필요
       setRemainingSearches({
-        single: singleVal,
-        bulk: bulkVal,
-        isLimited: true,
+        single: typeof data.remainingSingleSearches === 'number' ? data.remainingSingleSearches : 0,
+        bulk: typeof data.remainingBulkSearches === 'number' ? data.remainingBulkSearches : 0,
+        isLimited: data.isLimited ?? true,
       });
     } catch (error) {
       console.error('Error fetching remaining searches:', error);
@@ -430,17 +425,17 @@ export const HSCodeForm: React.FC = () => {
     <div className="flex h-screen overflow-hidden">
       <div className="w-1/2 p-4 flex flex-col overflow-auto">
         <h1 className="text-2xl font-bold mb-4">10단위 조회</h1>
-        
-        {remainingSearches.single !== null && remainingSearches.bulk !== null ? (  // 추가: null 체크 조건문
+
+        {remainingSearches.single !== null && remainingSearches.bulk !== null ? (
           <RemainingSearchesDisplay
             remaining={{
-              single: remainingSearches.single,  // 수정 없음
-              bulk: remainingSearches.bulk,      // 수정 없음
-              isLimited: remainingSearches.isLimited, // 수정 없음
+              single: remainingSearches.single,
+              bulk: remainingSearches.bulk,
+              isLimited: remainingSearches.isLimited,
             }}
           />
         ) : (
-          <p>남은 검색 횟수를 불러오는 중...</p> // 추가: 데이터가 아직 null일 경우 표시할 문구
+          <p>남은 검색 횟수를 불러오는 중...</p>
         )}
 
         <Card className="mb-4 flex-shrink-0">
