@@ -26,9 +26,9 @@ export async function POST(request: Request) {
     // remainingSearches 값을 이용해 bulk 코드처럼 remaining 구조로 만들어줌
     if (data.hsCode && typeof data.remainingSearches === 'number') {
       return NextResponse.json({
-        hsCode: '123456',
+        hsCode: data.hsCode,
         remaining: {
-          single: 10, // Lambda에서 받은 검색 횟수를 single에 매핑
+          single: data.remainingSearches, // Lambda에서 받은 검색 횟수를 single에 매핑
           bulk: 50,                       // bulk는 임의로 50으로 설정 (원한다면 다른 숫자로 조정 가능)
           isLimited: true,                // isLimited 값은 true로 설정
         }
