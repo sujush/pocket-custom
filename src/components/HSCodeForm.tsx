@@ -191,16 +191,27 @@ export const HSCodeForm: React.FC = () => {
     try {
       const response = await fetch('/api/hscode/remaining-searches', { method: 'GET' });
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-
+  
       const data = await response.json();
-      // 서버 응답이 항상 remainingSingleSearches, remainingBulkSearches, isLimited를 포함하도록 서버 코드 수정 필요
-      setRemainingSearches({
-        single: typeof data.remainingSingleSearches === 'number' ? data.remainingSingleSearches : 0,
-        bulk: typeof data.remainingBulkSearches === 'number' ? data.remainingBulkSearches : 0,
-        isLimited: data.isLimited ?? true,
-      });
+  
+      // data.remaining 안에 single, bulk, isLimited가 있다고 가정
+      if (data.remaining && typeof data.remaining.single === 'number' && typeof data.remaining.bulk === 'number') {
+        setRemainingSearches({
+          single: data.remaining.single,
+          bulk: data.remaining.bulk,
+          isLimited: data.remaining.isLimited ?? true,
+        });
+      } else {
+        // 구조가 예상과 다를 경우 기본값을 사용
+        setRemainingSearches({
+          single: 0,
+          bulk: 0,
+          isLimited: true,
+        });
+      }
     } catch (error) {
       console.error('Error fetching remaining searches:', error);
+      // 에러 발생 시 기본값
       setRemainingSearches({
         single: 0,
         bulk: 0,
