@@ -6,7 +6,7 @@ export async function POST(request: Request) {
   try {
     const { searchType } = await request.json();
     const result = await checkIPLimit(request, searchType);
-    
+
     if (!result.success) {
       return NextResponse.json(
         { message: result.message },
@@ -16,14 +16,13 @@ export async function POST(request: Request) {
 
     // 남은 검색 횟수 조회
     const remaining = await getRemainingSearches(request);
-
     return NextResponse.json({ 
-      "success": true,
-      "remainingSingleSearches": 9,
-      "remainingBulkSearches": 50,
-      "isLimited": true
+      success: true,
+      remainingSingleSearches: remaining.single,
+      remainingBulkSearches: remaining.bulk,
+      isLimited: remaining.isLimited,
     });
-    
+
   } catch (error) {
     if (error instanceof Error) {
       return NextResponse.json(
