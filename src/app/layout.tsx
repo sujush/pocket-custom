@@ -4,6 +4,9 @@ import './globals.css'
 import Navigation from '@/components/Navigation'
 import { Toaster } from "@/components/ui/toaster"
 
+// 추가: RemainingSearchesProvider를 임포트
+import { RemainingSearchesProvider } from '@/app/RemainingSearchesContext';
+
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
@@ -20,7 +23,10 @@ export default function RootLayout({
     <html lang="ko">
       <body className={inter.className}>
         <Navigation />
-        {children}
+        {/* 추가: RemainingSearchesProvider로 감싸서 모든 자식이 검색횟수 상태를 공유하도록 함 */}
+        <RemainingSearchesProvider>
+          {children}
+        </RemainingSearchesProvider>
         <Toaster />
       </body>
     </html>

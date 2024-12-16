@@ -10,6 +10,8 @@ import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { useRouter } from 'next/navigation';
 import { RemainingSearchesDisplay } from '@/components/RemainingSearchesDisplay';
+import { useRemainingSearches } from '@/app/RemainingSearchesContext'; 
+
 
 const categoryOptions = [
   '가구', '조명', '컴퓨터용 제품', '공구', '농업용 또는 원예용 제품', '전기용품',
@@ -155,6 +157,8 @@ const fetchAllPages = async (searchCode: string): Promise<HSCodeResult[]> => {
 };
 
 export const HSCodeForm: React.FC = () => {
+  const router = useRouter();
+  const { remainingSearches, setRemainingSearches } = useRemainingSearches(); 
   const [product, setProduct] = useState<Product>({
     category: '',
     material: '',
@@ -173,17 +177,6 @@ export const HSCodeForm: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resetTrigger, setResetTrigger] = useState(false);
 
-  const [remainingSearches, setRemainingSearches] = useState<{
-    single: number;
-    bulk: number;
-    isLimited: boolean;
-  }>({
-    single: 0, // 초기에 0으로 설정
-    bulk: 0,   // 초기에 0으로 설정
-    isLimited: true,
-  });
-
-  const router = useRouter();
 
   // 검색횟수 확인(남은횟수가져오기)
 
@@ -437,6 +430,12 @@ export const HSCodeForm: React.FC = () => {
       <div className="w-1/2 p-4 flex flex-col overflow-auto">
         <h1 className="text-2xl font-bold mb-4">10단위 조회</h1>
 
+        {/* ▼ 추가 부분: 여기서 전역 remainingSearches 사용 예시 */}
+        <p>개별 화물 남은 검색횟수: {remainingSearches.single}</p>
+        <p>벌크 남은 검색횟수: {remainingSearches.bulk}</p>
+        <p>Is Limited: {remainingSearches.isLimited ? 'Yes' : 'No'}</p>
+
+        {/* 기존 남은 검색 횟수 표시하는 부분이 있다면, 전역 상태로 대체 가능 */}
         {remainingSearches.single !== null && remainingSearches.bulk !== null ? (
           <RemainingSearchesDisplay remaining={remainingSearches} />
         ) : (

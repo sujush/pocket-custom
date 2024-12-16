@@ -5,6 +5,7 @@ import * as XLSX from 'xlsx';
 import { Loader } from 'lucide-react';
 import { RemainingSearchesDisplay } from '@/components/RemainingSearchesDisplay';
 import { useEffect } from 'react';
+import { useRemainingSearches } from '@/app/RemainingSearchesContext';
 
 // 재질 코드 매핑 상수
 const MATERIAL_CODES = {
@@ -124,11 +125,9 @@ const BulkHSCodePage = () => {
   const [queryStatus, setQueryStatus] = useState('');
   const [selectedItems, setSelectedItems] = useState<{ [key: string]: Item }>({});
   const [expandedResults, setExpandedResults] = useState<{ [key: string]: boolean }>({});
-  const [remainingSearches, setRemainingSearches] = useState({
-    single: 0,
-    bulk: 0,
-    isLimited: true
-  });
+  const { remainingSearches, setRemainingSearches } = useRemainingSearches();
+
+  
 
   const MAX_PRODUCTS_LIMIT = 20;
 
@@ -265,9 +264,27 @@ const BulkHSCodePage = () => {
     try {
       const response = await fetch('/api/hscode/remaining-searches');
       const data = await response.json();
-      setRemainingSearches(data);
+      // 여기서도 data.remaining 형태로 응답 온다고 가정하고 업데이트
+      if (data.remaining && typeof data.remaining.single === 'number' && typeof data.remaining.bulk === 'number') {
+        setRemainingSearches({
+          single: data.remaining.single,
+          bulk: data.remaining.bulk,
+          isLimited: data.remaining.isLimited ?? true,
+        });
+      } else {
+        setRemainingSearches({
+          single: 0,
+          bulk: 0,
+          isLimited: true,
+        });
+      }
     } catch (error) {
       console.error('Error fetching remaining searches:', error);
+      setRemainingSearches({
+        single: 0,
+        bulk: 0,
+        isLimited: true,
+      });
     }
   };
 
@@ -279,10 +296,10 @@ const BulkHSCodePage = () => {
     if (!validateProducts()) {
       return;
     }
-  
+
     setIsLoading(true);
     setQueryStatus("6자리 HS CODE 조회 중...");
-  
+
     try {
       const response = await fetch('/api/hscode/bulk', {
         method: 'POST',
@@ -291,29 +308,26 @@ const BulkHSCodePage = () => {
         },
         body: JSON.stringify({ products }),
       });
-  
+
       const data = await response.json();
       
-      // 응답 구조 확인
       console.log('API Response:', data);
 
-      if (data.remaining) {
-        setRemainingSearches(data.remaining); // 남은 검색 횟수 갱신
+      // ▼ 추가 부분: bulk 응답에 remaining 필드가 있다고 가정
+      if (data.remaining && typeof data.remaining.single === 'number' && typeof data.remaining.bulk === 'number') {
+        // 남은 검색 횟수 전역 상태 업데이트
+        setRemainingSearches({
+          single: data.remaining.single,
+          bulk: data.remaining.bulk,
+          isLimited: data.remaining.isLimited ?? true,
+        });
       }
-  
-      // data.body가 문자열인 경우 파싱
-      let result;
-      if (typeof data.body === 'string') {
-        result = JSON.parse(data.body);
-      } else {
-        result = data;
-      }
-  
-      if (result.hscodes) {
-        setResults(result.hscodes);
+
+      if (data.hscodes) {
+        setResults(data.hscodes);
         setQueryStatus("6자리 HS CODE 조회 완료");
       } else {
-        console.error('Invalid response format:', result);
+        console.error('Invalid response format:', data);
         setQueryStatus("조회 실패: 잘못된 응답 형식");
       }
     } catch (error) {
