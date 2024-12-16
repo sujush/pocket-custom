@@ -341,21 +341,6 @@ export const HSCodeForm: React.FC = () => {
 
 
       await fetchRemainingSearches();
-
-      // 여기에 남은 검색 횟수 업데이트 코드 추가
-      const remainingResponse = await fetch('/api/hscode/remaining-searches', {
-        method: 'GET',
-      });
-      if (remainingResponse.ok) {
-        const data = await remainingResponse.json();
-        setRemainingSearches({
-          single: data.remainingSearches.single,
-          bulk: data.remainingSearches.bulk,
-          isLimited: true
-        });
-      };
-
-
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '요청 처리 중 오류가 발생했습니다.';
       setError(errorMessage);
@@ -375,11 +360,7 @@ export const HSCodeForm: React.FC = () => {
       <div className="w-1/2 p-4 flex flex-col overflow-auto">
         <h1 className="text-2xl font-bold mb-4">10단위 조회</h1>
 
-        {remainingSearches.single !== null && remainingSearches.bulk !== null ? (
-          <RemainingSearchesDisplay remaining={remainingSearches} />
-        ) : (
-          <p>남은 검색 횟수를 불러오는 중...</p>
-        )}
+        <RemainingSearchesDisplay remaining={remainingSearches} />
 
         <Card className="mb-4 flex-shrink-0">
           <CardHeader>
