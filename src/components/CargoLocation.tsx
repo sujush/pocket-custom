@@ -107,7 +107,7 @@ export default function CargoLocation() {
 
         // 반입신고 횟수 체크
         const entryCount = processStatus.filter(p => p.type === "반입신고").length;
-        const hasUnloadingDeclaration = processStatus.some(p => p.type === "하선신고수리");
+        const hasUnloadingDeclaration = processStatus.some(p => p.type === "하선신고 수리");
 
         // FCL 특별 케이스: 입항전 수입신고
         const isPreEntryCleared = cargoType === "fcl" &&
@@ -182,7 +182,7 @@ export default function CargoLocation() {
         
         // 하선신고 여부 확인
         const hasUnloadingDeclaration = cargoData?.cargCsclPrgsInfoDtlQryVo?.some(
-            item => item.처리구분 === "하선신고수리"
+            item => item.처리구분 === "하선신고 수리"
         );
     
         let description = '';
