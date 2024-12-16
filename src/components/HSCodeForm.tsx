@@ -285,6 +285,10 @@ export const HSCodeForm: React.FC = () => {
 
       const data = await response.json();
 
+      if (data.remaining) {
+        setRemainingSearches(data.remaining); // 남은 검색 횟수 갱신
+      }
+
       if (!data.hsCode) {
         throw new Error('HS CODE를 받아오지 못했습니다');
       }
