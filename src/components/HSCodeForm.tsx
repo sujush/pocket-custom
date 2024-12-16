@@ -193,12 +193,12 @@ export const HSCodeForm: React.FC = () => {
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
-  
+
       const data = await response.json();
       // 응답 데이터에서 값이 없을 경우 0으로 처리
       const singleVal = typeof data.remainingSingleSearches === 'number' ? data.remainingSingleSearches : 0;
       const bulkVal = typeof data.remainingBulkSearches === 'number' ? data.remainingBulkSearches : 0;
-  
+
       setRemainingSearches({
         single: singleVal,
         bulk: bulkVal,
@@ -395,7 +395,7 @@ export const HSCodeForm: React.FC = () => {
       // 오류가 없는 경우에만 폼 초기화
       setResetTrigger(true);
 
-      
+
       await fetchRemainingSearches();
 
       // 여기에 남은 검색 횟수 업데이트 코드 추가
@@ -430,14 +430,18 @@ export const HSCodeForm: React.FC = () => {
     <div className="flex h-screen overflow-hidden">
       <div className="w-1/2 p-4 flex flex-col overflow-auto">
         <h1 className="text-2xl font-bold mb-4">10단위 조회</h1>
-
-        <RemainingSearchesDisplay
-          remaining={{
-            single: remainingSearches.single ?? 0,
-            bulk: remainingSearches.bulk ?? 0,
-            isLimited: remainingSearches.isLimited,
-          }}
-        />
+        
+        {remainingSearches.single !== null && remainingSearches.bulk !== null ? (  // 추가: null 체크 조건문
+          <RemainingSearchesDisplay
+            remaining={{
+              single: remainingSearches.single,  // 수정 없음
+              bulk: remainingSearches.bulk,      // 수정 없음
+              isLimited: remainingSearches.isLimited, // 수정 없음
+            }}
+          />
+        ) : (
+          <p>남은 검색 횟수를 불러오는 중...</p> // 추가: 데이터가 아직 null일 경우 표시할 문구
+        )}
 
         <Card className="mb-4 flex-shrink-0">
           <CardHeader>
