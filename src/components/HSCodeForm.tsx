@@ -174,12 +174,12 @@ export const HSCodeForm: React.FC = () => {
   const [resetTrigger, setResetTrigger] = useState(false);
 
   const [remainingSearches, setRemainingSearches] = useState<{
-    single: number | null;
-    bulk: number | null;
+    single: number;
+    bulk: number;
     isLimited: boolean;
   }>({
-    single: null,
-    bulk: null,
+    single: 0, // 초기에 0으로 설정
+    bulk: 0,   // 초기에 0으로 설정
     isLimited: true,
   });
 
@@ -191,9 +191,9 @@ export const HSCodeForm: React.FC = () => {
     try {
       const response = await fetch('/api/hscode/remaining-searches', { method: 'GET' });
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-  
+
       const data = await response.json();
-  
+
       // data.remaining 안에 single, bulk, isLimited가 있다고 가정
       if (data.remaining && typeof data.remaining.single === 'number' && typeof data.remaining.bulk === 'number') {
         setRemainingSearches({
@@ -202,13 +202,13 @@ export const HSCodeForm: React.FC = () => {
           isLimited: data.remaining.isLimited ?? true,
         });
       } else {
-        // 구조가 예상과 다를 경우 기본값을 사용
         setRemainingSearches({
           single: 0,
           bulk: 0,
           isLimited: true,
         });
       }
+
     } catch (error) {
       console.error('Error fetching remaining searches:', error);
       // 에러 발생 시 기본값
@@ -438,13 +438,7 @@ export const HSCodeForm: React.FC = () => {
         <h1 className="text-2xl font-bold mb-4">10단위 조회</h1>
 
         {remainingSearches.single !== null && remainingSearches.bulk !== null ? (
-          <RemainingSearchesDisplay
-            remaining={{
-              single: remainingSearches.single,
-              bulk: remainingSearches.bulk,
-              isLimited: remainingSearches.isLimited,
-            }}
-          />
+          <RemainingSearchesDisplay remaining={remainingSearches} />
         ) : (
           <p>남은 검색 횟수를 불러오는 중...</p>
         )}
