@@ -173,50 +173,22 @@ export const HSCodeForm: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resetTrigger, setResetTrigger] = useState(false);
 
-  const [remainingSearches, setRemainingSearches] = useState<{
-    single: number;
-    bulk: number;
-    isLimited: boolean;
-  }>({
-    single: 0, // 초기에 0으로 설정
-    bulk: 0,   // 초기에 0으로 설정
-    isLimited: true,
+  const [remainingSearches, setRemainingSearches] = useState({
+    single: 0,
+    bulk: 0,
+    isLimited: true
   });
-
   const router = useRouter();
 
   // 검색횟수 확인(남은횟수가져오기)
 
-  const fetchRemainingSearches = async (): Promise<void> => {
+  const fetchRemainingSearches = async () => {
     try {
-      const response = await fetch('/api/hscode/remaining-searches', { method: 'GET' });
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-
+      const response = await fetch('/api/hscode/remaining-searches');
       const data = await response.json();
-
-      // data.remaining 안에 single, bulk, isLimited가 있다고 가정
-      if (data.remaining && typeof data.remaining.single === 'number' && typeof data.remaining.bulk === 'number') {
-        setRemainingSearches({
-          single: data.remaining.single,
-          bulk: data.remaining.bulk,
-          isLimited: data.remaining.isLimited ?? true,
-        });
-      } else {
-        setRemainingSearches({
-          single: 0,
-          bulk: 0,
-          isLimited: true,
-        });
-      }
-
+      setRemainingSearches(data);
     } catch (error) {
       console.error('Error fetching remaining searches:', error);
-      // 에러 발생 시 기본값
-      setRemainingSearches({
-        single: 0,
-        bulk: 0,
-        isLimited: true,
-      });
     }
   };
 
@@ -274,24 +246,6 @@ export const HSCodeForm: React.FC = () => {
     setHsCode('');
 
     try {
-      // 검색 시 횟수 제한 확인
-      const limitResponse = await fetch('/api/hscode/check-limit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ searchType: 'single' }),
-      });
-
-      const limitData = await limitResponse.json();
-      if (limitData.remainingSearches) {  // 서버에서 남은 검색 횟수를 반환하도록 수정 필요
-        setRemainingSearches({
-          single: limitData.remainingSearches.single,
-          bulk: limitData.remainingSearches.bulk,
-          isLimited: true
-        });
-      }
-
       if (!product.category) {
         throw new Error('제품 카테고리 선택해주세요.');
       }
@@ -323,14 +277,6 @@ export const HSCodeForm: React.FC = () => {
         body: JSON.stringify({ ...product, functions }),
       });
 
-      // 검색 한도 초과 처리
-      if (response.status === 429) {
-        const data = await response.json();
-        setError(data.message || '검색 한도를 초과했습니다.'); // 한도 초과 메시지 표시
-        setIsSubmitting(false); // 버튼 비활성화 해제
-        return;
-      }
-
       // 검색 실패 처리
       if (!response.ok) {
         const data = await response.json();
@@ -351,15 +297,7 @@ export const HSCodeForm: React.FC = () => {
         throw new Error('유효하지 않은 HS CODE 형식입니다');
       }
 
-      setHsCode(sixDigitCode);
-
-      // 남은 검색 횟수 갱신 추가
-      if (data.remainingSearches) {
-        setRemainingSearches((prev) => ({
-          ...prev,
-          single: data.remainingSearches, // 응답에서 반환된 남은 검색 횟수 갱신
-        }));
-      }
+      setHsCode(sixDigitCode);   
 
       const handleHSCodeSearch = (sixDigitCode: string) => {
         // 마지막 숫자가 0인지 확인
