@@ -6,9 +6,24 @@ import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from '@/lib/store/authStore'
 
+
+// 타입을 정의합니다.
+interface User {
+  name: string;
+  isPremium: boolean;
+}
+
+// useAuthStore의 상태를 타입 지정
+interface AuthStore {
+  isAuthenticated: boolean;
+  user: User | null;
+  clearAuth: () => void;
+}
+
+
 export default function Navigation() {
  const router = useRouter()
- const { isAuthenticated, user, clearAuth } = useAuthStore()
+ const { isAuthenticated, user, clearAuth } = useAuthStore() as AuthStore; 
 
  const handleLogout = () => {
    clearAuth()
@@ -22,10 +37,10 @@ export default function Navigation() {
          포켓커스텀
        </Link>
        <div className="flex items-center space-x-6 mr-auto">
-         <Link href="/" className="text-gray-600 hover:text-gray-800 transition-colors duration-300">
+         <Link href="/about" className="text-gray-600 hover:text-gray-800 transition-colors duration-300">
            회사소개
          </Link>
-         <Link href="/services" className="text-gray-600 hover:text-gray-800 transition-colors duration-300">
+         <Link href="/board" className="text-gray-600 hover:text-gray-800 transition-colors duration-300">
            문의게시판
          </Link>
          <Link href="/support" className="text-gray-600 hover:text-gray-800 transition-colors duration-300">

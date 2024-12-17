@@ -11,7 +11,7 @@ export default function Hero() {
         <h1 className="text-5xl font-bold text-indigo-600">이연 관세사무소</h1>
       </div>
       <p className="text-xl text-gray-700 mb-8">
-        통관 관련 내부 검토용 시스템
+        모바일은 데스크탑 모드를 이용해주세요.
       </p>
     </div>
   )
