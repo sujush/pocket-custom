@@ -93,12 +93,25 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
     try {
       const response = await fetch(`/api/requirements?reqCfrmIstmNm=${reqCfrmIstmNm}`);
       const data = await response.json();
-      console.log('Fetched requirement data:', data); // 데이터 형식 확인
-      setRequirementDetail({
-        description: data.description || '해당 요건에 대한 설명이 없습니다.',
-        exemption: data.exemption || '면제 방법 정보가 없습니다.',
-        application: data.application || '신청 방법 정보가 없습니다.'
-      });
+      
+      console.log('API Response:', data);
+      const requirementInfo = data[reqCfrmIstmNm];
+      console.log('Requirement Info:', requirementInfo);
+      
+      if (requirementInfo) {
+        setRequirementDetail({
+          description: requirementInfo.description || '해당 요건에 대한 설명이 없습니다.',
+          exemption: requirementInfo.exemption || '면제 방법 정보가 없습니다.',
+          application: requirementInfo.application || '신청 방법 정보가 없습니다.'
+        });
+      } else {
+        setRequirementDetail({
+          description: '해당 요건에 대한 정보가 없습니다.',
+          exemption: '해당 요건에 대한 정보가 없습니다.',
+          application: '해당 요건에 대한 정보가 없습니다.'
+        });
+      }
+      
       setSelectedReqName(reqCfrmIstmNm);
     } catch (error) {
       console.error('Error fetching requirements description:', error);
