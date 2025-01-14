@@ -93,14 +93,14 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
     try {
       const response = await fetch(`/api/requirements?reqCfrmIstmNm=${reqCfrmIstmNm}`);
       const data = await response.json();
-      
+
       console.log('API Response:', data);
-  
+
       // data.description에서 정보를 가져옴
       if (data && data.description) {
         const requirementInfo = data.description;
         console.log('Found requirement info:', requirementInfo);
-        
+
         setRequirementDetail({
           description: requirementInfo.description || '해당 요건에 대한 설명이 없습니다.',
           exemption: requirementInfo.exemption || '면제 방법 정보가 없습니다.',
@@ -114,7 +114,7 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
           application: '해당 요건에 대한 정보가 없습니다.'
         });
       }
-      
+
       setSelectedReqName(reqCfrmIstmNm);
     } catch (error) {
       console.error('Error fetching requirements description:', error);
@@ -135,7 +135,7 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
     if (!text || typeof text !== 'string') {
       return <p className="text-gray-500">요건을 선택하여 정보를 확인하세요.</p>;
     }
-    
+
     try {
       return text.split('\n').map((line, index) => (
         <React.Fragment key={index}>
@@ -152,7 +152,7 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-4">수입요건 확인</h1>
-   
+
       <div className="flex">
         {/* 왼쪽 패널 - 요건 목록 */}
         <div className="w-1/2 pr-4">
@@ -161,7 +161,14 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
               <CardTitle>조회 품목번호: {params.hsCode}</CardTitle>
             </CardHeader>
           </Card>
-   
+
+          {/* 여기에 안내메시지 Card 추가 */}
+          <Card className="mb-4">
+            <CardContent className="p-4">
+              <p className="text-gray-700">법령상 적용대상이 아닌 물품은 요건비대상으로 보면 됩니다</p>
+            </CardContent>
+          </Card>
+
           {isLoading ? (
             <div className="flex justify-center items-center p-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
@@ -197,7 +204,7 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
             </Card>
           )}
         </div>
-   
+
         {/* 오른쪽 패널 - 상세 정보 */}
         <div className="w-1/2 pl-4 space-y-6">
           {/* 요건 설명 카드 */}
@@ -218,7 +225,7 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
               </div>
             </CardContent>
           </Card>
-   
+
           {/* 요건 면제방법 카드 */}
           <Card className="bg-white shadow-lg transition-all duration-200 hover:shadow-xl">
             <CardHeader className="border-b border-gray-100">
@@ -234,7 +241,7 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
               </div>
             </CardContent>
           </Card>
-   
+
           {/* 요건 신청방법 카드 */}
           <Card className="bg-white shadow-lg transition-all duration-200 hover:shadow-xl">
             <CardHeader className="border-b border-gray-100">
@@ -253,5 +260,5 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
         </div>
       </div>
     </div>
-   );
+  );
 }
