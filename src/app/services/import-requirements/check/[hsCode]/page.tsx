@@ -93,6 +93,7 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
     try {
       const response = await fetch(`/api/requirements?reqCfrmIstmNm=${reqCfrmIstmNm}`);
       const data = await response.json();
+      console.log('Fetched requirement data:', data); // 데이터 형식 확인
       setRequirementDetail({
         description: data.description || '해당 요건에 대한 설명이 없습니다.',
         exemption: data.exemption || '면제 방법 정보가 없습니다.',
@@ -114,16 +115,22 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
   };
 
   const formatText = (text: string | null | undefined) => {
-    if (!text) {
-      return <p>요건을 선택하여 정보를 확인하세요.</p>;
+    // text가 undefined, null, 빈 문자열인 경우를 모두 체크
+    if (!text || typeof text !== 'string') {
+      return <p className="text-gray-500">요건을 선택하여 정보를 확인하세요.</p>;
     }
     
-    return text.split('\n').map((line, index) => (
-      <React.Fragment key={index}>
-        {line}
-        {index < text.split('\n').length - 1 && <br />}
-      </React.Fragment>
-    ));
+    try {
+      return text.split('\n').map((line, index) => (
+        <React.Fragment key={index}>
+          {line}
+          {index < text.split('\n').length - 1 && <br />}
+        </React.Fragment>
+      ));
+    } catch (error) {
+      console.error('Error formatting text:', error);
+      return <p className="text-gray-500">텍스트 형식이 올바르지 않습니다.</p>;
+    }
   };
 
   return (
