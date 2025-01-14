@@ -206,7 +206,7 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
             <CardContent className="p-6">
               <div className="prose prose-gray max-w-none">
                 <p className="text-gray-700 leading-relaxed">
-                  {formatText(requirementDetail.description)}
+                  {formatText(requirementDetail.exemption)}
                 </p>
               </div>
             </CardContent>
@@ -222,7 +222,7 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
             <CardContent className="p-6">
               <div className="prose prose-gray max-w-none">
                 <p className="text-gray-700 leading-relaxed">
-                  {formatText(requirementDetail.description)}
+                  {formatText(requirementDetail.application)}
                 </p>
               </div>
             </CardContent>
