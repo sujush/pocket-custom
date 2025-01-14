@@ -95,16 +95,25 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
       const data = await response.json();
       
       console.log('API Response:', data);
-      const requirementInfo = data[reqCfrmIstmNm];
-      console.log('Requirement Info:', requirementInfo);
       
-      if (requirementInfo) {
+      // 데이터 구조 확인을 위한 디버깅
+      if (data && typeof data === 'object') {
+        console.log('Data keys:', Object.keys(data));
+        console.log('Full data structure:', JSON.stringify(data, null, 2));
+      }
+  
+      // 데이터 구조에 따라 조건문 수정
+      if (data && data[reqCfrmIstmNm]) {
+        const requirementInfo = data[reqCfrmIstmNm];
+        console.log('Found requirement info:', requirementInfo);
+        
         setRequirementDetail({
           description: requirementInfo.description || '해당 요건에 대한 설명이 없습니다.',
           exemption: requirementInfo.exemption || '면제 방법 정보가 없습니다.',
           application: requirementInfo.application || '신청 방법 정보가 없습니다.'
         });
       } else {
+        console.log('No matching requirement info found for:', reqCfrmIstmNm);
         setRequirementDetail({
           description: '해당 요건에 대한 정보가 없습니다.',
           exemption: '해당 요건에 대한 정보가 없습니다.',
