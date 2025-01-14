@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';  // 이 줄을 추가
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import xml2js from 'xml2js';
@@ -62,7 +63,7 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
   useEffect(() => {
     const fetchRequirementsData = async () => {
       setIsLoading(true);
-  
+
       try {
         const data = await fetchRequirements(params.hsCode);
         const uniqueData = data.filter(
@@ -82,7 +83,7 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
         setIsLoading(false);
       }
     };
-  
+
     if (params.hsCode) {
       fetchRequirementsData();
     }
@@ -112,18 +113,29 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
     fetchRequirementDescriptions(reqCfrmIstmNm);
   };
 
+  const formatText = (text: string) => {
+    if (!text) return null;
+    return text.split('\n').map((line, index) => (
+      <React.Fragment key={index}>
+        {line}
+        {index < text.split('\n').length - 1 && <br />}
+      </React.Fragment>
+    ));
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-4">수입요건 확인</h1>
-
+   
       <div className="flex">
+        {/* 왼쪽 패널 - 요건 목록 */}
         <div className="w-1/2 pr-4">
           <Card className="mb-4">
             <CardHeader>
               <CardTitle>조회 품목번호: {params.hsCode}</CardTitle>
             </CardHeader>
           </Card>
-
+   
           {isLoading ? (
             <div className="flex justify-center items-center p-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
@@ -159,51 +171,61 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
             </Card>
           )}
         </div>
-
-        <div className="w-1/2 pl-4 space-y-4">
+   
+        {/* 오른쪽 패널 - 상세 정보 */}
+        <div className="w-1/2 pl-4 space-y-6">
           {/* 요건 설명 카드 */}
-          <Card className="bg-gray-50 shadow-lg transition-opacity duration-200 ease-in-out">
-            <CardHeader>
+          <Card className="bg-white shadow-lg transition-all duration-200 hover:shadow-xl">
+            <CardHeader className="border-b border-gray-100">
               <CardTitle className="flex items-center space-x-2">
-                <span className="text-blue-600">요건 설명</span>
+                <span className="text-blue-600 font-semibold">요건 설명</span>
                 {selectedReqName && (
                   <span className="text-sm text-gray-500">({selectedReqName})</span>
                 )}
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4">
-              <p className="text-gray-600 whitespace-pre-line">
-                {requirementDetail.description || '요건을 선택하여 설명을 확인하세요.'}
-              </p>
+            <CardContent className="p-6">
+              <div className="prose prose-gray max-w-none">
+                <p className="text-gray-700 leading-relaxed">
+                  {formatText(requirementDetail.description) || '요건을 선택하여 설명을 확인하세요.'}
+                </p>
+              </div>
             </CardContent>
           </Card>
-
+   
           {/* 요건 면제방법 카드 */}
-          <Card className="bg-gray-50 shadow-lg transition-opacity duration-200 ease-in-out">
-            <CardHeader>
-              <CardTitle className="text-green-600">요건 면제방법</CardTitle>
+          <Card className="bg-white shadow-lg transition-all duration-200 hover:shadow-xl">
+            <CardHeader className="border-b border-gray-100">
+              <CardTitle className="flex items-center space-x-2">
+                <span className="text-green-600 font-semibold">요건 면제방법</span>
+              </CardTitle>
             </CardHeader>
-            <CardContent className="p-4">
-              <p className="text-gray-600 whitespace-pre-line">
-                {requirementDetail.exemption || '요건을 선택하여 면제방법을 확인하세요.'}
-              </p>
+            <CardContent className="p-6">
+              <div className="prose prose-gray max-w-none">
+                <p className="text-gray-700 leading-relaxed">
+                  {formatText(requirementDetail.exemption) || '요건을 선택하여 면제방법을 확인하세요.'}
+                </p>
+              </div>
             </CardContent>
           </Card>
-
+   
           {/* 요건 신청방법 카드 */}
-          <Card className="bg-gray-50 shadow-lg transition-opacity duration-200 ease-in-out">
-            <CardHeader>
-              <CardTitle className="text-purple-600">요건 신청방법</CardTitle>
+          <Card className="bg-white shadow-lg transition-all duration-200 hover:shadow-xl">
+            <CardHeader className="border-b border-gray-100">
+              <CardTitle className="flex items-center space-x-2">
+                <span className="text-purple-600 font-semibold">요건 신청방법</span>
+              </CardTitle>
             </CardHeader>
-            <CardContent className="p-4">
-              <p className="text-gray-600 whitespace-pre-line">
-                {requirementDetail.application || '요건을 선택하여 신청방법을 확인하세요.'}
-              </p>
+            <CardContent className="p-6">
+              <div className="prose prose-gray max-w-none">
+                <p className="text-gray-700 leading-relaxed">
+                  {formatText(requirementDetail.application) || '요건을 선택하여 신청방법을 확인하세요.'}
+                </p>
+              </div>
             </CardContent>
           </Card>
         </div>
-        {/* 수정 끝 */}
       </div>
     </div>
-  );
+   );
 }
