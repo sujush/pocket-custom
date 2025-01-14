@@ -95,16 +95,10 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
       const data = await response.json();
       
       console.log('API Response:', data);
-      
-      // 데이터 구조 확인을 위한 디버깅
-      if (data && typeof data === 'object') {
-        console.log('Data keys:', Object.keys(data));
-        console.log('Full data structure:', JSON.stringify(data, null, 2));
-      }
   
-      // 데이터 구조에 따라 조건문 수정
-      if (data && data[reqCfrmIstmNm]) {
-        const requirementInfo = data[reqCfrmIstmNm];
+      // data.description에서 정보를 가져옴
+      if (data && data.description) {
+        const requirementInfo = data.description;
         console.log('Found requirement info:', requirementInfo);
         
         setRequirementDetail({
