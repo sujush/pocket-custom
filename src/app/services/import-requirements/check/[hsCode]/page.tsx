@@ -113,8 +113,11 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
     fetchRequirementDescriptions(reqCfrmIstmNm);
   };
 
-  const formatText = (text: string) => {
-    if (!text) return null;
+  const formatText = (text: string | null | undefined) => {
+    if (!text) {
+      return <p>요건을 선택하여 정보를 확인하세요.</p>;
+    }
+    
     return text.split('\n').map((line, index) => (
       <React.Fragment key={index}>
         {line}
@@ -187,7 +190,7 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
             <CardContent className="p-6">
               <div className="prose prose-gray max-w-none">
                 <p className="text-gray-700 leading-relaxed">
-                  {formatText(requirementDetail.description) || '요건을 선택하여 설명을 확인하세요.'}
+                  {formatText(requirementDetail.description)}
                 </p>
               </div>
             </CardContent>
@@ -203,7 +206,7 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
             <CardContent className="p-6">
               <div className="prose prose-gray max-w-none">
                 <p className="text-gray-700 leading-relaxed">
-                  {formatText(requirementDetail.exemption) || '요건을 선택하여 면제방법을 확인하세요.'}
+                  {formatText(requirementDetail.description)}
                 </p>
               </div>
             </CardContent>
@@ -219,7 +222,7 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
             <CardContent className="p-6">
               <div className="prose prose-gray max-w-none">
                 <p className="text-gray-700 leading-relaxed">
-                  {formatText(requirementDetail.application) || '요건을 선택하여 신청방법을 확인하세요.'}
+                  {formatText(requirementDetail.description)}
                 </p>
               </div>
             </CardContent>
