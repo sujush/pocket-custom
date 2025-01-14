@@ -43,15 +43,26 @@ async function fetchRequirements(hsCode: string): Promise<RequirementResult[]> {
   }
 }
 
+interface RequirementDetail {
+  description: string;
+  exemption: string;
+  application: string;
+}
+
 export default function ImportRequirementsCheckPage({ params }: { params: { hsCode: string } }) {
   const [requirements, setRequirements] = useState<RequirementResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [requirementDescription, setRequirementDescription] = useState<string | null>(null);
+  const [requirementDetail, setRequirementDetail] = useState<RequirementDetail>({
+    description: '',
+    exemption: '',
+    application: ''
+  });
+  const [selectedReqName, setSelectedReqName] = useState<string>('');
 
   useEffect(() => {
     const fetchRequirementsData = async () => {
       setIsLoading(true);
-
+  
       try {
         const data = await fetchRequirements(params.hsCode);
         const uniqueData = data.filter(
@@ -60,13 +71,18 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
         );
         setRequirements(uniqueData);
       } catch (error) {
-        console.error(error); //error 를 로그에 출력하여 사용함
-        setRequirementDescription('수입요건 조회 중 오류가 발생했습니다.');
+        console.error(error);
+        // 수정 필요: requirementDescription -> requirementDetail로 변경
+        setRequirementDetail({
+          description: '수입요건 조회 중 오류가 발생했습니다.',
+          exemption: '수입요건 조회 중 오류가 발생했습니다.',
+          application: '수입요건 조회 중 오류가 발생했습니다.'
+        });
       } finally {
         setIsLoading(false);
       }
     };
-
+  
     if (params.hsCode) {
       fetchRequirementsData();
     }
@@ -76,10 +92,19 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
     try {
       const response = await fetch(`/api/requirements?reqCfrmIstmNm=${reqCfrmIstmNm}`);
       const data = await response.json();
-      setRequirementDescription(data.description || '해당 요건에 대한 설명이 없습니다.');
+      setRequirementDetail({
+        description: data.description || '해당 요건에 대한 설명이 없습니다.',
+        exemption: data.exemption || '면제 방법 정보가 없습니다.',
+        application: data.application || '신청 방법 정보가 없습니다.'
+      });
+      setSelectedReqName(reqCfrmIstmNm);
     } catch (error) {
       console.error('Error fetching requirements description:', error);
-      setRequirementDescription('설명을 불러오지 못했습니다.');
+      setRequirementDetail({
+        description: '정보를 불러오지 못했습니다.',
+        exemption: '정보를 불러오지 못했습니다.',
+        application: '정보를 불러오지 못했습니다.'
+      });
     }
   };
 
@@ -135,18 +160,49 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
           )}
         </div>
 
-        <div className="w-1/2 pl-4">
-          <Card className="h-full bg-gray-50 shadow-lg animate-fade-in">
+        <div className="w-1/2 pl-4 space-y-4">
+          {/* 요건 설명 카드 */}
+          <Card className="bg-gray-50 shadow-lg transition-opacity duration-200 ease-in-out">
             <CardHeader>
-              <CardTitle>요건 설명</CardTitle>
+              <CardTitle className="flex items-center space-x-2">
+                <span className="text-blue-600">요건 설명</span>
+                {selectedReqName && (
+                  <span className="text-sm text-gray-500">({selectedReqName})</span>
+                )}
+              </CardTitle>
             </CardHeader>
             <CardContent className="p-4">
-              <p className="text-gray-600" style={{ whiteSpace: 'pre-line'}}>
-                {requirementDescription || '요건 확인서를 선택하여 설명을 확인하세요.'}
+              <p className="text-gray-600 whitespace-pre-line">
+                {requirementDetail.description || '요건을 선택하여 설명을 확인하세요.'}
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* 요건 면제방법 카드 */}
+          <Card className="bg-gray-50 shadow-lg transition-opacity duration-200 ease-in-out">
+            <CardHeader>
+              <CardTitle className="text-green-600">요건 면제방법</CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <p className="text-gray-600 whitespace-pre-line">
+                {requirementDetail.exemption || '요건을 선택하여 면제방법을 확인하세요.'}
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* 요건 신청방법 카드 */}
+          <Card className="bg-gray-50 shadow-lg transition-opacity duration-200 ease-in-out">
+            <CardHeader>
+              <CardTitle className="text-purple-600">요건 신청방법</CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <p className="text-gray-600 whitespace-pre-line">
+                {requirementDetail.application || '요건을 선택하여 신청방법을 확인하세요.'}
               </p>
             </CardContent>
           </Card>
         </div>
+        {/* 수정 끝 */}
       </div>
     </div>
   );
