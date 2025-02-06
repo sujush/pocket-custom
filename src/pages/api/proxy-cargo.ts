@@ -74,7 +74,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const unipassUrl = `${unipassBaseUrl}/retrieveCargCsclPrgsInfo?crkyCn=${apiKey}${
     mblNo ? `&mblNo=${mblNo}&blYy=${blYy}` : `&hblNo=${hblNo}&blYy=${blYy}`
-  }`
+  }`;
+
+  console.log(" Unipass API 요청 URL:", unipassUrl);
 
   try {
     const response = await fetch(unipassUrl, {
@@ -84,12 +86,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     });
 
+    console.log("Unipass API 응답상태 코드:", response.status);
+
     if (!response.ok) {
       console.error("Unipass API 요청 실패:", response.statusText);
       throw new Error('Unipass API 요청 실패');
     }
 
     const xml = await response.text();
+    console.log("Unipass API 응답 XML:", xml);
     const jsonData = await parseStringPromise(xml, { explicitArray: false });
 
     // 최상위 필드 필터링 및 변환
