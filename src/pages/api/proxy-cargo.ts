@@ -101,12 +101,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const mainData = transformFields(jsonData.cargCsclPrgsInfoQryRtnVo.cargCsclPrgsInfoQryVo, fieldMap);
 
     // 하위 필드 필터링 및 변환
-    const subData = jsonData.cargCsclPrgsInfoQryRtnVo?.cargCsclPrgsInfoDtlQryVo
-    ? jsonData.cargCsclPrgsInfoQryRtnVo.cargCsclPrgsInfoDtlQryVo.map((item: Record<string, unknown>) =>
-        transformFields(item, subFieldMap)
-    )
-    : [];
-
+    const subData = jsonData.cargCsclPrgsInfoQryRtnVo.cargCsclPrgsInfoDtlQryVo.map((item: Record<string, unknown>) => transformFields(item, subFieldMap));
 
     // 최종 데이터 조합
     const result = {
