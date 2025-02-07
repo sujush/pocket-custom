@@ -97,12 +97,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log("Unipass API 응답 XML:", xml);
     const jsonData = await parseStringPromise(xml, { explicitArray: false });
 
+    // 디버깅: 전체 JSON 데이터 구조 출력
+    console.log("파싱된 JSON 데이터:", JSON.stringify(jsonData, null, 2));
+
     // 최상위 필드 필터링 및 변환
-    const mainData = transformFields(jsonData.cargCsclPrgsInfoQryRtnVo.cargCsclPrgsInfoQryVo, fieldMap);
+    const mainData = transformFields(
+      jsonData.cargCsclPrgsInfoQryRtnVo.cargCsclPrgsInfoQryVo,
+      fieldMap
+    );
 
-    // 하위 필드 필터링 및 변환
-    const subData = jsonData.cargCsclPrgsInfoQryRtnVo.cargCsclPrgsInfoDtlQryVo.map((item: Record<string, unknown>) => transformFields(item, subFieldMap));
-
+    // 하위 데이터 처리 (존재 여부 및 배열 여부 확인)
+    const detailQry = jsonData?.cargCsclPrgsInfoQryRtnVo?.cargCsclPrgsInfoDtlQryVo;
+    let subData: Record<string, unknown>[] = [];
+    if (detailQry) {
+      if (Array.isArray(detailQry)) {
+        subData = detailQry.map((item: Record<string, unknown>) => transformFields(item, subFieldMap));
+      } else {
+        subData = [transformFields(detailQry, subFieldMap)];
+      }
+    } else {
+      console.warn("하위 데이터(cargCsclPrgsInfoDtlQryVo)가 응답에 포함되어 있지 않습니다.");
+    }
     // 최종 데이터 조합
     const result = {
       ...mainData,
