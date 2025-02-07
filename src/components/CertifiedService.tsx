@@ -34,7 +34,7 @@ const CertifiedServices = [
 
 const CertifiedServiceCard: React.FC<{ service: { title: string; description: string; icon: React.ElementType; link: string } }> = ({ service }) => {
  const router = useRouter();
- const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+ const isAuthenticated = useAuthStore(state => state.isAuthenticated); //로그인해야 이용가능하도록 하는 기능
 
  const handleClick = () => {
    if (!isAuthenticated) {
