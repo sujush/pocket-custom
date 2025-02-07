@@ -53,7 +53,7 @@ export default function CargoLocation() {
         cargoType: "fcl",
         blNumber: ""
     });
-    const blYy = "2024";
+    const blYy = "2025";
 
     // BL 타입 변경 핸들러
     const handleBLTypeChange = (type: BLType) => {
