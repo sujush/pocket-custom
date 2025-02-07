@@ -12,16 +12,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 
-interface FormResult {
+type CategoryType = '가공식품' | '기구ㆍ용기등' | null;
+type FeatureType = '한글표시사항 작성' | '검사비용 확인' | null;
+type GlassType = 
+  | "유리제 (비가열조리용) 포함"
+  | "유리제 (열탕용) 포함"
+  | "유리제 (전자레인지용) 포함"
+  | "유리제 (오븐용) 포함"
+  | "유리제 (직화용) 포함"
+  | "해당사항 없음"
+  | null;
+
+interface FormDataType {
   productName: string;
   material: string;
   manufacturer: string;
@@ -29,7 +32,27 @@ interface FormResult {
   address: string;
   contact: string;
   origin: string;
-  additionalText?: string;
+}
+
+interface ResultType extends FormDataType {
+  additionalText: string;
+}
+
+interface CategoryItem {
+  id: CategoryType;
+  label: string;
+  description: string;
+}
+
+interface FeatureItem {
+  id: FeatureType;
+  label: string;
+  description: string;
+}
+
+interface FormField {
+  id: keyof FormDataType;
+  label: string;
 }
 
 interface StepProps {
@@ -38,13 +61,13 @@ interface StepProps {
   active: boolean;
 }
 
-export default function CertifiedFoodInspection() {
-  const [category, setCategory] = useState<string | null>(null)
-  const [feature, setFeature] = useState<string | null>(null)
-  const [inputValue, setInputValue] = useState('')
-  const [result, setResult] = useState<FormResult | null>(null)
-  const [glassType, setGlassType] = useState<string | null>(null)
-  const [formData, setFormData] = useState({
+export default function CertifiedFoodInspection(): JSX.Element {
+  const [category, setCategory] = useState<CategoryType>(null)
+  const [feature, setFeature] = useState<FeatureType>(null)
+  const [inputValue, setInputValue] = useState<string>('')
+  const [result, setResult] = useState<ResultType | null>(null)
+  const [glassType, setGlassType] = useState<GlassType>(null)
+  const [formData, setFormData] = useState<FormDataType>({
     productName: '',
     material: '',
     manufacturer: '',
@@ -53,9 +76,9 @@ export default function CertifiedFoodInspection() {
     contact: '',
     origin: ''
   })
-  const [showTable, setShowTable] = useState(false)
+  const [showTable, setShowTable] = useState<boolean>(false)
 
-  const foodTypes = [
+  const foodTypes: string[] = [
     "과자류, 빵류 또는 떡류",
     "빙과류",
     "코코아가공품류 또는 초콜릿류",
@@ -81,7 +104,7 @@ export default function CertifiedFoodInspection() {
     "기타식품류",
   ]
 
-  const glassTypes = [
+  const glassTypes: GlassType[] = [
     "유리제 (비가열조리용) 포함",
     "유리제 (열탕용) 포함",
     "유리제 (전자레인지용) 포함",
@@ -90,7 +113,7 @@ export default function CertifiedFoodInspection() {
     "해당사항 없음"
   ]
 
-  const formFields: Array<{id: keyof typeof formData, label: string}> = [
+  const formFields: FormField[] = [
     { id: 'productName', label: '제품명' },
     { id: 'material', label: '식품에 닿는 부분의 재질' },
     { id: 'manufacturer', label: '해외제조업소 영문명' },
@@ -100,53 +123,93 @@ export default function CertifiedFoodInspection() {
     { id: 'origin', label: '원산지' }
   ]
 
-  const categories = [
+  const categories: CategoryItem[] = [
     { id: '가공식품', label: '가공식품', description: '식품 첨가물, 건강기능식품 등' },
     { id: '기구ㆍ용기등', label: '기구ㆍ용기등', description: '식품용 기구, 용기, 포장재 등' }
   ]
 
-  const features = [
+  const features: FeatureItem[] = [
     { id: '한글표시사항 작성', label: '한글표시사항 작성', description: '제품의 한글 표시사항을 작성합니다' },
     { id: '검사비용 확인', label: '검사비용 확인', description: '예상되는 검사 비용을 확인합니다' }
   ]
 
-  const getAdditionalText = (glassType: string | null) => {
-    if (glassType === "유리제 (비가열조리용) 포함") {
+  const getGlassMaterial = (type: GlassType): string => {
+    switch(type) {
+      case "유리제 (열탕용) 포함":
+        return "유리제(열탕용)";
+      case "유리제 (전자레인지용) 포함":
+        return "유리제(전자레인지용)";
+      case "유리제 (오븐용) 포함":
+        return "유리제(오븐용)";
+      case "유리제 (직화용) 포함":
+        return "유리제(직화용)";
+      default:
+        return "";
+    }
+  }
+
+  const getAdditionalText = (type: GlassType): string => {
+    if (type === "유리제 (비가열조리용) 포함") {
       return "가열조리용으로 사용하지 마십시오"
-    } else if (glassType && glassType !== "해당사항 없음") {
+    } else if (type && type !== "해당사항 없음") {
       return "표시된 용도 외로 사용하지 마십시오"
     }
     return ""
   }
 
-  const handleFormSubmit = () => {
-    // 모든 필드가 채워졌는지 확인
-    const isFormComplete = Object.values(formData).every(value => value.trim() !== '')
-    
-    if (!isFormComplete) {
-      alert("모든 필드를 입력해주세요.")
-      return
+  const handleGlassTypeSelect = (type: GlassType): void => {
+    setGlassType(type);
+    if (type !== "유리제 (비가열조리용) 포함" && type !== "해당사항 없음" && type !== null) {
+      const glassText = getGlassMaterial(type);
+      setFormData(prev => ({
+        ...prev,
+        material: `${glassText}, `
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        material: ''
+      }));
     }
-
-    // 제품명에 (식품용) 추가
-    const modifiedFormData = {
-      ...formData,
-      productName: `${formData.productName} (식품용)`
-    }
-
-    const additionalText = getAdditionalText(glassType)
-    setResult({ ...modifiedFormData, additionalText })
-    setShowTable(true)
   }
 
-  const handleInputChange = (field: keyof typeof formData, value: string) => {
+  const handleInputChange = (field: keyof FormDataType, value: string): void => {
+    if (field === 'material' && 
+        glassType && 
+        glassType !== "유리제 (비가열조리용) 포함" && 
+        glassType !== "해당사항 없음") {
+      const baseGlassText = getGlassMaterial(glassType);
+      
+      if (!value.startsWith(baseGlassText)) {
+        value = baseGlassText + value.slice(baseGlassText.length - 1);
+      }
+    }
+    
     setFormData(prev => ({
       ...prev,
       [field]: value
-    }))
+    }));
   }
 
-  const Step = ({ number, title, active }: StepProps) => (
+  const handleFormSubmit = (): void => {
+    const isFormComplete = Object.values(formData).every(value => value.trim() !== '');
+    
+    if (!isFormComplete) {
+      alert("모든 필드를 입력해주세요.");
+      return;
+    }
+
+    const modifiedFormData = {
+      ...formData,
+      productName: `${formData.productName} (식품용)`
+    };
+
+    const additionalText = getAdditionalText(glassType);
+    setResult({ ...modifiedFormData, additionalText });
+    setShowTable(true);
+  }
+
+  const Step = ({ number, title, active }: StepProps): JSX.Element => (
     <div className="flex items-center gap-2 text-sm">
       <div className={`rounded-full w-6 h-6 flex items-center justify-center ${
         active ? 'bg-blue-500 text-white' : 'bg-gray-200'
@@ -163,9 +226,9 @@ export default function CertifiedFoodInspection() {
       
       {/* Progress Steps */}
       <div className="flex justify-between mb-8 px-4">
-        <Step number="1" title="검사 유형 선택" active={!category ? true : false} />
-        <Step number="2" title="기능 선택" active={category && !feature ? true : false} />
-        <Step number="3" title="정보 입력" active={category && feature ? true : false} />
+        <Step number="1" title="검사 유형 선택" active={!category ?? false} />
+        <Step number="2" title="기능 선택" active={Boolean(category && !feature)} />
+        <Step number="3" title="정보 입력" active={Boolean(category && feature)} />
       </div>
 
       {/* Category Selection */}
@@ -300,7 +363,7 @@ export default function CertifiedFoodInspection() {
                         className={`cursor-pointer transition-all hover:shadow-md ${
                           glassType === type ? 'ring-2 ring-blue-500' : ''
                         }`}
-                        onClick={() => setGlassType(type)}
+                        onClick={() => handleGlassTypeSelect(type)}
                       >
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
@@ -324,10 +387,13 @@ export default function CertifiedFoodInspection() {
                           {field.label}
                         </label>
                         <Input
+                          key={field.id}
                           className="w-full p-3"
                           value={formData[field.id]}
-                          onChange={(e) => handleInputChange(field.id as keyof typeof formData, e.target.value)}
-                          placeholder={`${field.label}을(를) 입력하세요`}
+                          onChange={(e) => handleInputChange(field.id, e.target.value)}
+                          placeholder={field.id === 'material' 
+                            ? "정확한 재질을 입력하세요 EX) 폴리프로필렌 또는 PP 등" 
+                            : `${field.label}을(를) 입력하세요`}
                         />
                       </div>
                     ))}
@@ -349,7 +415,7 @@ export default function CertifiedFoodInspection() {
                   className="w-full p-3"
                   placeholder={`${feature}에 필요한 정보를 입력하세요.`}
                   value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputValue(e.target.value)}
                 />
                 <Button 
                   onClick={handleFormSubmit}
@@ -366,51 +432,55 @@ export default function CertifiedFoodInspection() {
       {/* Result Table */}
       {showTable && result && (
         <div className="mt-8">
-          <h3 className="text-lg font-semibold mb-4">한글표시사항 결과:</h3>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>항목</TableHead>
-                <TableHead>내용</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow>
-                <TableCell className="font-medium">제품명</TableCell>
-                <TableCell>{result.productName}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">식품에 닿는 부분의 재질</TableCell>
-                <TableCell>{result.material}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">해외제조업소 영문명</TableCell>
-                <TableCell>{result.manufacturer}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">수입자 업체명</TableCell>
-                <TableCell>{result.importer}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">수입자 주소</TableCell>
-                <TableCell>{result.address}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">수입자 연락처</TableCell>
-                <TableCell>{result.contact}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">원산지</TableCell>
-                <TableCell>{result.origin}</TableCell>
-              </TableRow>
+          <table className="w-full border-collapse border border-gray-200">
+            <thead>
+              <tr className="bg-gray-100">
+                <th colSpan={2} className="text-center p-4 border-b font-bold">
+                  식품위생법에 따른 한글표시사항
+                </th>
+              </tr>
+              <tr>
+                <th className="text-left p-4 border-b w-1/3">항목</th>
+                <th className="text-left p-4 border-b">내용</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="p-4 border-b font-medium">제품명</td>
+                <td className="p-4 border-b">{result.productName}</td>
+              </tr>
+              <tr>
+                <td className="p-4 border-b font-medium">식품에 닿는 부분의 재질</td>
+                <td className="p-4 border-b">{result.material}</td>
+              </tr>
+              <tr>
+                <td className="p-4 border-b font-medium">해외제조업소 영문명</td>
+                <td className="p-4 border-b">{result.manufacturer}</td>
+              </tr>
+              <tr>
+                <td className="p-4 border-b font-medium">수입자 업체명</td>
+                <td className="p-4 border-b">{result.importer}</td>
+              </tr>
+              <tr>
+                <td className="p-4 border-b font-medium">수입자 주소</td>
+                <td className="p-4 border-b">{result.address}</td>
+              </tr>
+              <tr>
+                <td className="p-4 border-b font-medium">수입자 연락처</td>
+                <td className="p-4 border-b">{result.contact}</td>
+              </tr>
+              <tr>
+                <td className="p-4 border-b font-medium">원산지</td>
+                <td className="p-4 border-b">{result.origin}</td>
+              </tr>
               {result.additionalText && (
-                <TableRow>
-                  <TableCell className="font-medium">추가 안내사항</TableCell>
-                  <TableCell className="text-red-500 font-semibold">{result.additionalText}</TableCell>
-                </TableRow>
+                <tr>
+                  <td className="p-4 border-b font-medium">추가 안내사항</td>
+                  <td className="p-4 border-b text-red-500 font-semibold">{result.additionalText}</td>
+                </tr>
               )}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
         </div>
       )}
     </div>
