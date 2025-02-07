@@ -226,7 +226,7 @@ export default function CertifiedFoodInspection(): JSX.Element {
       
       {/* Progress Steps */}
       <div className="flex justify-between mb-8 px-4">
-        <Step number="1" title="검사 유형 선택" active={!category ?? false} />
+        <Step number="1" title="검사 유형 선택" active={!category} />
         <Step number="2" title="기능 선택" active={Boolean(category && !feature)} />
         <Step number="3" title="정보 입력" active={Boolean(category && feature)} />
       </div>
