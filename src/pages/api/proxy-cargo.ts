@@ -68,29 +68,12 @@ function transformFields(data: Record<string, unknown>, map: Record<string, stri
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { mblNo, hblNo, blYy, cargMtNo } = req.query
+  const { mblNo, hblNo, blYy } = req.query
   const apiKey = process.env.NEXT_PUBLIC_UNIPASS_API_KEY
   const unipassBaseUrl = "https://unipass.customs.go.kr:38010/ext/rest/cargCsclPrgsInfoQry"
 
-
-    // 필수 파라미터 검증
-  if (!apiKey || (!mblNo && !hblNo && !cargMtNo) || !blYy) {
-    return res.status(400).json({ error: '필수 파라미터가 누락되었습니다.' });
-  }
-
-  // BL 연도 검증 (최근 3년 이내)
-  const currentYear = new Date().getFullYear();
-  const blYyNum = parseInt(blYy as string);
-  if (blYyNum < currentYear - 3 || blYyNum > currentYear) {
-    return res.status(400).json({ error: 'BL 년도(blYy)는 최근 3년 내여야 합니다.' });
-  }
-
-
-  const unipassUrl = `${unipassBaseUrl}/retrieveCargCsclPrgsInfo?crkyCn=${apiKey}${
-    mblNo ? `&mblNo=${mblNo}&blYy=${blYy}` : `&hblNo=${hblNo}&blYy=${blYy}`
-  }`;
-
-  console.log(" Unipass API 요청 URL:", unipassUrl);
+  const unipassUrl = `${unipassBaseUrl}/retrieveCargCsclPrgsInfo?crkyCn=${apiKey}${mblNo ? `&mblNo=${mblNo}&blYy=${blYy}` : `&hblNo=${hblNo}&blYy=${blYy}`
+    }`
 
   try {
     const response = await fetch(unipassUrl, {
@@ -100,48 +83,47 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     });
 
-    console.log("Unipass API 응답상태 코드:", response.status);
-
     if (!response.ok) {
       console.error("Unipass API 요청 실패:", response.statusText);
       throw new Error('Unipass API 요청 실패');
     }
 
     const xml = await response.text();
-    console.log("Unipass API 응답 XML:", xml);
     const jsonData = await parseStringPromise(xml, { explicitArray: false });
 
-   // JSON 구조 확인
-   console.log('응답 데이터:', JSON.stringify(jsonData, null, 2));
-
     // 최상위 필드 필터링 및 변환
-    const mainData = jsonData.cargCsclPrgsInfoQryRtnVo?.cargCsclPrgsInfoQryVo;
-    if (!mainData) {
-      console.warn('요약 정보가 없습니다.');
-    }
+    const mainData = transformFields(jsonData.cargCsclPrgsInfoQryRtnVo.cargCsclPrgsInfoQryVo, fieldMap);
 
-    // 하위 데이터 처리 (존재 여부 및 배열 여부 확인)
+    // 수정 후
     const detailQry = jsonData.cargCsclPrgsInfoQryRtnVo?.cargCsclPrgsInfoDtlQryVo;
+
     let subData: Record<string, unknown>[] = [];
     if (detailQry) {
-      subData = Array.isArray(detailQry)
-        ? detailQry.map((item) => transformFields(item, subFieldMap))
-        : [transformFields(detailQry, subFieldMap)];
+      // detailQry가 배열인지 확인하여 처리
+      if (Array.isArray(detailQry)) {
+        subData = detailQry.map((item) => transformFields(item, subFieldMap));
+      } else {
+        // 단일 객체인 경우 배열로 감싸기
+        subData = [transformFields(detailQry, subFieldMap)];
+      }
     } else {
-      console.warn('장치장 정보가 없습니다.');
+      console.warn("장치장 정보가 응답 데이터에 없습니다.");
     }
+
     // 최종 데이터 조합
     const result = {
-      ...transformFields(mainData || {}, fieldMap),
-      cargCsclPrgsInfoDtlQryVo: subData,
+      ...mainData,
+      cargCsclPrgsInfoDtlQryVo: subData
     };
 
     res.status(200).json(result);
-  } catch (error) {
-    console.error('Unipass API 요청 오류:', error);
-    res.status(500).json({ 
-      error: 'Unipass API 요청에 실패했습니다.', 
-      details: error instanceof Error ? error.message : '알 수 없는 오류'
-    });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error("Unipass API 요청 오류:", error.message);
+      res.status(500).json({ error: 'Unipass API 요청에 실패했습니다.', details: error.message });
+    } else {
+      console.error("Unipass API 요청 오류:", error);
+      res.status(500).json({ error: 'Unipass API 요청에 실패했습니다.', details: '알 수 없는 오류 발생' });
+    }
   }
 }
