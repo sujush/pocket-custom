@@ -1,78 +1,418 @@
 'use client'
 
 import React, { useState } from 'react'
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { CheckCircle2 } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+
+interface FormResult {
+  productName: string;
+  material: string;
+  manufacturer: string;
+  importer: string;
+  address: string;
+  contact: string;
+  origin: string;
+  additionalText?: string;
+}
+
+interface StepProps {
+  number: string;
+  title: string;
+  active: boolean;
+}
 
 export default function CertifiedFoodInspection() {
-  const [category, setCategory] = useState<'가공식품' | '기구ㆍ용기등' | null>(null)
-  const [feature, setFeature] = useState<'한글표시사항 작성' | '검사비용 확인' | null>(null)
+  const [category, setCategory] = useState<string | null>(null)
+  const [feature, setFeature] = useState<string | null>(null)
   const [inputValue, setInputValue] = useState('')
-  const [result, setResult] = useState<string | null>(null)
+  const [result, setResult] = useState<FormResult | null>(null)
+  const [glassType, setGlassType] = useState<string | null>(null)
+  const [formData, setFormData] = useState({
+    productName: '',
+    material: '',
+    manufacturer: '',
+    importer: '',
+    address: '',
+    contact: '',
+    origin: ''
+  })
+  const [showTable, setShowTable] = useState(false)
 
-  // 결과 확인 버튼 클릭 시 실행되는 함수
-  const handleSubmit = () => {
-    if (!category || !feature) {
-      alert("검사 유형과 기능을 선택해주세요.")
+  const foodTypes = [
+    "과자류, 빵류 또는 떡류",
+    "빙과류",
+    "코코아가공품류 또는 초콜릿류",
+    "당류",
+    "잼류",
+    "두부류 또는 묵류",
+    "식용유지류",
+    "면류",
+    "음료류",
+    "특수용도식품",
+    "장류",
+    "조미식품",
+    "절임류 또는 조림류",
+    "주류",
+    "농산가공식품류",
+    "식육가공품 및 포장육",
+    "알가공품류",
+    "유가공품",
+    "수산가공식품류",
+    "동물성가공식품류",
+    "벌꿀 및 화분가공품",
+    "즉석식품류",
+    "기타식품류",
+  ]
+
+  const glassTypes = [
+    "유리제 (비가열조리용) 포함",
+    "유리제 (열탕용) 포함",
+    "유리제 (전자레인지용) 포함",
+    "유리제 (오븐용) 포함",
+    "유리제 (직화용) 포함",
+    "해당사항 없음"
+  ]
+
+  const formFields: Array<{id: keyof typeof formData, label: string}> = [
+    { id: 'productName', label: '제품명' },
+    { id: 'material', label: '식품에 닿는 부분의 재질' },
+    { id: 'manufacturer', label: '해외제조업소 영문명' },
+    { id: 'importer', label: '수입자 업체명' },
+    { id: 'address', label: '수입자 주소 (영업등록증상 주소)' },
+    { id: 'contact', label: '수입자 연락처' },
+    { id: 'origin', label: '원산지' }
+  ]
+
+  const categories = [
+    { id: '가공식품', label: '가공식품', description: '식품 첨가물, 건강기능식품 등' },
+    { id: '기구ㆍ용기등', label: '기구ㆍ용기등', description: '식품용 기구, 용기, 포장재 등' }
+  ]
+
+  const features = [
+    { id: '한글표시사항 작성', label: '한글표시사항 작성', description: '제품의 한글 표시사항을 작성합니다' },
+    { id: '검사비용 확인', label: '검사비용 확인', description: '예상되는 검사 비용을 확인합니다' }
+  ]
+
+  const getAdditionalText = (glassType: string | null) => {
+    if (glassType === "유리제 (비가열조리용) 포함") {
+      return "가열조리용으로 사용하지 마십시오"
+    } else if (glassType && glassType !== "해당사항 없음") {
+      return "표시된 용도 외로 사용하지 마십시오"
+    }
+    return ""
+  }
+
+  const handleFormSubmit = () => {
+    // 모든 필드가 채워졌는지 확인
+    const isFormComplete = Object.values(formData).every(value => value.trim() !== '')
+    
+    if (!isFormComplete) {
+      alert("모든 필드를 입력해주세요.")
       return
     }
 
-    // 임시 결과 값 설정
-    setResult(`✅ ${category}에 대한 "${feature}" 결과: ${inputValue || '기본 정보'}`)
+    // 제품명에 (식품용) 추가
+    const modifiedFormData = {
+      ...formData,
+      productName: `${formData.productName} (식품용)`
+    }
+
+    const additionalText = getAdditionalText(glassType)
+    setResult({ ...modifiedFormData, additionalText })
+    setShowTable(true)
   }
 
-  return (
-    <div className="max-w-2xl mx-auto mt-8 p-6 bg-white shadow-md rounded-lg">
-      <h2 className="text-xl font-bold mb-4 text-center">수입식품 검사 서비스</h2>
+  const handleInputChange = (field: keyof typeof formData, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }
 
-      {/* 1. 가공식품 vs 기구ㆍ용기등 선택 */}
-      <div className="mb-6">
-        <h3 className="font-semibold mb-2">검사 유형을 선택하세요:</h3>
-        <RadioGroup onValueChange={value => setCategory(value as '가공식품' | '기구ㆍ용기등')}>
-          <RadioGroupItem value="가공식품" label="가공식품" />
-          <RadioGroupItem value="기구ㆍ용기등" label="기구ㆍ용기등" />
-        </RadioGroup>
+  const Step = ({ number, title, active }: StepProps) => (
+    <div className="flex items-center gap-2 text-sm">
+      <div className={`rounded-full w-6 h-6 flex items-center justify-center ${
+        active ? 'bg-blue-500 text-white' : 'bg-gray-200'
+      }`}>
+        {number}
+      </div>
+      <span className={active ? 'font-semibold' : 'text-gray-500'}>{title}</span>
+    </div>
+  )
+
+  return (
+    <div className="max-w-3xl mx-auto mt-8 p-8 bg-white shadow-lg rounded-xl">
+      <h2 className="text-2xl font-bold mb-6 text-center text-blue-800">수입식품 검사 서비스</h2>
+      
+      {/* Progress Steps */}
+      <div className="flex justify-between mb-8 px-4">
+        <Step number="1" title="검사 유형 선택" active={!category ? true : false} />
+        <Step number="2" title="기능 선택" active={category && !feature ? true : false} />
+        <Step number="3" title="정보 입력" active={category && feature ? true : false} />
       </div>
 
-      {/* 2. 기능 선택 */}
+      {/* Category Selection */}
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold mb-4">검사 유형을 선택하세요:</h3>
+        <div className="flex flex-row gap-4 w-full">
+          {categories.map((item) => (
+            <Card 
+              key={item.id}
+              className={`cursor-pointer transition-all hover:shadow-md flex-1 ${
+                category === item.id ? 'ring-2 ring-blue-500' : ''
+              }`}
+              onClick={() => {
+                if (category === item.id) {
+                  setCategory(null)
+                  setFeature(null)
+                  setInputValue('')
+                  setGlassType(null)
+                  setFormData({
+                    productName: '',
+                    material: '',
+                    manufacturer: '',
+                    importer: '',
+                    address: '',
+                    contact: '',
+                    origin: ''
+                  })
+                  setShowTable(false)
+                } else {
+                  setCategory(item.id)
+                  setInputValue('')
+                  setGlassType(null)
+                  setFormData({
+                    productName: '',
+                    material: '',
+                    manufacturer: '',
+                    importer: '',
+                    address: '',
+                    contact: '',
+                    origin: ''
+                  })
+                  setShowTable(false)
+                }
+              }}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-semibold">{item.label}</h4>
+                    <p className="text-sm text-gray-500">{item.description}</p>
+                  </div>
+                  {category === item.id && <CheckCircle2 className="text-blue-500" />}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Feature Selection */}
       {category && (
-        <div className="mb-6">
-          <h3 className="font-semibold mb-2">이용할 기능을 선택하세요:</h3>
-          <RadioGroup onValueChange={value => setFeature(value as '한글표시사항 작성' | '검사비용 확인')}>
-            <RadioGroupItem value="한글표시사항 작성" label="한글표시사항 작성" />
-            <RadioGroupItem value="검사비용 확인" label="검사비용 확인" />
-          </RadioGroup>
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold mb-4">이용할 기능을 선택하세요:</h3>
+          <div className="flex flex-row gap-4 w-full">
+            {features.map((item) => (
+              <Card 
+                key={item.id}
+                className={`cursor-pointer transition-all hover:shadow-md flex-1 ${
+                  feature === item.id ? 'ring-2 ring-blue-500' : ''
+                }`}
+                onClick={() => {
+                  if (feature === item.id) {
+                    setFeature(null)
+                  } else {
+                    setFeature(item.id)
+                    setGlassType(null)
+                    setShowTable(false)
+                  }
+                }}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold">{item.label}</h4>
+                      <p className="text-sm text-gray-500">{item.description}</p>
+                    </div>
+                    {feature === item.id && <CheckCircle2 className="text-blue-500" />}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* 3. 입력 폼 */}
+      {/* Input Form */}
       {feature && (
-        <div className="mb-6">
-          <h3 className="font-semibold mb-2">필요한 정보를 입력하세요:</h3>
-          <Input 
-            placeholder={`${feature}에 필요한 정보를 입력하세요.`}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-          />
+        <div className="mb-8">
+          {category === '가공식품' ? (
+            <>
+              <h3 className="text-lg font-semibold mb-4">식품유형 선택:</h3>
+              <div className="space-y-4">
+                <Select value={inputValue} onValueChange={setInputValue}>
+                  <SelectTrigger className="w-full p-3">
+                    <SelectValue placeholder="식품유형을 선택하세요" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {foodTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button 
+                  onClick={handleFormSubmit}
+                  className="w-full py-6 text-lg bg-blue-500 hover:bg-blue-600"
+                >
+                  결과 확인
+                </Button>
+              </div>
+            </>
+          ) : category === '기구ㆍ용기등' && feature === '한글표시사항 작성' ? (
+            <>
+              {!glassType ? (
+                <>
+                  <h3 className="text-lg font-semibold mb-4">유리제 포함 여부 선택:</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {glassTypes.map((type) => (
+                      <Card 
+                        key={type}
+                        className={`cursor-pointer transition-all hover:shadow-md ${
+                          glassType === type ? 'ring-2 ring-blue-500' : ''
+                        }`}
+                        onClick={() => setGlassType(type)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-semibold">{type}</h4>
+                            </div>
+                            {glassType === type && <CheckCircle2 className="text-blue-500" />}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-lg font-semibold mb-4">상세 정보 입력:</h3>
+                  <div className="space-y-4">
+                    {formFields.map((field) => (
+                      <div key={field.id}>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {field.label}
+                        </label>
+                        <Input
+                          className="w-full p-3"
+                          value={formData[field.id]}
+                          onChange={(e) => handleInputChange(field.id as keyof typeof formData, e.target.value)}
+                          placeholder={`${field.label}을(를) 입력하세요`}
+                        />
+                      </div>
+                    ))}
+                    <Button 
+                      onClick={handleFormSubmit}
+                      className="w-full py-6 text-lg bg-blue-500 hover:bg-blue-600"
+                    >
+                      결과 확인
+                    </Button>
+                  </div>
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              <h3 className="text-lg font-semibold mb-4">필요한 정보를 입력하세요:</h3>
+              <div className="space-y-4">
+                <Input 
+                  className="w-full p-3"
+                  placeholder={`${feature}에 필요한 정보를 입력하세요.`}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                />
+                <Button 
+                  onClick={handleFormSubmit}
+                  className="w-full py-6 text-lg bg-blue-500 hover:bg-blue-600"
+                >
+                  결과 확인
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       )}
 
-      {/* 4. 결과 확인 버튼 */}
-      {feature && (
-        <Button onClick={handleSubmit} className="w-full">
-          결과 확인
-        </Button>
-      )}
-
-      {/* 5. 결과 출력 */}
-      {result && (
-        <Card className="mt-6">
-          <CardContent className="p-4">
-            <p className="text-green-700 font-semibold">{result}</p>
-          </CardContent>
-        </Card>
+      {/* Result Table */}
+      {showTable && result && (
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold mb-4">한글표시사항 결과:</h3>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>항목</TableHead>
+                <TableHead>내용</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell className="font-medium">제품명</TableCell>
+                <TableCell>{result.productName}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">식품에 닿는 부분의 재질</TableCell>
+                <TableCell>{result.material}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">해외제조업소 영문명</TableCell>
+                <TableCell>{result.manufacturer}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">수입자 업체명</TableCell>
+                <TableCell>{result.importer}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">수입자 주소</TableCell>
+                <TableCell>{result.address}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">수입자 연락처</TableCell>
+                <TableCell>{result.contact}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">원산지</TableCell>
+                <TableCell>{result.origin}</TableCell>
+              </TableRow>
+              {result.additionalText && (
+                <TableRow>
+                  <TableCell className="font-medium">추가 안내사항</TableCell>
+                  <TableCell className="text-red-500 font-semibold">{result.additionalText}</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </div>
   )
