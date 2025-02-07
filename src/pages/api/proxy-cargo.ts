@@ -2,6 +2,15 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { parseStringPromise } from 'xml2js'
 
+// 데이터 필드 타입 정의
+type CargoSummary = {
+  [key: string]: unknown; // 요약 데이터 필드
+};
+
+type CargoDetail = {
+  [key: string]: unknown; // 장치장 데이터 필드
+};
+
 // 영어 필드명을 한글 필드명으로 매핑
 const fieldMap = {
   "cargMtNo": "화물관리번호",
@@ -89,31 +98,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const xml = await response.text();
+    console.log("Unipass API 응답 원본 XML:\n", xml);
+
     const jsonData = await parseStringPromise(xml, { explicitArray: false });
+    console.log("Unipass API 파싱된 JSON 데이터:\n", JSON.stringify(jsonData, null, 2));
 
-    // 최상위 필드 필터링 및 변환
-    const mainData = transformFields(jsonData.cargCsclPrgsInfoQryRtnVo.cargCsclPrgsInfoQryVo, fieldMap);
+    // 요약 데이터
+    const mainData = jsonData?.cargCsclPrgsInfoQryRtnVo?.cargCsclPrgsInfoQryVo as CargoSummary | undefined;
+    const parsedMainData = transformFields(mainData || {}, fieldMap);
 
-    // 수정 후
-    const detailQry = jsonData.cargCsclPrgsInfoQryRtnVo?.cargCsclPrgsInfoDtlQryVo;
+    // 장치장 데이터
+    const detailQry = jsonData?.cargCsclPrgsInfoQryRtnVo?.cargCsclPrgsInfoDtlQry as CargoDetail | CargoDetail[] | undefined;
+    let parsedSubData: CargoDetail[] = [];
 
-    let subData: Record<string, unknown>[] = [];
     if (detailQry) {
-      // detailQry가 배열인지 확인하여 처리
       if (Array.isArray(detailQry)) {
-        subData = detailQry.map((item) => transformFields(item, subFieldMap));
+        parsedSubData = detailQry.map((item) => transformFields(item, subFieldMap)) as CargoDetail[];
       } else {
-        // 단일 객체인 경우 배열로 감싸기
-        subData = [transformFields(detailQry, subFieldMap)];
+        parsedSubData = [transformFields(detailQry, subFieldMap)] as CargoDetail[];
       }
     } else {
       console.warn("장치장 정보가 응답 데이터에 없습니다.");
     }
 
-    // 최종 데이터 조합
     const result = {
-      ...mainData,
-      cargCsclPrgsInfoDtlQryVo: subData
+      ...parsedMainData,
+      cargCsclPrgsInfoDtlQryVo: parsedSubData,
     };
 
     res.status(200).json(result);
