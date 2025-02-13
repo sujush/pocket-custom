@@ -87,10 +87,23 @@ interface StepProps {
     active: boolean;
 }
 
-interface FoodType {
-    type: string;
+// FoodType 인터페이스를 ProcessedFoodCategory 인터페이스로 변경
+interface ProcessedFoodCost {
     cost: number;
 }
+
+interface ProcessedFoodSubCategory {
+    [key: string]: ProcessedFoodCost;
+}
+
+interface ProcessedFoodMidCategory {
+    [key: string]: ProcessedFoodSubCategory;
+}
+
+interface ProcessedFoodMainCategory {
+    [key: string]: ProcessedFoodMidCategory;
+}
+
 
 // materialsData 정의
 const materialsData: MainCategory = {
@@ -223,32 +236,74 @@ export default function CertifiedFoodInspection(): JSX.Element {
     const [totalCost, setTotalCost] = useState<number>(0)
 
     // 상수 데이터
- 
-    const foodTypes: FoodType[] = [
-        { type: "과자류, 빵류 또는 떡류", cost: 284000 },
-        { type: "빙과류", cost: 284000 },
-        { type: "코코아가공품류 또는 초콜릿류", cost: 284000 },
-        { type: "당류", cost: 284000 },
-        { type: "잼류", cost: 284000 },
-        { type: "두부류 또는 묵류", cost: 284000 },
-        { type: "식용유지류", cost: 284000 },
-        { type: "면류", cost: 284000 },
-        { type: "음료류", cost: 284000 },
-        { type: "특수용도식품", cost: 284000 },
-        { type: "장류", cost: 284000 },
-        { type: "조미식품", cost: 284000 },
-        { type: "절임류 또는 조림류", cost: 284000 },
-        { type: "주류", cost: 284000 },
-        { type: "농산가공식품류", cost: 284000 },
-        { type: "식육가공품 및 포장육", cost: 284000 },
-        { type: "알가공품류", cost: 284000 },
-        { type: "유가공품", cost: 284000 },
-        { type: "수산가공식품류", cost: 284000 },
-        { type: "동물성가공식품류", cost: 284000 },
-        { type: "벌꿀 및 화분가공품", cost: 284000 },
-        { type: "즉석식품류", cost: 284000 },
-        { type: "기타식품류", cost: 284000 }
-    ]
+
+    const processedFoodData: ProcessedFoodMainCategory = {
+        "식품류": {
+            "과자류": {
+                "과자류, 빵류 또는 떡류": { cost: 284000 },
+                "빙과류": { cost: 284000 }
+            },
+            "음료류": {
+                "음료류": { cost: 284000 }
+            },
+            "주류": {
+                "주류": { cost: 284000 }
+            }
+        },
+        "가공품류": {
+            "코코아가공품류": {
+                "코코아가공품류 또는 초콜릿류": { cost: 284000 }
+            },
+            "농산가공품류": {
+                "당류": { cost: 284000 },
+                "잼류": { cost: 284000 },
+                "농산가공식품류": { cost: 284000 }
+            },
+            "수산가공품류": {
+                "수산가공식품류": { cost: 284000 }
+            },
+            "축산가공품류": {
+                "식육가공품 및 포장육": { cost: 284000 },
+                "알가공품류": { cost: 284000 },
+                "유가공품": { cost: 284000 },
+                "동물성가공식품류": { cost: 284000 }
+            }
+        },
+        "조미식품류": {
+            "장류": {
+                "장류": { cost: 284000 }
+            },
+            "소스류": {
+                "조미식품": { cost: 284000 }
+            },
+            "절임식품": {
+                "절임류 또는 조림류": { cost: 284000 }
+            }
+        },
+        "기타": {
+            "두부류": {
+                "두부류 또는 묵류": { cost: 284000 }
+            },
+            "식용유지류": {
+                "식용유지류": { cost: 284000 }
+            },
+            "면류": {
+                "면류": { cost: 284000 }
+            },
+            "특수용도식품": {
+                "특수용도식품": { cost: 284000 }
+            },
+            "벌꿀류": {
+                "벌꿀 및 화분가공품": { cost: 284000 }
+            },
+            "즉석식품류": {
+                "즉석식품류": { cost: 284000 }
+            },
+            "기타": {
+                "기타식품류": { cost: 284000 }
+            }
+        }
+    };
 
     const glassTypes: GlassType[] = [
         "유리제 (비가열조리용) 포함",
@@ -374,17 +429,22 @@ export default function CertifiedFoodInspection(): JSX.Element {
     const handleSelectionChange = (id: string, field: keyof CostSelection, value: string): void => {
         setSelections(prev => prev.map(selection => {
             if (selection.id === id) {
+                const updated = { ...selection, [field]: value };
+
                 if (category === '가공식품') {
                     // 가공식품일 경우
-                    const selectedType = foodTypes.find(item => item.type === value);
-                    return {
-                        ...selection,
-                        subCategory: value,
-                        cost: selectedType ? selectedType.cost : 0
-                    };
+                    if (field === 'mainCategory') {
+                        updated.midCategory = '';
+                        updated.subCategory = '';
+                        updated.cost = 0;
+                    } else if (field === 'midCategory') {
+                        updated.subCategory = '';
+                        updated.cost = 0;
+                    } else if (field === 'subCategory' && updated.mainCategory && updated.midCategory) {
+                        updated.cost = processedFoodData[updated.mainCategory][updated.midCategory][value].cost;
+                    }
                 } else {
-                    // 기구용기등일 경우 (기존 로직)
-                    const updated = { ...selection, [field]: value };
+                    // 기구용기등일 경우
                     if (field === 'mainCategory') {
                         updated.midCategory = '';
                         updated.subCategory = '';
@@ -395,13 +455,12 @@ export default function CertifiedFoodInspection(): JSX.Element {
                     } else if (field === 'subCategory' && updated.mainCategory && updated.midCategory) {
                         updated.cost = materialsData[updated.mainCategory][updated.midCategory][value].cost;
                     }
-                    return updated;
                 }
+                return updated;
             }
             return selection;
         }));
     };
-
     // 총 비용 계산 Effect
     React.useEffect(() => {
         const total = selections.reduce((sum, selection) => sum + selection.cost, 0);
@@ -541,11 +600,15 @@ export default function CertifiedFoodInspection(): JSX.Element {
                                         <SelectValue placeholder="식품유형을 선택하세요" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {foodTypes.map((item) => (
-                                            <SelectItem key={item.type} value={item.type}>
-                                                {item.type}
-                                            </SelectItem>
-                                        ))}
+                                        {Object.entries(processedFoodData).flatMap(([, mainCat]) =>
+                                            Object.entries(mainCat).flatMap(([, midCat]) =>
+                                                Object.keys(midCat).map(subCat => (
+                                                    <SelectItem key={subCat} value={subCat}>
+                                                        {subCat}
+                                                    </SelectItem>
+                                                ))
+                                            )
+                                        )}
                                     </SelectContent>
                                 </Select>
                                 <Button
@@ -573,21 +636,59 @@ export default function CertifiedFoodInspection(): JSX.Element {
                                             )}
                                         </div>
 
-                                        <Select
-                                            value={selection.subCategory}
-                                            onValueChange={(value) => handleSelectionChange(selection.id, 'subCategory', value)}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="식품유형을 선택하세요" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {foodTypes.map((item) => (
-                                                    <SelectItem key={item.type} value={item.type}>
-                                                        {item.type}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                        <div className="grid grid-cols-3 gap-4">
+                                            <Select
+                                                value={selection.mainCategory}
+                                                onValueChange={(value) => handleSelectionChange(selection.id, 'mainCategory', value)}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="대분류 선택" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {Object.keys(processedFoodData).map(category => (
+                                                        <SelectItem key={category} value={category}>
+                                                            {category}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+
+                                            <Select
+                                                value={selection.midCategory}
+                                                onValueChange={(value) => handleSelectionChange(selection.id, 'midCategory', value)}
+                                                disabled={!selection.mainCategory}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="중분류 선택" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {selection.mainCategory &&
+                                                        Object.keys(processedFoodData[selection.mainCategory]).map(category => (
+                                                            <SelectItem key={category} value={category}>
+                                                                {category}
+                                                            </SelectItem>
+                                                        ))}
+                                                </SelectContent>
+                                            </Select>
+
+                                            <Select
+                                                value={selection.subCategory}
+                                                onValueChange={(value) => handleSelectionChange(selection.id, 'subCategory', value)}
+                                                disabled={!selection.midCategory}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="소분류 선택" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {selection.mainCategory && selection.midCategory &&
+                                                        Object.keys(processedFoodData[selection.mainCategory][selection.midCategory]).map(category => (
+                                                            <SelectItem key={category} value={category}>
+                                                                {category}
+                                                            </SelectItem>
+                                                        ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
 
                                         {selection.cost > 0 && (
                                             <div className="text-right text-sm text-gray-600">
