@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { CheckCircle2 } from "lucide-react"
+import { CheckCircle2, PlusCircle, Trash2 } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
+// 타입 정의
 type CategoryType = '가공식품' | '기구ㆍ용기등' | null;
 type FeatureType = '한글표시사항 작성' | '검사비용 확인' | null;
 type GlassType = 
@@ -23,6 +24,31 @@ type GlassType =
   | "유리제 (직화용) 포함"
   | "해당사항 없음"
   | null;
+
+// 인터페이스 정의
+interface MaterialCost {
+  cost: number;
+}
+
+interface SubCategory {
+  [key: string]: MaterialCost;
+}
+
+interface MidCategory {
+  [key: string]: SubCategory;
+}
+
+interface MainCategory {
+  [key: string]: MidCategory;
+}
+
+interface CostSelection {
+  id: string;
+  mainCategory: string;
+  midCategory: string;
+  subCategory: string;
+  cost: number;
+}
 
 interface FormDataType {
   productName: string;
@@ -61,7 +87,27 @@ interface StepProps {
   active: boolean;
 }
 
+// materialsData 정의 (예시 데이터)
+const materialsData: MainCategory = {
+  "합성수지제": {
+    "올레핀계": {
+      "폴리에틸렌(PE) 및 폴리프로필렌(PP)": { cost: 100000 },
+      "에틸렌-초산비닐 공중합체(EVA)": { cost: 150000 }
+    },
+    "에스테르계": {
+      "폴리부틸렌테레프탈레이트(PBT)": { cost: 200000 }
+    }
+  },
+  "고무제": {
+    "고무류": {
+      "고무제": { cost: 300000 }
+    }
+  }
+  // 여기에 더 많은 재질과 비용 데이터 추가
+};
+
 export default function CertifiedFoodInspection(): JSX.Element {
+  // 상태 관리
   const [category, setCategory] = useState<CategoryType>(null)
   const [feature, setFeature] = useState<FeatureType>(null)
   const [inputValue, setInputValue] = useState<string>('')
@@ -77,7 +123,16 @@ export default function CertifiedFoodInspection(): JSX.Element {
     origin: ''
   })
   const [showTable, setShowTable] = useState<boolean>(false)
+  const [selections, setSelections] = useState<CostSelection[]>([{
+    id: '1',
+    mainCategory: '',
+    midCategory: '',
+    subCategory: '',
+    cost: 0
+  }])
+  const [totalCost, setTotalCost] = useState<number>(0)
 
+  // 상수 데이터
   const foodTypes: string[] = [
     "과자류, 빵류 또는 떡류",
     "빙과류",
@@ -133,6 +188,7 @@ export default function CertifiedFoodInspection(): JSX.Element {
     { id: '검사비용 확인', label: '검사비용 확인', description: '예상되는 검사 비용을 확인합니다' }
   ]
 
+  // 유틸리티 함수
   const getGlassMaterial = (type: GlassType): string => {
     switch(type) {
       case "유리제 (열탕용) 포함":
@@ -157,6 +213,7 @@ export default function CertifiedFoodInspection(): JSX.Element {
     return ""
   }
 
+  // 이벤트 핸들러
   const handleGlassTypeSelect = (type: GlassType): void => {
     setGlassType(type);
     if (type !== "유리제 (비가열조리용) 포함" && type !== "해당사항 없음" && type !== null) {
@@ -209,6 +266,49 @@ export default function CertifiedFoodInspection(): JSX.Element {
     setShowTable(true);
   }
 
+  const handleAddMaterial = (): void => {
+    setSelections(prev => [...prev, {
+      id: Date.now().toString(),
+      mainCategory: '',
+      midCategory: '',
+      subCategory: '',
+      cost: 0
+    }]);
+  }
+
+  const handleRemoveMaterial = (id: string): void => {
+    setSelections(prev => prev.filter(item => item.id !== id));
+  }
+
+  const handleSelectionChange = (id: string, field: keyof CostSelection, value: string): void => {
+    setSelections(prev => prev.map(selection => {
+      if (selection.id === id) {
+        const updated = { ...selection, [field]: value };
+        
+        if (field === 'mainCategory') {
+          updated.midCategory = '';
+          updated.subCategory = '';
+          updated.cost = 0;
+        } else if (field === 'midCategory') {
+          updated.subCategory = '';
+          updated.cost = 0;
+        } else if (field === 'subCategory' && updated.mainCategory && updated.midCategory) {
+          updated.cost = materialsData[updated.mainCategory][updated.midCategory][value].cost;
+        }
+
+        return updated;
+      }
+      return selection;
+    }));
+  }
+
+  // 총 비용 계산 Effect
+  React.useEffect(() => {
+    const total = selections.reduce((sum, selection) => sum + selection.cost, 0);
+    setTotalCost(total);
+  }, [selections]);
+
+  // Step 컴포넌트
   const Step = ({ number, title, active }: StepProps): JSX.Element => (
     <div className="flex items-center gap-2 text-sm">
       <div className={`rounded-full w-6 h-6 flex items-center justify-center ${
@@ -257,6 +357,13 @@ export default function CertifiedFoodInspection(): JSX.Element {
                     origin: ''
                   })
                   setShowTable(false)
+                  setSelections([{
+                    id: '1',
+                    mainCategory: '',
+                    midCategory: '',
+                    subCategory: '',
+                    cost: 0
+                  }])
                 } else {
                   setCategory(item.id)
                   setInputValue('')
@@ -324,9 +431,10 @@ export default function CertifiedFoodInspection(): JSX.Element {
         </div>
       )}
 
-      {/* Input Form */}
+      {/* Input Forms */}
       {feature && (
         <div className="mb-8">
+          {/* 가공식품 - 한글표시사항 작성 */}
           {category === '가공식품' ? (
             <>
               <h3 className="text-lg font-semibold mb-4">식품유형 선택:</h3>
@@ -407,30 +515,112 @@ export default function CertifiedFoodInspection(): JSX.Element {
                 </>
               )}
             </>
-          ) : (
-            <>
-              <h3 className="text-lg font-semibold mb-4">필요한 정보를 입력하세요:</h3>
-              <div className="space-y-4">
-                <Input 
-                  className="w-full p-3"
-                  placeholder={`${feature}에 필요한 정보를 입력하세요.`}
-                  value={inputValue}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputValue(e.target.value)}
-                />
-                <Button 
-                  onClick={handleFormSubmit}
-                  className="w-full py-6 text-lg bg-blue-500 hover:bg-blue-600"
-                >
-                  결과 확인
-                </Button>
-              </div>
-            </>
-          )}
+          ) : category === '기구ㆍ용기등' && feature === '검사비용 확인' ? (
+            <div className="space-y-6">
+              {selections.map((selection, index) => (
+                <Card key={selection.id} className="p-4">
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold">재질 {index + 1}</h3>
+                      {selections.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleRemoveMaterial(selection.id)}
+                        >
+                          <Trash2 className="h-5 w-5 text-red-500" />
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-4">
+                      <Select
+                        value={selection.mainCategory}
+                        onValueChange={(value) => handleSelectionChange(selection.id, 'mainCategory', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="대분류 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.keys(materialsData).map(category => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Select
+                        value={selection.midCategory}
+                        onValueChange={(value) => handleSelectionChange(selection.id, 'midCategory', value)}
+                        disabled={!selection.mainCategory}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="중분류 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {selection.mainCategory && 
+                            Object.keys(materialsData[selection.mainCategory]).map(category => (
+                              <SelectItem key={category} value={category}>
+                                {category}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Select
+                        value={selection.subCategory}
+                        onValueChange={(value) => handleSelectionChange(selection.id, 'subCategory', value)}
+                        disabled={!selection.midCategory}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="소분류 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {selection.mainCategory && selection.midCategory &&
+                            Object.keys(materialsData[selection.mainCategory][selection.midCategory]).map(category => (
+                              <SelectItem key={category} value={category}>
+                                {category}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {selection.cost > 0 && (
+                      <div className="text-right text-sm text-gray-600">
+                        예상 비용: {selection.cost.toLocaleString()}원
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              ))}
+
+              <Button
+                onClick={handleAddMaterial}
+                variant="outline"
+                className="w-full"
+              >
+                <PlusCircle className="h-5 w-5 mr-2" />
+                재질 추가
+              </Button>
+
+              {totalCost > 0 && (
+                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                  <div className="text-lg font-semibold">
+                    총 예상 비용: {totalCost.toLocaleString()}원
+                  </div>
+                  <div className="text-sm text-gray-500 mt-2">
+                    * 해당 비용은 예상비용으로서 실제 발생 비용은 달라질 수 있습니다.
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : null}
         </div>
       )}
 
       {/* Result Table */}
-      {showTable && result && (
+      {showTable && result && feature === '한글표시사항 작성' && (
         <div className="mt-8">
           <table className="w-full border-collapse border border-gray-200">
             <thead>
@@ -485,4 +675,4 @@ export default function CertifiedFoodInspection(): JSX.Element {
       )}
     </div>
   )
-}
+}          
