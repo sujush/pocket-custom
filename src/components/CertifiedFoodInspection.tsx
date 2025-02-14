@@ -952,7 +952,7 @@ export default function CertifiedFoodInspection(): JSX.Element {
         { id: 'contentAndCalories' as ProcessedFoodStringFields, label: '내용량 및 열량', placeholder: '제품의 중량과 열량을 입력하세요' },
         { id: 'ingredients' as ProcessedFoodStringFields, label: '원재료명', placeholder: '제품에 포함된 원재료 목록을 입력하세요' },
         { id: 'packagingMaterial' as ProcessedFoodStringFields, label: '용기ㆍ포장 재질', placeholder: '포장재 종류를 입력하세요' },
-        { id: 'storageMethod' as ProcessedFoodStringFields, label: '보관방법', placeholder: '보관 조건을 입력하세요' },
+        { id: 'storageMethod' as ProcessedFoodStringFields, label: '보관방법', placeholder: '보관 조건을 입력하세요' },        
     ];
 
     return (
