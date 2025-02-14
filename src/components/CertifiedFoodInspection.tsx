@@ -151,11 +151,11 @@ const ALLERGENS = [
     '알류(가금류만 해당)', '우유', '메밀', '땅콩', '대두', '밀', '고등어',
     '게', '새우', '돼지고기', '복숭아', '토마토',
     '아황산류', '호두', '닭고기', '쇠고기', '오징어',
-    '조개류', '잣'
+    '조개류', '잣' , '해당사항없음'
 ];
 
 const GMO_INGREDIENTS = [
-    '대두', '옥수수', '면화', '카놀라', '사탕무', '알팔파', '감자'
+    '대두', '옥수수', '면화', '카놀라', '사탕무', '알팔파', '감자' , '해당사항 없음'
 ];
 
 const STERILIZATION_TYPES = [
@@ -854,12 +854,12 @@ export default function CertifiedFoodInspection(): JSX.Element {
 
         // 알레르기 유발물질 정보 생성
         const allergenInfo = processedFoodForm.allergens.length > 0
-            ? `다음 항목을 포함: ${processedFoodForm.allergens.join(', ')}`
+            ? `다음의 알레르기 유발물질 포함: ${processedFoodForm.allergens.join(', ')}`
             : '해당사항 없음';
 
         // GMO 정보 생성
         const gmoInfo = processedFoodForm.gmoIngredients.length > 0
-            ? `다음 GMO 원재료 포함: ${processedFoodForm.gmoIngredients.join(', ')}`
+            ? `다음의 유전자변형 원재료 포함 가능성 있음: ${processedFoodForm.gmoIngredients.join(', ')}`
             : '해당사항 없음';
 
         // 결과 설정
@@ -1640,7 +1640,7 @@ export default function CertifiedFoodInspection(): JSX.Element {
                             )}
                             {isProcessedFoodResult(result) && result.nutritionLabeling && result.nutritionLabeling.required && (
                                 <tr>
-                                    <td className="p-4 border-b font-medium">영양성분</td>
+                                    <td className="p-4 border-b font-medium">총 내용량 당 영양성분</td>
                                     <td className="p-4 border-b">
                                         <div>열량: {result.nutritionLabeling.values.calories}kcal</div>
                                         <div>나트륨: {result.nutritionLabeling.values.sodium}mg</div>
@@ -1667,7 +1667,7 @@ export default function CertifiedFoodInspection(): JSX.Element {
                                 </tr>
                             )}
                             <tr>
-                                <td className="p-4 border-b font-medium">추가 안내사항</td>
+                                <td className="p-4 border-b font-medium">부정ㆍ불량식품 표시</td>
                                 <td className="p-4 border-b text-red-500">{result.additionalText}</td>
                             </tr>
                         </tbody>
