@@ -19,10 +19,10 @@ const mainServices = [
     link: '/services/import-requirements/'
   },
   {
-    title: '수출 인보이스 및 패킹리스트 제작',
-    description: '간편하게 인보이스와 패킹리스트를 작성할 수 있습니다. (구독자용)',
+    title: '통관 세액 계산',
+    description: '통관 시 발생하는 예상 세액을 조회할 수 있습니다',
     icon: FileText,
-    link: '/services/invoice'
+    link: '/services/tax-calculation'
   }
 ];
 
