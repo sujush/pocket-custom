@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 
 type ProductRow = {
-  날짜: string;
-  구분: string;
+  상호: string;
   기자재명칭: string;
   모델명: string;
-  상호: string;
   제조국가: string;
+  인증연월일: string;
+  인증상태: string;
   인증번호: string;
 };
 
@@ -23,8 +23,7 @@ export default function CheckProductsPage() {
       .then((res) => res.json())
       .then((json) => {
         if (json.success) {
-          setAllData(json.data);
-          setFilteredData(json.data);
+          setAllData(json.data);          
         }
       });
   }, []);
@@ -33,15 +32,16 @@ export default function CheckProductsPage() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchText) {
-      // 검색어가 없으면 전체 목록
+      // 검색어가 없으면 빈 배열로 유지
       setFilteredData([]);
       return;
     }
-    // 컬럼 여러 개에서 검색: 기자재명칭, 모델명, 상호 등
+    // 검색어가 있으면 allData에서 필터
     const result = allData.filter((row) =>
       row["기자재명칭"]?.includes(searchText) ||
       row["모델명"]?.includes(searchText) ||
-      row["상호"]?.includes(searchText)
+      row["상호"]?.includes(searchText) ||
+      row["제조국가"]?.includes(searchText)
     );
     setFilteredData(result);
   };
@@ -54,7 +54,7 @@ export default function CheckProductsPage() {
         <input
           className="border p-2 flex-1"
           type="text"
-          placeholder="제품명, 모델명, 상호 등 검색"
+          placeholder="기자재명칭, 모델명, 상호, 제조국가 검색"
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
         />
@@ -70,21 +70,21 @@ export default function CheckProductsPage() {
             <th className="border px-2 py-1">기자재명칭</th>
             <th className="border px-2 py-1">모델명</th>
             <th className="border px-2 py-1">제조국가</th>
-            <th className="border px-2 py-1">인증/등록 연월일</th>
-            <th className="border px-2 py-1">인증/등록 상태</th>
-            <th className="border px-2 py-1">인증/등록 번호</th>
+            <th className="border px-2 py-1">인증연월일</th>
+            <th className="border px-2 py-1">인증상태</th>
+            <th className="border px-2 py-1">인증번호</th>
           </tr>
         </thead>
         <tbody>
           {filteredData.length > 0 ? (
             filteredData.map((row, idx) => (
               <tr key={idx}>
-                <td className="border px-2 py-1">{row["날짜"]}</td>
-                <td className="border px-2 py-1">{row["구분"]}</td>
+                <td className="border px-2 py-1">{row["상호"]}</td>
                 <td className="border px-2 py-1">{row["기자재명칭"]}</td>
                 <td className="border px-2 py-1">{row["모델명"]}</td>
-                <td className="border px-2 py-1">{row["상호"]}</td>
                 <td className="border px-2 py-1">{row["제조국가"]}</td>
+                <td className="border px-2 py-1">{row["인증연월일"]}</td>
+                <td className="border px-2 py-1">{row["인증상태"]}</td>
                 <td className="border px-2 py-1">{row["인증번호"]}</td>
               </tr>
             ))
