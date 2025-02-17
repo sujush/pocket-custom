@@ -34,7 +34,7 @@ export default function CheckProductsPage() {
     e.preventDefault();
     if (!searchText) {
       // 검색어가 없으면 전체 목록
-      setFilteredData(allData);
+      setFilteredData([]);
       return;
     }
     // 컬럼 여러 개에서 검색: 기자재명칭, 모델명, 상호 등
