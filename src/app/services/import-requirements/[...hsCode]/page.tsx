@@ -196,7 +196,7 @@ export default function ImportRequirementsPage({ params }: { params: { hsCode?: 
         }
 
         const data = await response.json()
-        
+
         // 허용된 관세율구분 결정
         let allowedTypes = [...BASE_RATE_TYPES]
         if (selectedCountry && selectedCountry !== 'ALL' && COUNTRY_RATE_TYPES[selectedCountry as keyof typeof COUNTRY_RATE_TYPES]) {
@@ -204,7 +204,7 @@ export default function ImportRequirementsPage({ params }: { params: { hsCode?: 
         }
 
         // 데이터 필터링
-        const filteredData = data.data.filter((item: { 관세율구분: string }) => 
+        const filteredData = data.data.filter((item: { 관세율구분: string }) =>
           allowedTypes.includes(item.관세율구분)
         )
 
@@ -242,7 +242,7 @@ export default function ImportRequirementsPage({ params }: { params: { hsCode?: 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-4">HS CODE 조회</h1>
-      
+
       <div className="space-y-4">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -254,7 +254,7 @@ export default function ImportRequirementsPage({ params }: { params: { hsCode?: 
               maxLength={10}
             />
           </div>
-          
+
           <div>
             <Select value={selectedCountry} onValueChange={handleCountryChange}>
               <SelectTrigger className="w-full">
@@ -262,11 +262,20 @@ export default function ImportRequirementsPage({ params }: { params: { hsCode?: 
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">협정세율을 확인하려면 국가를 선택해주세요</SelectItem>
-                {Object.entries(COUNTRIES).sort((a, b) => a[1].localeCompare(b[1])).map(([code, name]) => (
-                  <SelectItem key={code} value={code}>
-                    {name} ({code})
-                  </SelectItem>
-                ))}
+                {Object.entries(COUNTRIES)
+                  .sort((a, b) => {
+                    // CHN(중국)이 먼저 오도록 처리
+                    if (a[0] === "CHN") return -1;
+                    if (b[0] === "CHN") return 1;
+                    // 나머지는 국가명 a[1] 기준 사전순
+                    return a[1].localeCompare(b[1]);
+                  })
+                  .map(([code, name]) => (
+                    <SelectItem key={code} value={code}>
+                      {name} ({code})
+                    </SelectItem>
+                  ))
+                }
               </SelectContent>
             </Select>
           </div>
@@ -296,11 +305,10 @@ export default function ImportRequirementsPage({ params }: { params: { hsCode?: 
             <CardContent>
               <div className="grid gap-4">
                 {results.map((item, index) => (
-                  <div 
-                    key={index} 
-                    className={`border p-4 rounded-lg bg-white shadow-sm ${
-                      item.관세율구분 === 'A' ? 'border-blue-500 bg-blue-50' : ''
-                    }`}
+                  <div
+                    key={index}
+                    className={`border p-4 rounded-lg bg-white shadow-sm ${item.관세율구분 === 'A' ? 'border-blue-500 bg-blue-50' : ''
+                      }`}
                   >
                     <div className="grid grid-cols-4 gap-4 items-center">
                       <div className="space-y-1">
@@ -309,9 +317,8 @@ export default function ImportRequirementsPage({ params }: { params: { hsCode?: 
                       </div>
                       <div className="space-y-1">
                         <p className="font-semibold text-gray-700">관세율구분</p>
-                        <p className={`text-gray-900 ${
-                          item.관세율구분 === 'A' ? 'font-bold text-blue-600' : ''
-                        }`}>
+                        <p className={`text-gray-900 ${item.관세율구분 === 'A' ? 'font-bold text-blue-600' : ''
+                          }`}>
                           {RATE_TYPE_MAPPING[item.관세율구분 as keyof typeof RATE_TYPE_MAPPING] || item.관세율구분 || '-'}
                         </p>
                       </div>
