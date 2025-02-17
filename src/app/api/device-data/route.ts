@@ -9,7 +9,7 @@ type CSVRow = Record<string, string>;
 
 export async function GET() {
   // CSV 파일 경로 (예: 프로젝트 루트의 'public/data/Device_new_list.csv')
-  const csvFilePath = path.join(process.cwd(), "public", "data", "Device_new_list.csv");
+  const csvFilePath = path.join(process.cwd(), "public", "data", "Device_list.csv");
 
   try {
     // 1) CSV 파일을 읽어서 Buffer로 받음

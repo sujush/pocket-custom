@@ -66,13 +66,13 @@ export default function CheckProductsPage() {
       <table className="table-auto w-full border border-gray-300">
         <thead>
           <tr className="bg-gray-100">
-            <th className="border px-2 py-1">날짜</th>
-            <th className="border px-2 py-1">구분</th>
+            <th className="border px-2 py-1">상호</th>
             <th className="border px-2 py-1">기자재명칭</th>
             <th className="border px-2 py-1">모델명</th>
-            <th className="border px-2 py-1">상호</th>
             <th className="border px-2 py-1">제조국가</th>
-            <th className="border px-2 py-1">인증번호</th>
+            <th className="border px-2 py-1">인증/등록 연월일</th>
+            <th className="border px-2 py-1">인증/등록 상태</th>
+            <th className="border px-2 py-1">인증/등록 번호</th>
           </tr>
         </thead>
         <tbody>
