@@ -1,3 +1,5 @@
+//app/page.tsx 에 적용
+
 "use client";
 
 import React from 'react';
