@@ -71,7 +71,7 @@ const FeatureCard: React.FC<{
       transform hover:-translate-y-1 hover:scale-105
     `}>
       <div className="flex items-center mb-4">
-        <feature.icon className="h-8 w-8 text-emerald-600 mr-4" />
+        <feature.icon className="h-8 w-8 text-rose-600 mr-4" />
         <h2 className="text-xl font-semibold text-emerald-800">{feature.title}</h2>
       </div>
       <p className="text-gray-700 mb-4 text-sm">{feature.description}</p>
@@ -90,7 +90,7 @@ export default function AdditionalFeatures() {
   return (
     <div className="my-16">
       <h2 className="text-2xl font-bold text-gray-800 mb-8 text-center">
-        추가 기능
+        {/* "추가기능" 문구를 제거했습니다. */}
       </h2>
       <div className="grid grid-cols-2 gap-8">
         {additionalFeatures.map((feature, index) => (
