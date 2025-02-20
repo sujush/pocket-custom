@@ -49,7 +49,7 @@ const additionalServices = [
     //description: '검사대행 서비스를 이용할 수 있습니다. \n 의뢰인 또는 검사자가 중개인없이 컨택이 가능합니다.',
     //icon: Phone,
     //color: 'purple',
-    link: 'https://www.e-yeon.com/', //외부링크
+    link: 'https://www.e-yeon.co.kr/', //외부링크
     ImagePath: '/Images/ad-eyeon.jpg'
   }
 ];
