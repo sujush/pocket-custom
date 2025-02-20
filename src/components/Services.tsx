@@ -4,8 +4,9 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Search, FileCheck, FileText, Calculator, Box, Phone } from 'lucide-react';
+import { ArrowRight, Search, FileCheck, FileText, Calculator, Box } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/authStore';
+import Image from 'next/image';
 
 const mainServices = [
   {
@@ -44,11 +45,12 @@ const additionalServices = [
     link: 'cargo-location'
   },
   {
-    title: '검사 대행 찾기',
-    description: '검사대행 서비스를 이용할 수 있습니다. \n 의뢰인 또는 검사자가 중개인없이 컨택이 가능합니다.',
-    icon: Phone,
-    color: 'purple',
-    link: 'https://www.customs-inspection.net/' //외부링크
+    title: '이연관세사무소',
+    //description: '검사대행 서비스를 이용할 수 있습니다. \n 의뢰인 또는 검사자가 중개인없이 컨택이 가능합니다.',
+    //icon: Phone,
+    //color: 'purple',
+    link: 'https://www.e-yeon.com/', //외부링크
+    ImagePath: '/Images/ad-eyeon.jpg'
   }
 ];
 
@@ -116,7 +118,7 @@ const MainServiceCard: React.FC<{ service: { title: string; description: string;
               onClick={handleClickBulkCheck}
               className="inline-flex items-center text-indigo-600 hover:text-indigo-700 font-bold"
             >
-                HS CODE 대량 조회 (★)
+              HS CODE 대량 조회 (★)
             </button>
           </>
         )}
@@ -126,7 +128,18 @@ const MainServiceCard: React.FC<{ service: { title: string; description: string;
 };
 
 // AdditionalServiceCard 컴포넌트
-const AdditionalServiceCard: React.FC<{ service: { title: string; description: string; icon: React.ElementType; link: string; color?: string } }> = ({ service }) => {
+type AdditionalServiceProps = {
+  title: string;
+  description?: string;
+  icon?: React.ElementType;
+  link: string;
+  color?: string;
+  ImagePath?: string;
+}
+
+// AdditionalServiceCard 컴포넌트
+const AdditionalServiceCard: React.FC<{ service: AdditionalServiceProps }> = ({ service }) => {
+
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
 
@@ -136,7 +149,8 @@ const AdditionalServiceCard: React.FC<{ service: { title: string; description: s
   };
 
   const classes = colorClasses[service.color as keyof typeof colorClasses] || colorClasses.blue;
-  const [mainDescription, ...contactInfo] = service.description.split('\n');
+
+
 
   const handleServiceNavigation = () => {
     console.log('추가 서비스 클릭 시 상태:', {
@@ -156,36 +170,30 @@ const AdditionalServiceCard: React.FC<{ service: { title: string; description: s
   const handleClick = () => {
     handleServiceNavigation();
   };
-
-  const renderContactInfo = (info: string[]) => {
-    return info.map((line, index) => {
-      if (line.includes('이연관세사무소')) {
-        return (
-          <React.Fragment key={index}>
-            <span className="font-bold">{line}</span>
-            <br />
-          </React.Fragment>
-        );
-      }
-      return (
-        <React.Fragment key={index}>
-          {line}
-          <br />
-        </React.Fragment>
-      );
-    });
-  };
+  
+  if (service.ImagePath) {
+    return (
+      <div
+        className="relative h-full rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg cursor-pointer transform hover:-translate-y-1 hover:scale-105"
+        onClick={() => window.open(service.link, '_blank')}
+      >
+        <Image
+          src={service.ImagePath}
+          alt={service.title}
+          layout="fill"
+          objectFit="cover"
+          className="rounded-lg"
+        />
+      </div>
+    );
+  }
 
   return (
+    // 기존 일반 카드 렌더링 코드는 유지
     <div className={`${classes} ${!isAuthenticated ? 'opacity-75' : ''} rounded-lg overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md border p-4 transform hover:-translate-y-1 hover:scale-105`}>
-      <service.icon className="h-8 w-8 mb-2" />
+      {service.icon && <service.icon className="h-8 w-8 mb-2" />}
       <h2 className="text-lg font-semibold mb-2">{service.title}</h2>
-      <p className="text-sm whitespace-pre-line">{mainDescription}</p>
-      {contactInfo.length > 0 && (
-        <p className="text-base leading-relaxed mt-2">
-          {renderContactInfo(contactInfo)}
-        </p>
-      )}
+      {service.description && <p className="text-sm whitespace-pre-line">{service.description}</p>}
       {service.link && (
         <button
           onClick={handleClick}
@@ -198,6 +206,8 @@ const AdditionalServiceCard: React.FC<{ service: { title: string; description: s
     </div>
   );
 };// Services 컴포넌트
+
+
 export default function Services() {
   return (
     <div className="grid grid-cols-2 gap-8">
