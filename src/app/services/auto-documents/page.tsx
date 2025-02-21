@@ -103,6 +103,14 @@ export default function DocumentsMaking() {
       ...newProducts[index],
       [field]: value
     };
+    
+    // 만약 quantity 또는 unitPrice가 바뀌면 amount 계산하기
+    if (field === 'quantity' || field === 'unitPrice') {
+      const quantity = parseFloat(newProducts[index].quantity) || 0;
+      const unitPrice = parseFloat(newProducts[index].unitPrice) || 0;
+      newProducts[index].amount = (quantity * unitPrice).toFixed(2);
+    }
+    
     setProducts(newProducts);
   };
 
@@ -276,15 +284,15 @@ export default function DocumentsMaking() {
       
       {/* 수출자 정보 */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold">1. Shipper / Exporter Information</h2>
+        <h2 className="text-lg font-semibold">1. Shipper / Exporter Information (수출자정보) </h2>
         <Input
-          placeholder="Exporter Name"
+          placeholder="Exporter Name 수출자명"
           name="exporterName"
           value={formData.exporterName}
           onChange={handleFormChange}
         />
         <Textarea
-          placeholder="Exporter Address"
+          placeholder="Exporter Address 수출자주소"
           name="exporterAddress"
           value={formData.exporterAddress}
           onChange={handleFormChange}
@@ -293,15 +301,15 @@ export default function DocumentsMaking() {
 
       {/* 수입자 정보 */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold">2. Consignee Information</h2>
+        <h2 className="text-lg font-semibold">2. Consignee Information (수입자 정보) </h2>
         <Input
-          placeholder="Importer Name"
+          placeholder="Importer Name 수입자명"
           name="importerName"
           value={formData.importerName}
           onChange={handleFormChange}
         />
         <Textarea
-          placeholder="Importer Address"
+          placeholder="Importer Address 수입자주소"
           name="importerAddress"
           value={formData.importerAddress}
           onChange={handleFormChange}
@@ -310,9 +318,9 @@ export default function DocumentsMaking() {
 
       {/* 착화통지처 */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold">3. Notify Party</h2>
+        <h2 className="text-lg font-semibold">3. Notify Party 통지처 </h2>
         <Textarea
-          placeholder="Notify Party"
+          placeholder="Notify Party (동일하면 Same Above) "
           name="notifyParty"
           value={formData.notifyParty}
           onChange={handleFormChange}
@@ -321,12 +329,12 @@ export default function DocumentsMaking() {
 
       {/* Other Information */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold">4. Other Information</h2>
+        <h2 className="text-lg font-semibold">4. Other Information 기타 정보들</h2>
         
         {/* Document Information */}
         <div className="grid grid-cols-3 gap-4">
           <Input
-            placeholder="Document Number"
+            placeholder="Document Number 인보이스 번호 "
             name="documentNumber"
             value={formData.documentNumber}
             onChange={handleFormChange}
@@ -339,13 +347,13 @@ export default function DocumentsMaking() {
             onChange={handleFormChange}
           />
           <Input
-            placeholder="L/C Number and Date"
+            placeholder="L/C Number and Date 신용장 번호 및 날짜"
             name="lcNumberAndDate"
             value={formData.lcNumberAndDate}
             onChange={handleFormChange}
           />
           <Textarea
-            placeholder="L/C Issuing Bank"
+            placeholder="L/C Issuing Bank 신용장 개설은행"
             name="lcIssuingBank"
             value={formData.lcIssuingBank}
             onChange={handleFormChange}
@@ -356,37 +364,37 @@ export default function DocumentsMaking() {
         {/* Transport Information */}
         <div className="grid grid-cols-2 gap-4">
           <Input
-            placeholder="Transport Method"
+            placeholder="Transport Method 운송수단"
             name="transportMethod"
             value={formData.transportMethod}
             onChange={handleFormChange}
           />
           <Input
-            placeholder="Incoterms"
+            placeholder="Incoterms 인코텀즈 조건"
             name="incoterms"
             value={formData.incoterms}
             onChange={handleFormChange}
           />
           <Input
-            placeholder="Loading Port"
+            placeholder="Loading Port 선적항"
             name="loadingPort"
             value={formData.loadingPort}
             onChange={handleFormChange}
           />
           <Input
-            placeholder="Discharge Port"
+            placeholder="Discharge Port 양륙향"
             name="dischargePort"
             value={formData.dischargePort}
             onChange={handleFormChange}
           />
           <Input
-            placeholder="Carrier"
+            placeholder="Carrier 운송사"
             name="carrier"
             value={formData.carrier}
             onChange={handleFormChange}
           />
           <Input
-            placeholder="Vessel and Voyage"
+            placeholder="Vessel and Voyage 선박명 및 항차"
             name="vesselAndVoyage"
             value={formData.vesselAndVoyage}
             onChange={handleFormChange}
@@ -395,7 +403,7 @@ export default function DocumentsMaking() {
 
         {/* Remarks */}
         <Textarea
-          placeholder="Remarks"
+          placeholder="Remarks 비고"
           name="remarks"
           value={formData.remarks}
           onChange={handleFormChange}
@@ -405,7 +413,7 @@ export default function DocumentsMaking() {
       {/* 상품 정보 */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-lg font-semibold">Products</h2>
+          <h2 className="text-lg font-semibold">Products 제품정보</h2>
           <Button onClick={addProduct} className="flex items-center">
             <Plus className="w-4 h-4 mr-2" />
             Add Product
@@ -415,7 +423,7 @@ export default function DocumentsMaking() {
         {products.map((product, idx) => (
           <div key={idx} className="grid grid-cols-4 gap-4 p-4 border rounded-lg">
             <Input
-              placeholder="C/N"
+              placeholder="C/N 박스번호"
               value={product.cn}
               onChange={(e) => handleProductChange(idx, 'cn', e.target.value)}
             />
@@ -425,34 +433,34 @@ export default function DocumentsMaking() {
               onChange={(e) => handleProductChange(idx, 'hsCode', e.target.value)}
             />
             <Input
-              placeholder="Description"
+              placeholder="Description 제품명(영어로)"
               value={product.description}
               onChange={(e) => handleProductChange(idx, 'description', e.target.value)}
               className="col-span-2"
             />
             <Input
-              placeholder="Quantity"
+              placeholder="Quantity 수량"
               value={product.quantity}
               onChange={(e) => handleProductChange(idx, 'quantity', e.target.value)}
             />
             <Input
-              placeholder="Unit Price"
+              placeholder="Unit Price 단가"
               value={product.unitPrice}
               onChange={(e) => handleProductChange(idx, 'unitPrice', e.target.value)}
             />
             <Input
-              placeholder="Amount"
+              placeholder="Amount 금액"
               value={product.amount}
               disabled
               className="bg-gray-100"
             />
             <Input
-              placeholder="Net Weight"
+              placeholder="Net Weight 순중량"
               value={product.netWeight}
               onChange={(e) => handleProductChange(idx, 'netWeight', e.target.value)}
             />
             <Input
-              placeholder="Gross Weight"
+              placeholder="Gross Weight 총중량"
               value={product.grossWeight}
               onChange={(e) => handleProductChange(idx, 'grossWeight', e.target.value)}
             />
