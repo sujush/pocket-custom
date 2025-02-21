@@ -8,7 +8,6 @@ import { Download, Trash2, Plus } from "lucide-react";
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
-// 인터페이스 정의
 interface IFormData {
   exporterName: string;
   exporterAddress: string;
@@ -18,6 +17,7 @@ interface IFormData {
   documentNumber: string;
   documentDate: string;
   lcNumberAndDate: string;
+  lcIssuingBank: string;
   transportMethod: string;
   incoterms: string;
   loadingPort: string;
@@ -55,6 +55,7 @@ export default function DocumentsMaking() {
     documentNumber: '',
     documentDate: '',
     lcNumberAndDate: '',
+    lcIssuingBank: '',
     transportMethod: '',
     incoterms: '',
     loadingPort: '',
@@ -75,25 +76,14 @@ export default function DocumentsMaking() {
     grossWeight: ''
   }]);
 
-  const productsForCalculation = useMemo(() => 
-    products.map(p => ({
-      quantity: p.quantity,
-      unitPrice: p.unitPrice
-    })),
-    [products]
-  );
-
+  // 상품 데이터 금액 자동 계산
   useEffect(() => {
-    const updatedProducts = products.map(product => {
-      const quantity = parseFloat(product.quantity) || 0;
-      const unitPrice = parseFloat(product.unitPrice) || 0;
-      return {
-        ...product,
-        amount: (quantity * unitPrice).toFixed(2)
-      };
-    });
+    const updatedProducts = products.map(product => ({
+      ...product,
+      amount: ((parseFloat(product.quantity) || 0) * (parseFloat(product.unitPrice) || 0)).toFixed(2)
+    }));
     setProducts(updatedProducts);
-  }, [productsForCalculation, products]);
+  }, [products]);
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
     const { name, value } = e.target;
@@ -181,10 +171,11 @@ export default function DocumentsMaking() {
 
     // 데이터 병합 및 값 설정
     const dataMerges = [
-      { range: 'A3:E5', value: `${formData.exporterName}\n${formData.exporterAddress}` },
-      { range: 'F3:J3', value: formData.documentNumber },
-      { range: 'F7:J7', value: formData.lcNumberAndDate },
-      { range: 'A10:E12', value: `${formData.importerName}\n${formData.importerAddress}` },
+      { range: 'A3:E8', value: `${formData.exporterName}\n${formData.exporterAddress}` },
+      { range: 'F3:J5', value: formData.documentNumber },
+      { range: 'F7:J8', value: formData.lcNumberAndDate },
+      { range: 'A10:E15', value: `${formData.importerName}\n${formData.importerAddress}` },
+      { range: 'F10:J12', value: formData.lcIssuingBank },
       { range: 'F14:J15', value: formData.transportMethod },
       { range: 'A17:E19', value: formData.notifyParty },
       { range: 'F17:J19', value: formData.incoterms },
@@ -213,6 +204,8 @@ export default function DocumentsMaking() {
       '14. C/N',
       '15. HS Code',
       '16. Description of Goods',
+      '',
+      '',
       '17. Quantity',
       '18. Unit Price',
       '19. Amount',
@@ -222,35 +215,45 @@ export default function DocumentsMaking() {
     
     worksheet.getRow(24).values = headers;
     worksheet.getRow(24).font = { bold: true };
+    worksheet.mergeCells('C24:E24');
 
     // 상품 데이터 추가
-    products.forEach(product => {
-      worksheet.addRow([
+    products.forEach((product, index) => {
+      const row = worksheet.addRow([
         product.cn,
         product.hsCode,
         product.description,
+        '',
+        '',
         product.quantity,
         product.unitPrice,
         product.amount,
         product.netWeight,
         product.grossWeight
       ]);
+      worksheet.mergeCells(`C${25 + index}:E${25 + index}`);
+      row.alignment = { vertical: 'middle', horizontal: 'center' };
     });
 
     // TOTAL 행 추가 (C열부터 시작)
+    const totalRowNumber = 25 + products.length;
     const totalRow = worksheet.addRow([
       '',
       '',
       'TOTAL',
+      '',
+      '',
       calculateTotals.totalQuantity.toString(),
       '',
       calculateTotals.totalAmount.toFixed(2),
       calculateTotals.totalNetWeight.toFixed(2),
       calculateTotals.totalGrossWeight.toFixed(2)
     ]);
+    worksheet.mergeCells(`C${totalRowNumber}:E${totalRowNumber}`);
     totalRow.font = { bold: true };
+    totalRow.alignment = { vertical: 'middle', horizontal: 'center' };
 
-    // 테두리 및 정렬 스타일 적용
+    // 테두리 스타일 적용
     worksheet.eachRow(row => {
       row.eachCell(cell => {
         cell.border = {
@@ -259,9 +262,6 @@ export default function DocumentsMaking() {
           bottom: { style: 'thin' },
           right: { style: 'thin' }
         };
-        if (!cell.alignment) {
-          cell.alignment = { vertical: 'middle', horizontal: 'center' };
-        }
       });
     });
 
@@ -319,72 +319,81 @@ export default function DocumentsMaking() {
         />
       </div>
 
-      {/* 서류 정보 */}
-      <div className="grid grid-cols-3 gap-4">
-        <Input
-          placeholder="Document Number"
-          name="documentNumber"
-          value={formData.documentNumber}
-          onChange={handleFormChange}
-        />
-        <Input
-          placeholder="Document Date"
-          name="documentDate"
-          type="date"
-          value={formData.documentDate}
-          onChange={handleFormChange}
-        />
-        <Input
-          placeholder="L/C Number and Date"
-          name="lcNumberAndDate"
-          value={formData.lcNumberAndDate}
-          onChange={handleFormChange}
-        />
-      </div>
-
-      {/* 운송 정보 */}
-      <div className="grid grid-cols-2 gap-4">
-        <Input
-          placeholder="Transport Method"
-          name="transportMethod"
-          value={formData.transportMethod}
-          onChange={handleFormChange}
-        />
-        <Input
-          placeholder="Incoterms"
-          name="incoterms"
-          value={formData.incoterms}
-          onChange={handleFormChange}
-        />
-        <Input
-          placeholder="Loading Port"
-          name="loadingPort"
-          value={formData.loadingPort}
-          onChange={handleFormChange}
-        />
-        <Input
-          placeholder="Discharge Port"
-          name="dischargePort"
-          value={formData.dischargePort}
-          onChange={handleFormChange}
-        />
-        <Input
-          placeholder="Carrier"
-          name="carrier"
-          value={formData.carrier}
-          onChange={handleFormChange}
-        />
-        <Input
-          placeholder="Vessel and Voyage"
-          name="vesselAndVoyage"
-          value={formData.vesselAndVoyage}
-          onChange={handleFormChange}
-        />
-      </div>
-
-      {/* Remarks */}
+      {/* Other Information */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Remarks</h2>
+        <h2 className="text-lg font-semibold">4. Other Information</h2>
+        
+        {/* Document Information */}
+        <div className="grid grid-cols-3 gap-4">
+          <Input
+            placeholder="Document Number"
+            name="documentNumber"
+            value={formData.documentNumber}
+            onChange={handleFormChange}
+          />
+          <Input
+            placeholder="Document Date"
+            name="documentDate"
+            type="date"
+            value={formData.documentDate}
+            onChange={handleFormChange}
+          />
+          <Input
+            placeholder="L/C Number and Date"
+            name="lcNumberAndDate"
+            value={formData.lcNumberAndDate}
+            onChange={handleFormChange}
+          />
+          <Textarea
+            placeholder="L/C Issuing Bank"
+            name="lcIssuingBank"
+            value={formData.lcIssuingBank}
+            onChange={handleFormChange}
+            className="col-span-3"
+          />
+        </div>
+
+        {/* Transport Information */}
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            placeholder="Transport Method"
+            name="transportMethod"
+            value={formData.transportMethod}
+            onChange={handleFormChange}
+          />
+          <Input
+            placeholder="Incoterms"
+            name="incoterms"
+            value={formData.incoterms}
+            onChange={handleFormChange}
+          />
+          <Input
+            placeholder="Loading Port"
+            name="loadingPort"
+            value={formData.loadingPort}
+            onChange={handleFormChange}
+          />
+          <Input
+            placeholder="Discharge Port"
+            name="dischargePort"
+            value={formData.dischargePort}
+            onChange={handleFormChange}
+          />
+          <Input
+            placeholder="Carrier"
+            name="carrier"
+            value={formData.carrier}
+            onChange={handleFormChange}
+          />
+          <Input
+            placeholder="Vessel and Voyage"
+            name="vesselAndVoyage"
+            value={formData.vesselAndVoyage}
+            onChange={handleFormChange}
+          />
+        </div>
+
+        {/* Remarks */}
         <Textarea
           placeholder="Remarks"
           name="remarks"
@@ -408,6 +417,11 @@ export default function DocumentsMaking() {
             <Input
               placeholder="C/N"
               value={product.cn}
+              onChange={(e) => handleProductChange(idx, 'cn', e.target.value)}
+            />
+            <Input
+              placeholder="HS Code"
+              value={product.hsCode}
               onChange={(e) => handleProductChange(idx, 'hsCode', e.target.value)}
             />
             <Input
