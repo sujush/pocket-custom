@@ -69,35 +69,18 @@ const Hero: FC = () => {
   useEffect(() => {
     const fetchExchangeRates = async (): Promise<void> => {
       try {
-        const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-        const API_KEY = process.env.NEXT_PUBLIC_TARIFF_RATE;
-        
-        console.log('API Key:', API_KEY); // API 키 확인
-        console.log('Today:', today); // 날짜 형식 확인
-        
-        const url = `https://unipass.customs.go.kr:38010/ext/rest/trifFxrtInfoQry/retrieveTrifFxrtInfo?crkyCn=${API_KEY}&qryYymmDd=${today}&imexTp=2`;
-        console.log('Request URL:', url); // 요청 URL 확인
-
-        const response = await fetch(url, {
-          mode: 'cors', // CORS 모드 명시
-          headers: {
-            'Content-Type': 'application/xml',
-            'Accept': 'application/xml'
-          }
-        });
-
-        console.log('Response status:', response.status); // 응답 상태 코드
-        console.log('Response headers:', response.headers); // 응답 헤더
+        const response = await fetch('/api/exchange-rates');
 
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          const errorData = await response.json();
+          throw new Error(errorData.error || '환율 정보를 가져오는데 실패했습니다');
         }
 
         const xmlText = await response.text();
-        console.log('Response XML:', xmlText.substring(0, 200)); // 응답 내용 일부 확인
+        console.log('Response XML:', xmlText.substring(0, 200));
 
         const updatedRates = parseExchangeRates(xmlText);
-        console.log('Parsed rates:', updatedRates); // 파싱된 환율 데이터
+        console.log('Parsed rates:', updatedRates);
 
         setExchangeRates(updatedRates);
         setError(null);
