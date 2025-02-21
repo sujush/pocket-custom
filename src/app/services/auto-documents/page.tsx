@@ -8,16 +8,6 @@ import { Download } from "lucide-react";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 
-type Product = {
-    cn: string;
-    hsCode: string;
-    description: string;
-    quantity: string;
-    unitPrice: string;
-    amount: string;
-    netWeight: string;
-    grossWeight: string;
-};
 
 export default function DocumentsMaking() {
   const [formData, setFormData] = useState({
@@ -28,6 +18,7 @@ export default function DocumentsMaking() {
     notify: "",
     invoiceNumber: "",
     invoiceDate: "",
+    lcNumberAndDate: "",
     shippingMethod: "",
     incoterms: "",
     portOfLoading: "",
@@ -38,12 +29,24 @@ export default function DocumentsMaking() {
     products: [],
   });
 
+  type Product = {
+    cn: string;
+    hsCode: string;
+    description: string;
+    quantity: string;
+    unitPrice: string;
+    amount: string;
+    netWeight: string;
+    grossWeight: string;
+};
+
+
   const [productList, setProductList] = useState([
     { cn: "", hsCode: "", description: "", quantity: "", unitPrice: "", amount: "", netWeight: "", grossWeight: "" },
   ]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, index: number | undefined = undefined) => {
-    const { name, value } = e.target as { name: keyof Product; value: string };
+    const { name, value } = e.target as { name: keyof Product; value: string }; // name의 타입을 명시적으로 설정
     if (index !== undefined) {
       const newProducts = [...productList];
       newProducts[index][name] = value;
@@ -62,22 +65,33 @@ export default function DocumentsMaking() {
     const worksheet = workbook.addWorksheet("Invoice & Packing List");
 
     // 자동으로 입력되는 기본 데이터
-    worksheet.addRow(["COMMERCIAL INVOICE/PACKING LIST"]).font = { size: 24, bold: true };
-    worksheet.addRow(["Exporter", formData.exporterName]);
-    worksheet.addRow(["Exporter Address", formData.exporterAddress]);
-    worksheet.addRow(["Importer", formData.importerName]);
-    worksheet.addRow(["Importer Address", formData.importerAddress]);
-    worksheet.addRow(["Notify", formData.notify]);
-    worksheet.addRow(["Invoice No", formData.invoiceNumber]);
-    worksheet.addRow(["Invoice Date", formData.invoiceDate]);
-    worksheet.addRow(["Shipping Method", formData.shippingMethod]);
-    worksheet.addRow(["Incoterms", formData.incoterms]);
-    worksheet.addRow(["Port of Loading", formData.portOfLoading]);
-    worksheet.addRow(["Port of Discharge", formData.portOfDischarge]);
-    worksheet.addRow(["Carrier", formData.carrier]);
-    worksheet.addRow(["Vessel", formData.vessel]);
-    worksheet.addRow(["Remark", formData.remark]);
-    worksheet.addRow([]);
+    worksheet.mergeCells("A1:J1");
+    worksheet.getCell("A1").value = "COMMERCIAL INVOICE/PACKING LIST";
+    worksheet.getCell("A1").font = { size: 24, bold: true };
+    
+    const autoFillData = [
+      ["A3:E3", "Exporter Name"], ["F3:J3", formData.exporterName],
+      ["A4:E4", "Exporter Address"], ["F4:J4", formData.exporterAddress],
+      ["A10:E10", "Importer Name"], ["F10:J10", formData.importerName],
+      ["A11:E11", "Importer Address"], ["F11:J11", formData.importerAddress],
+      ["A6:E6", "Notify"], ["F6:J6", formData.notify],
+      ["A7:E7", "Invoice No"], ["F7:J7", formData.invoiceNumber],
+      ["A8:E8", "Invoice Date"], ["F8:J8", formData.invoiceDate],
+      ["F6:J6", "9. No. & Date of L/C"], ["F7:J7", formData.lcNumberAndDate],
+      ["A9:E9", "Shipping Method"], ["F9:J9", formData.shippingMethod],
+      ["A12:E12", "Incoterms"], ["F12:J12", formData.incoterms],
+      ["A13:E13", "Port of Loading"], ["F13:J13", formData.portOfLoading],
+      ["A14:E14", "Port of Discharge"], ["F14:J14", formData.portOfDischarge],
+      ["A15:E15", "Carrier"], ["F15:J15", formData.carrier],
+      ["A16:E16", "Vessel"], ["F16:J16", formData.vessel],
+      ["A17:E17", "Remark"], ["F17:J17", formData.remark],
+    ];
+
+    autoFillData.forEach(([range, value]) => {
+      worksheet.mergeCells(range);
+      worksheet.getCell(range.split(":")[0]).value = value;
+      worksheet.getCell(range.split(":")[0]).alignment = { horizontal: "center", vertical: "middle" };
+    });
 
     // 제품 리스트 헤더
     worksheet.addRow(["C/N", "HS Code", "Description of Goods", "Quantity", "Unit Price", "Amount", "Net Weight", "Gross Weight"]);
@@ -109,15 +123,18 @@ export default function DocumentsMaking() {
         <Textarea placeholder="수출자 주소" name="exporterAddress" onChange={handleInputChange} />
         <Input placeholder="수입자명" name="importerName" onChange={handleInputChange} />
         <Textarea placeholder="수입자 주소" name="importerAddress" onChange={handleInputChange} />
+        <Input placeholder="착화 통지처" name="notify" onChange={handleInputChange} />
+        <Input placeholder="서류 번호" name="invoiceNumber" onChange={handleInputChange} />
+        <Input placeholder="작성일자" name="invoiceDate" onChange={handleInputChange} />
+        <Input placeholder="신용장 번호 및 날짜" name="lcNumberAndDate" onChange={handleInputChange} />
+        <Input placeholder="운송방식" name="shippingMethod" onChange={handleInputChange} />
+        <Input placeholder="인코텀즈 조건" name="incoterms" onChange={handleInputChange} />
+        <Input placeholder="선적항" name="portOfLoading" onChange={handleInputChange} />
+        <Input placeholder="양륙항" name="portOfDischarge" onChange={handleInputChange} />
+        <Input placeholder="운송사" name="carrier" onChange={handleInputChange} />
+        <Input placeholder="선박명 및 항차" name="vessel" onChange={handleInputChange} />
+        <Textarea placeholder="비고" name="remark" onChange={handleInputChange} />
         <Button onClick={addProduct}>상품 추가</Button>
-        {productList.map((product, index) => (
-          <div key={index} className="grid grid-cols-4 gap-2">
-            <Input placeholder="C/N" name="cn" onChange={(e) => handleInputChange(e, index)} />
-            <Input placeholder="HS Code" name="hsCode" onChange={(e) => handleInputChange(e, index)} />
-            <Input placeholder="Description" name="description" onChange={(e) => handleInputChange(e, index)} />
-            <Input placeholder="Quantity" name="quantity" onChange={(e) => handleInputChange(e, index)} />
-          </div>
-        ))}
         <Button onClick={generateExcel} className="mt-4 flex items-center">
           <Download className="mr-2" /> 엑셀 다운로드
         </Button>
