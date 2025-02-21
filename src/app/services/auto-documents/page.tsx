@@ -8,7 +8,7 @@ import { Download, Trash2, Plus } from "lucide-react";
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
-// 인터페이스 정의를 컴포넌트 외부에 선언
+// 인터페이스 정의
 interface IFormData {
   exporterName: string;
   exporterAddress: string;
@@ -146,7 +146,7 @@ export default function DocumentsMaking() {
       totalGrossWeight: 0
     });
   }, [products]);
-  // 엑셀 생성
+
   const generateExcel = async () => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Invoice & Packing List');
@@ -162,76 +162,70 @@ export default function DocumentsMaking() {
     titleCell.font = { size: 16, bold: true };
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
-    // 고정 레이블 설정
-    const labels = [
-      { cell: 'A2', value: '1. Shipper / Exporter' },
-      { cell: 'F2', value: '8. No & Date of Invoice' },
-      { cell: 'F6', value: '9. No. & Date of L/C' },
-      { cell: 'A9', value: '2. Consignee' },
-      { cell: 'F9', value: '10. L/C Issuing Bank' },
-      { cell: 'F13', value: '11. Ship Via' },
-      { cell: 'A16', value: '3. Notify' },
-      { cell: 'F16', value: '12. Delivery Terms' },
-      { cell: 'A20', value: '4. Port of Loading' },
-      { cell: 'C20', value: '5. Final Destination' },
-      { cell: 'F20', value: '13. Remarks' },
-      { cell: 'A22', value: '6. Carrier' },
-      { cell: 'C22', value: '7. Sailing on/or about' }
+    // 고정 레이블 설정 및 병합
+    const headerMerges = [
+      { range: 'A2:E2', value: '1. Shipper / Exporter' },
+      { range: 'F2:J2', value: '8. No & Date of Invoice' },
+      { range: 'F6:J6', value: '9. No. & Date of L/C' },
+      { range: 'A9:E9', value: '2. Consignee' },
+      { range: 'F9:J9', value: '10. L/C Issuing Bank' },
+      { range: 'F13:J13', value: '11. Ship Via' },
+      { range: 'A16:E16', value: '3. Notify' },
+      { range: 'F16:J16', value: '12. Delivery Terms' },
+      { range: 'A20:B20', value: '4. Port of Loading' },
+      { range: 'C20:E20', value: '5. Final Destination' },
+      { range: 'F20:J20', value: '13. Remarks' },
+      { range: 'A22:B22', value: '6. Carrier' },
+      { range: 'C22:E22', value: '7. Sailing on/or about' }
     ];
 
-    labels.forEach(({ cell, value }) => {
-      worksheet.getCell(cell).value = value;
-      worksheet.getCell(cell).font = { bold: true };
-    });
-
-    // 병합 셀 설정 및 데이터 입력
-    const mergesWithData = [
-      { range: 'A3:E5', value: formData.exporterName + '\n' + formData.exporterAddress },
-      { range: 'F3:G3', value: formData.documentNumber },
-      { range: 'H3:J3', value: formData.documentDate },
+    // 데이터 병합 및 값 설정
+    const dataMerges = [
+      { range: 'A3:E5', value: `${formData.exporterName}\n${formData.exporterAddress}` },
+      { range: 'F3:J3', value: formData.documentNumber },
       { range: 'F7:J7', value: formData.lcNumberAndDate },
-      { range: 'A10:E12', value: formData.importerName + '\n' + formData.importerAddress },
+      { range: 'A10:E12', value: `${formData.importerName}\n${formData.importerAddress}` },
       { range: 'F14:J15', value: formData.transportMethod },
       { range: 'A17:E19', value: formData.notifyParty },
       { range: 'F17:J19', value: formData.incoterms },
-      { range: 'A21:B21', value: formData.loadingPort },
-      { range: 'C21:E21', value: formData.dischargePort },
-      { range: 'F21:J23', value: formData.remarks },
-      { range: 'A23:B23', value: formData.carrier },
-      { range: 'C23:E23', value: formData.vesselAndVoyage }
+      { range: 'F21:J23', value: formData.remarks }
     ];
 
-    mergesWithData.forEach(({ range, value }) => {
+    // 헤더 병합 및 스타일 적용
+    headerMerges.forEach(({ range, value }) => {
       worksheet.mergeCells(range);
-      worksheet.getCell(range.split(':')[0]).value = value;
-      worksheet.getCell(range.split(':')[0]).alignment = { 
-        vertical: 'middle', 
-        horizontal: 'center',
-        wrapText: true 
-      };
+      const cell = worksheet.getCell(range.split(':')[0]);
+      cell.value = value;
+      cell.font = { bold: true };
+      cell.alignment = { vertical: 'middle', horizontal: 'left' };
+    });
+
+    // 데이터 병합 및 스타일 적용
+    dataMerges.forEach(({ range, value }) => {
+      worksheet.mergeCells(range);
+      const cell = worksheet.getCell(range.split(':')[0]);
+      cell.value = value;
+      cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
     });
 
     // 상품 데이터 헤더 (24행)
-    const productHeaders = [
-      { width: 10, header: '14. C/N' },
-      { width: 12, header: '15. HS Code' },
-      { width: 30, header: '16. Description of Goods' },
-      { width: 12, header: '17. Quantity' },
-      { width: 12, header: '18. Unit Price' },
-      { width: 12, header: '19. Amount' },
-      { width: 12, header: 'Net weight' },
-      { width: 12, header: 'Gross weight' }
+    const headers = [
+      '14. C/N',
+      '15. HS Code',
+      '16. Description of Goods',
+      '17. Quantity',
+      '18. Unit Price',
+      '19. Amount',
+      'Net weight',
+      'Gross weight'
     ];
-
-    worksheet.getRow(24).values = productHeaders.map(h => h.header);
+    
+    worksheet.getRow(24).values = headers;
     worksheet.getRow(24).font = { bold: true };
-    productHeaders.forEach((h, i) => {
-      worksheet.getColumn(i + 1).width = h.width;
-    });
 
     // 상품 데이터 추가
     products.forEach(product => {
-      const row = worksheet.addRow([
+      worksheet.addRow([
         product.cn,
         product.hsCode,
         product.description,
@@ -241,25 +235,22 @@ export default function DocumentsMaking() {
         product.netWeight,
         product.grossWeight
       ]);
-      row.height = 20;
-      row.alignment = { vertical: 'middle', horizontal: 'center' };
     });
 
-    // 총계 행 추가
+    // TOTAL 행 추가 (C열부터 시작)
     const totalRow = worksheet.addRow([
+      '',
+      '',
       'TOTAL',
+      calculateTotals.totalQuantity.toString(),
       '',
-      '',
-      calculateTotals.totalQuantity,
-      '',
-      calculateTotals.totalAmount,
-      calculateTotals.totalNetWeight,
-      calculateTotals.totalGrossWeight
+      calculateTotals.totalAmount.toFixed(2),
+      calculateTotals.totalNetWeight.toFixed(2),
+      calculateTotals.totalGrossWeight.toFixed(2)
     ]);
     totalRow.font = { bold: true };
-    totalRow.height = 20;
 
-    // 테두리 스타일 적용
+    // 테두리 및 정렬 스타일 적용
     worksheet.eachRow(row => {
       row.eachCell(cell => {
         cell.border = {
@@ -268,6 +259,9 @@ export default function DocumentsMaking() {
           bottom: { style: 'thin' },
           right: { style: 'thin' }
         };
+        if (!cell.alignment) {
+          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        }
       });
     });
 
@@ -414,11 +408,6 @@ export default function DocumentsMaking() {
             <Input
               placeholder="C/N"
               value={product.cn}
-              onChange={(e) => handleProductChange(idx, 'cn', e.target.value)}
-            />
-            <Input
-              placeholder="HS Code"
-              value={product.hsCode}
               onChange={(e) => handleProductChange(idx, 'hsCode', e.target.value)}
             />
             <Input
@@ -429,13 +418,11 @@ export default function DocumentsMaking() {
             />
             <Input
               placeholder="Quantity"
-              type="number"
               value={product.quantity}
               onChange={(e) => handleProductChange(idx, 'quantity', e.target.value)}
             />
             <Input
               placeholder="Unit Price"
-              type="number"
               value={product.unitPrice}
               onChange={(e) => handleProductChange(idx, 'unitPrice', e.target.value)}
             />
@@ -447,13 +434,11 @@ export default function DocumentsMaking() {
             />
             <Input
               placeholder="Net Weight"
-              type="number"
               value={product.netWeight}
               onChange={(e) => handleProductChange(idx, 'netWeight', e.target.value)}
             />
             <Input
               placeholder="Gross Weight"
-              type="number"
               value={product.grossWeight}
               onChange={(e) => handleProductChange(idx, 'grossWeight', e.target.value)}
             />
