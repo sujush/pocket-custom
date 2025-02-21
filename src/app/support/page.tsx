@@ -1,4 +1,6 @@
 // app/support/page.tsx
+//Navigation 에서 시작
+
 export default function SupportPage() {
     return (
       <div className="container mx-auto p-4">
