@@ -76,14 +76,6 @@ export default function DocumentsMaking() {
     grossWeight: ''
   }]);
 
-  // 상품 데이터 금액 자동 계산
-  useEffect(() => {
-    const updatedProducts = products.map(product => ({
-      ...product,
-      amount: ((parseFloat(product.quantity) || 0) * (parseFloat(product.unitPrice) || 0)).toFixed(2)
-    }));
-    setProducts(updatedProducts);
-  }, [products]);
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
     const { name, value } = e.target;
