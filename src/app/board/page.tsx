@@ -1,3 +1,5 @@
+// src/app/board/page.tsx
+
 'use client';
 
 import { useState } from 'react';
@@ -6,13 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-
+import { checkIsAdmin } from '@/lib/admin';
+import { useEffect } from 'react';
 
 interface Comment {
   id: number;
   content: string;
   createdAt: string;
-  isAdmin: boolean;
   author: string;
 }
 
@@ -21,33 +23,22 @@ interface Post {
   title: string;
   content: string;
   author: string;
+  password: string;
   createdAt: string;
   comments: Comment[];
 }
 
 export default function ServicesPage() {
-  const [posts, setPosts] = useState<Post[]>([
-    {
-      id: 1,
-      title: "수입신고 절차 문의",
-      content: "안녕하세요, 수입신고 절차에 대해 문의드립니다...",
-      author: "김고객",
-      createdAt: "2024-02-22",
-      comments: [
-        {
-          id: 1,
-          content: "안녕하세요, 이연관세사무소입니다. 수입신고 절차는...",
-          createdAt: "2024-02-22",
-          isAdmin: true,
-          author: "이연관세사무소"
-        }
-      ]
-    }
-  ]);
-  
+  const [posts, setPosts] = useState<Post[]>([]);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [showPostForm, setShowPostForm] = useState(false);
   const [commentContent, setCommentContent] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    setIsAdmin(checkIsAdmin());
+  }, []);
 
   const handleSubmitPost = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -58,6 +49,7 @@ export default function ServicesPage() {
       title: formData.get('title') as string,
       content: formData.get('content') as string,
       author: formData.get('author') as string,
+      password: formData.get('password') as string,
       createdAt: new Date().toISOString().split('T')[0],
       comments: []
     };
@@ -69,12 +61,15 @@ export default function ServicesPage() {
 
   const handleAddComment = () => {
     if (!selectedPost || !commentContent.trim()) return;
+    if (!isAdmin) {
+      setError("관리자만 답변을 작성할 수 있습니다.");
+      return;
+    }
 
     const newComment: Comment = {
       id: selectedPost.comments.length + 1,
       content: commentContent,
       createdAt: new Date().toISOString().split('T')[0],
-      isAdmin: true,
       author: "이연관세사무소"
     };
 
@@ -137,6 +132,17 @@ export default function ServicesPage() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="password">비밀번호</Label>
+                <Input 
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="게시글 비밀번호를 입력해주세요"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="content">문의 내용</Label>
                 <Textarea
                   id="content"
@@ -171,13 +177,11 @@ export default function ServicesPage() {
                 {selectedPost.comments.map((comment) => (
                   <div
                     key={comment.id}
-                    className={`p-4 rounded-lg ${
-                      comment.isAdmin ? 'bg-blue-50' : 'bg-gray-50'
-                    }`}
+                    className="p-4 rounded-lg bg-blue-50"
                   >
                     <div className="flex justify-between items-center mb-2">
                       <span className="font-medium">
-                        {comment.isAdmin && '✓ '}{comment.author}
+                        ✓ {comment.author}
                       </span>
                       <span className="text-sm text-gray-500">
                         {comment.createdAt}
@@ -188,20 +192,25 @@ export default function ServicesPage() {
                 ))}
                 
                 {/* 관리자 답변 입력 폼 */}
-                <div className="mt-4 space-y-2">
-                  <Textarea
-                    placeholder="답변을 입력해주세요"
-                    value={commentContent}
-                    onChange={(e) => setCommentContent(e.target.value)}
-                    className="min-h-[100px]"
-                  />
-                  <Button 
-                    onClick={handleAddComment}
-                    disabled={!commentContent.trim()}
-                  >
-                    답변 작성
-                  </Button>
-                </div>
+                {isAdmin && (
+                  <div className="mt-4 space-y-2">
+                    <Textarea
+                      placeholder="답변을 입력해주세요"
+                      value={commentContent}
+                      onChange={(e) => setCommentContent(e.target.value)}
+                      className="min-h-[100px]"
+                    />
+                    <Button 
+                      onClick={handleAddComment}
+                      disabled={!commentContent.trim()}
+                    >
+                      답변 작성
+                    </Button>
+                  </div>
+                )}
+                {error && (
+                  <p className="text-sm text-red-500 mt-2">{error}</p>
+                )}
               </div>
             </CardContent>
           </Card>
