@@ -45,24 +45,27 @@ const Hero: FC = () => {
     const xmlDoc = parser.parseFromString(xmlText, "text/xml");
     const rateElements = xmlDoc.getElementsByTagName("trifFxrtInfoQryRsltVo");
     
-    const newRates = [...exchangeRates];
-    
-    Array.from(rateElements).forEach((rateElement: Element) => {
-      const getElementText = (tagName: string): string => {
-        const element = rateElement.getElementsByTagName(tagName)[0];
-        return element ? element.textContent || '' : '';
-      };
+    const countryMapping: { [key: string]: ExchangeRate } = {
+      US: { country: '미국', code: 'USD', rate: 0, currency: 'Dollar' },
+      CN: { country: '중국', code: 'CNY', rate: 0, currency: 'Yuan' },
+      JP: { country: '일본', code: 'JPY', rate: 0, currency: 'Yen' },
+      EU: { country: '유럽', code: 'EUR', rate: 0, currency: 'Euro' },
+      GB: { country: '영국', code: 'GBP', rate: 0, currency: 'Pound' }
+    };
 
-      const countryCode = getElementText("cntySign");
-      const rateValue = getElementText("fxrt");
+    Array.from(rateElements).forEach((rateElement: Element) => {
+      const countryCode = rateElement.getElementsByTagName("cntySgn")[0]?.textContent || '';
+      const rateValue = rateElement.getElementsByTagName("fxrt")[0]?.textContent || '0';
       
-      const existingRateIndex = newRates.findIndex(r => r.code === countryCode);
-      if (existingRateIndex !== -1 && rateValue) {
-        newRates[existingRateIndex].rate = parseFloat(rateValue);
-      }
+      // 우리가 관심있는 국가의 환율만 저장
+      Object.entries(countryMapping).forEach(([key, data]) => {
+        if (countryCode.includes(key)) {
+          data.rate = parseFloat(rateValue);
+        }
+      });
     });
-    
-    return newRates;
+
+    return Object.values(countryMapping);
   };
 
   // 환율 데이터 가져오기
