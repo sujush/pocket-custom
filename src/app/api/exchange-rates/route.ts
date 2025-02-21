@@ -3,16 +3,29 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   try {
     const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const API_KEY = process.env.NEXT_PUBLIC_TARIFF_RATE;
+    const BASE_URL = process.env.NEXT_PUBLIC_TARIFF_RATE;
 
-    if (!API_KEY) {
+    if (!BASE_URL) {
       return NextResponse.json(
-        { error: 'API 키가 설정되지 않았습니다' },
+        { error: 'API URL이 설정되지 않았습니다' },
         { status: 500 }
       );
     }
 
-    const url = `https://unipass.customs.go.kr:38010/ext/rest/trifFxrtInfoQry/retrieveTrifFxrtInfo?crkyCn=${API_KEY}&qryYymmDd=${today}&imexTp=2`;
+    // URL에서 인증키 추출
+    const urlObj = new URL(BASE_URL);
+    const params = new URLSearchParams(urlObj.search);
+    const crkyCn = params.get('crkyCn');
+
+    if (!crkyCn) {
+      return NextResponse.json(
+        { error: '인증키가 URL에 포함되어 있지 않습니다' },
+        { status: 500 }
+      );
+    }
+
+    // 새로운 URL 구성
+    const url = `${urlObj.origin}${urlObj.pathname}?crkyCn=${crkyCn}&qryYymmDd=${today}&imexTp=2`;
 
     const response = await fetch(url);
 
