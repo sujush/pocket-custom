@@ -1,4 +1,5 @@
 // src/app/admin/page.tsx
+//도메인/admin 페이지로 접속해서 로그인 후 관리자 페이지 이용
 
 'use client';
 
