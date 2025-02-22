@@ -22,11 +22,11 @@ export default function Footer() {
               </ul>
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-4 text-indigo-800">뉴스레터 구독</h3>
-              <p className="text-gray-700 mb-4">최신 소식과 혜택을 받아보세요</p>
+              <h3 className="text-lg font-semibold mb-4 text-indigo-800">견적서 요청</h3>
+              <p className="text-gray-700 mb-4">통관 견적 요청 시 메일주소를 입력해주세요</p>
               <div className="flex">
                 <input type="email" placeholder="이메일 주소" className="flex-grow px-4 py-2 rounded-l-lg border-t border-b border-l text-gray-800 border-indigo-200 bg-white" />
-                <Button className="rounded-r-lg bg-indigo-600 text-white px-4 py-2 hover:bg-indigo-700">구독</Button>
+                <Button className="rounded-r-lg bg-indigo-600 text-white px-4 py-2 hover:bg-indigo-700">보내기</Button>
               </div>
             </div>
           </div>
