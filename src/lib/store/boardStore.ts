@@ -186,12 +186,10 @@ export const useBoardStore = create<BoardState>()(
                     if (adminToken) headers['x-admin-token'] = adminToken;
                   }
               
-                  // authorEmail을 headers에 추가
-                  headers['body'] = JSON.stringify({ authorEmail: user?.email });
-              
                   const response = await fetch(`${BOARD_API_URL}/posts/${postId}/comments/${commentId}`, {
                     method: 'DELETE',
                     headers,
+                    body: JSON.stringify({ authorEmail: user?.email }),  // body를 여기로 이동
                     credentials: 'include'
                   });
                   
