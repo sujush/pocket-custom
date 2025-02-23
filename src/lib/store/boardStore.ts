@@ -175,11 +175,21 @@ export const useBoardStore = create<BoardState>()(
                   set({ loading: true, error: null });
                   const { user } = useAuthStore.getState();
                   
+                  const headers: Record<string, string> = {
+                    'Content-Type': 'application/json'
+                  };
+              
+                  // 관리자인 경우 관리자 토큰 추가
+                  if (user?.isAdmin) {
+                    const adminId = process.env.NEXT_PUBLIC_ADMIN_ID;
+                    const adminToken = process.env.NEXT_PUBLIC_ADMIN_TOKEN;
+                    if (adminId) headers['x-admin-id'] = adminId;
+                    if (adminToken) headers['x-admin-token'] = adminToken;
+                  }
+              
                   const response = await fetch(`${BOARD_API_URL}/posts/${postId}/comments/${commentId}`, {
                     method: 'DELETE',
-                    headers: {
-                      'Content-Type': 'application/json'
-                    },
+                    headers,
                     body: JSON.stringify({ 
                       authorEmail: user?.email,
                       authorName: user?.name || "익명"
@@ -210,7 +220,7 @@ export const useBoardStore = create<BoardState>()(
                   set({ loading: false });
                 }
               },
-              
+
       deletePost: async (postId: string) => {
                 try {
                     set({ loading: true, error: null });
