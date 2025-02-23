@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, type FC } from 'react';
+import { useState, useEffect, type FC, useCallback } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sun, Moon } from "lucide-react";
 
@@ -40,7 +40,7 @@ const Hero: FC = () => {
   };
 
   // XML 파싱 함수
-  const parseExchangeRates = (xmlText: string): ExchangeRate[] => {
+  const parseExchangeRates = useCallback((xmlText: string): ExchangeRate[] => {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlText, "text/xml");
     const rateElements = xmlDoc.getElementsByTagName("trifFxrtInfoQryRsltVo");
@@ -52,7 +52,7 @@ const Hero: FC = () => {
       EU: { country: '유럽', code: 'EUR', rate: 0, currency: 'Euro' },
       GB: { country: '영국', code: 'GBP', rate: 0, currency: 'Pound' }
     };
-
+  
     Array.from(rateElements).forEach((rateElement: Element) => {
       const countryCode = rateElement.getElementsByTagName("cntySgn")[0]?.textContent || '';
       const rateValue = rateElement.getElementsByTagName("fxrt")[0]?.textContent || '0';
@@ -64,9 +64,9 @@ const Hero: FC = () => {
         }
       });
     });
-
+  
     return Object.values(countryMapping);
-  };
+  }, []); // 의존성 배열이 비어있으므로 컴포넌트가 마운트될 때 한 번만 생성됨
 
   // 환율 데이터 가져오기
   useEffect(() => {

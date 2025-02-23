@@ -15,7 +15,9 @@ import { useAuthStore } from '@/lib/store/authStore';
 export default function WritePage() {
   const router = useRouter();
   const { createPost } = useBoardStore();
-  const { user } = useAuthStore();
+  const { user } = useAuthStore.getState();
+
+
   
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -30,7 +32,7 @@ export default function WritePage() {
     e.preventDefault();
     
     if (!title.trim() || !content.trim()) {
-      alert('제목과 내용을 모두 입력해주세요.');
+      alert('제목 내용을 모두 입력해주세요.');
       return;
     }
 

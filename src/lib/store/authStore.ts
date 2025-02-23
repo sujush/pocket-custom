@@ -8,6 +8,7 @@ interface User {
   email: string;
   name: string;
   isPremium: boolean;
+  isAdmin? : boolean; //관리자 여부
 }
 
 interface AuthState {
@@ -20,6 +21,8 @@ interface AuthState {
 }
 
 const apiUrl = process.env.NEXT_PUBLIC_APIGATEWAY_URL;
+
+
 
 export const useAuthStore = create<AuthState>()(
   persist<AuthState>(

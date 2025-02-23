@@ -40,7 +40,7 @@ export default function AdminLoginPage() {
         localStorage.setItem('adminLoginTime', Date.now().toString());
         
         toast.success('관리자로 로그인되었습니다');
-        router.push('/dashboard');
+        router.push('/board');
       } else {
         setError('아이디 또는 비밀번호가 일치하지 않습니다.');
         toast.error('로그인에 실패했습니다');

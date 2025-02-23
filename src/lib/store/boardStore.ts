@@ -2,6 +2,8 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useAuthStore } from '@/lib/store/authStore';
+
 
 interface Post {
   id: string;
@@ -39,6 +41,7 @@ interface BoardState {
   fetchPost: (id: string) => Promise<void>;
   createPost: (title: string, content: string) => Promise<void>;
   createComment: (postId: string, content: string) => Promise<void>;
+  deletePost: (postId: string) => Promise<void>;  // 추가된 부분
 }
 
 const BOARD_API_URL = process.env.NEXT_PUBLIC_BOARD_API_URL;
@@ -99,13 +102,20 @@ export const useBoardStore = create<BoardState>()(
       createPost: async (title: string, content: string) => {
         try {
           set({ loading: true, error: null });
+          // 현재 사용자 정보 가져오기 (예: useAuthStore)
+          const { user } = useAuthStore.getState();
+
+          
           const response = await fetch(`${BOARD_API_URL}/posts`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ title, content })
+            body: JSON.stringify({
+              title,
+              content,
+              authorEmail: user?.email,
+              authorName: user?.isAdmin ? "관리자" : user?.name || "익명"
+            })
           });
           
           const data = await response.json();
@@ -122,7 +132,7 @@ export const useBoardStore = create<BoardState>()(
           set({ loading: false });
         }
       },
-
+      
       createComment: async (postId: string, content: string) => {
         try {
           set({ loading: true, error: null });
@@ -153,6 +163,37 @@ export const useBoardStore = create<BoardState>()(
           }
         } catch {
           set({ error: '댓글 작성에 실패했습니다.' });
+        } finally {
+          set({ loading: false });
+        }
+      },
+
+      deletePost: async (postId: string) => {
+        try {
+          set({ loading: true, error: null });
+          const headers: Record<string, string> = {};
+          
+          const adminId = process.env.NEXT_PUBLIC_ADMIN_ID;
+          const adminToken = process.env.NEXT_PUBLIC_ADMIN_TOKEN;
+          
+          if (adminId) headers['x-admin-id'] = adminId;
+          if (adminToken) headers['x-admin-token'] = adminToken;
+
+          const response = await fetch(`${BOARD_API_URL}/posts/${postId}`, {
+            method: 'DELETE',
+            headers,
+            credentials: 'include',
+          });
+          const data = await response.json();
+
+          if (data.success) {
+            const { posts } = get();
+            set({ posts: posts.filter(post => post.id !== postId) });
+          } else {
+            set({ error: data.message || '게시글 삭제에 실패했습니다.' });
+          }
+        } catch {
+          set({ error: '게시글 삭제에 실패했습니다.' });
         } finally {
           set({ loading: false });
         }
