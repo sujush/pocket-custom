@@ -198,9 +198,11 @@ export const useBoardStore = create<BoardState>()(
                     }
                   } else {
                     set({ error: data.message || '댓글 삭제에 실패했습니다.' });
+                    throw new Error(data.message);
                   }
-                } catch {
+                } catch (error) {
                   set({ error: '댓글 삭제에 실패했습니다.' });
+                  throw error;
                 } finally {
                   set({ loading: false });
                 }
