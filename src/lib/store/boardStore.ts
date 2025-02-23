@@ -172,36 +172,39 @@ export const useBoardStore = create<BoardState>()(
             // createComment 함수 다음에 추가
             deleteComment: async (postId: string, commentId: string) => {
                 try {
-                    set({ loading: true, error: null });
-                    const response = await fetch(`${BOARD_API_URL}/posts/${postId}/comments/${commentId}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        credentials: 'include',
-                    });
-
-                    const data = await response.json();
-
-                    if (data.success) {
-                        const currentPost = get().currentPost;
-                        if (currentPost && currentPost.id === postId) {
-                            set({
-                                currentPost: {
-                                    ...currentPost,
-                                    comments: currentPost.comments.filter(comment => comment.id !== commentId)
-                                }
-                            });
+                  set({ loading: true, error: null });
+                  const { user } = useAuthStore.getState();
+                  
+                  const response = await fetch(`${BOARD_API_URL}/posts/${postId}/comments/${commentId}`, {
+                    method: 'DELETE',
+                    headers: {
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ authorEmail: user?.email }),
+                    credentials: 'include'
+                  });
+                  
+                  const data = await response.json();
+                  
+                  if (data.success) {
+                    const currentPost = get().currentPost;
+                    if (currentPost && currentPost.id === postId) {
+                      set({
+                        currentPost: {
+                          ...currentPost,
+                          comments: currentPost.comments.filter(comment => comment.id !== commentId)
                         }
-                    } else {
-                        set({ error: data.message || '댓글 삭제에 실패했습니다.' });
+                      });
                     }
+                  } else {
+                    set({ error: data.message || '댓글 삭제에 실패했습니다.' });
+                  }
                 } catch {
-                    set({ error: '댓글 삭제에 실패했습니다.' });
+                  set({ error: '댓글 삭제에 실패했습니다.' });
                 } finally {
-                    set({ loading: false });
+                  set({ loading: false });
                 }
-            },
+              },
 
       deletePost: async (postId: string) => {
                 try {
