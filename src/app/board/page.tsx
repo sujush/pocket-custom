@@ -22,14 +22,14 @@ export default function BoardPage() {
     setIsAdmin(adminFlag);
   }, [fetchPosts]);
 
-  
+
 
   // 게시글 삭제 처리 함수 (관리자만 사용할 수 있음)
   const handleDelete = async (postId: string) => {
     if (confirm("게시글을 삭제하시겠습니까?")) {
       try {
         await deletePost(postId);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
         alert("게시글 삭제에 실패했습니다.");
       }
@@ -66,7 +66,7 @@ export default function BoardPage() {
 
       <div className="space-y-4">
         {posts.map((post) => (
-          <Card 
+          <Card
             key={post.id}
             className="cursor-pointer hover:bg-gray-50 transition-colors"
             onClick={() => router.push(`/board/${post.id}`)}
@@ -89,8 +89,8 @@ export default function BoardPage() {
                 {post.content}
               </p>
             </CardContent>
-            {/* 관리자인 경우 게시글 삭제 버튼 노출 */}
-            {isAdmin && (
+            {/* 관리자인 경우 게시글 삭제 버튼 노출. 작성자는 자신의 글만 */}
+            {(isAdmin || post.authorEmail === user?.email) && (
               <div className="p-4">
                 <Button variant="destructive" onClick={(e) => {
                   e.stopPropagation();

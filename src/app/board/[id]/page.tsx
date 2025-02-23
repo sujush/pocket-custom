@@ -18,7 +18,7 @@ interface PageProps {
 
 export default function PostDetailPage({ params }: PageProps) {
     const router = useRouter();
-    const { currentPost, loading, error, fetchPost, deletePost, createComment } = useBoardStore();
+    const { currentPost, loading, error, fetchPost, deletePost, deleteComment, createComment } = useBoardStore();
     const [isAdmin, setIsAdmin] = useState(false);
     const { user } = useAuthStore();
     const [commentContent, setCommentContent] = useState('');
@@ -27,7 +27,7 @@ export default function PostDetailPage({ params }: PageProps) {
     useEffect(() => {
         const adminFlag = localStorage.getItem('isAdmin') === 'true';
         setIsAdmin(adminFlag);
-      }, []);
+    }, []);
 
     useEffect(() => {
         fetchPost(params.id);
@@ -90,7 +90,7 @@ export default function PostDetailPage({ params }: PageProps) {
                             </CardDescription>
                         </div>
                         <div className="flex gap-2">
-                            {isAdmin && (
+                            {(isAdmin || currentPost.authorEmail === user?.email) && (
                                 <Button
                                     variant="destructive"
                                     onClick={(e) => {
@@ -125,9 +125,24 @@ export default function PostDetailPage({ params }: PageProps) {
                         <CardContent className="py-4">
                             <div className="flex justify-between items-center mb-2">
                                 <span className="font-medium">{comment.authorName}</span>
-                                <span className="text-sm text-gray-500">
-                                    {formatDate(comment.createdAt)}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm text-gray-500">
+                                        {formatDate(comment.createdAt)}
+                                    </span>
+                                    {(isAdmin || comment.authorEmail === user?.email) && (
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={() => {
+                                                if (confirm('댓글을 삭제하시겠습니까?')) {
+                                                    deleteComment(currentPost.id, comment.id);
+                                                }
+                                            }}
+                                        >
+                                            삭제
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
                             <p className="text-gray-700 whitespace-pre-wrap">{comment.content}</p>
                         </CardContent>
