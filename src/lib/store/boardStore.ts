@@ -180,7 +180,10 @@ export const useBoardStore = create<BoardState>()(
                     headers: {
                       'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ authorEmail: user?.email }),
+                    body: JSON.stringify({ 
+                      authorEmail: user?.email,
+                      authorName: user?.name || "익명"
+                    }),
                     credentials: 'include'
                   });
                   
@@ -207,7 +210,7 @@ export const useBoardStore = create<BoardState>()(
                   set({ loading: false });
                 }
               },
-
+              
       deletePost: async (postId: string) => {
                 try {
                     set({ loading: true, error: null });
