@@ -179,7 +179,6 @@ export const useBoardStore = create<BoardState>()(
                     'Content-Type': 'application/json'
                   };
               
-                  // 관리자인 경우 관리자 토큰 추가
                   if (user?.isAdmin) {
                     const adminId = process.env.NEXT_PUBLIC_ADMIN_ID;
                     const adminToken = process.env.NEXT_PUBLIC_ADMIN_TOKEN;
@@ -187,13 +186,12 @@ export const useBoardStore = create<BoardState>()(
                     if (adminToken) headers['x-admin-token'] = adminToken;
                   }
               
+                  // authorEmail을 headers에 추가
+                  headers['body'] = JSON.stringify({ authorEmail: user?.email });
+              
                   const response = await fetch(`${BOARD_API_URL}/posts/${postId}/comments/${commentId}`, {
                     method: 'DELETE',
                     headers,
-                    body: JSON.stringify({ 
-                      authorEmail: user?.email,
-                      authorName: user?.name || "익명"
-                    }),
                     credentials: 'include'
                   });
                   
