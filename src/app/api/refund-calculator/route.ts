@@ -6,17 +6,19 @@ import { parseStringPromise } from 'xml2js';
 import { NextResponse } from 'next/server';
 
 interface SimlXamrttXtrnUserQryResponse {
-  simlXamrttXtrnUserQryRtnVo?: Array<{
-    simlXamrttXtrnUserQryRsltVo?: Array<{
-      prutDrwbWncrAmt?: string[]; // 단위당 환급금액
-      stsz?: string[];            // 품목명
-      hs10?: string[];            // HS 10자리 코드
-      aplyDd?: string[];          // 적용일자
-      ceseDt?: string[];          // 중지일자
-      drwbAmtBaseTpcd?: string[]; // 환급액계기준구분코드
-    }>;
-  }>;
-}
+    simlXamrttXtrnUserQryRtnVo: {
+      ntceInfo: string;
+      tCnt: string;
+      simlXamrttXtrnUserQryRsltVo: Array<{
+        prutDrwbWncrAmt: string; // 단위당 환급금액
+        stsz: string;            // 품목명
+        drwbAmtBaseTpcd: string; // 환급액계기준구분코드
+        aplyDd: string;          // 적용일자
+        ceseDt: string;          // 중지일자
+        hs10: string;            // HS 10자리 코드
+      }>;
+    };
+  }
 
 interface ApiErrorResponse {
   status: number;
