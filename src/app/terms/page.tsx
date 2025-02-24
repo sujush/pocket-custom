@@ -12,7 +12,7 @@ export default function TermsPage() {
             <article>
               <h3 className="font-medium mb-2">제1조 (목적)</h3>
               <p className="text-gray-600">
-                이 약관은 &ldquo;서비스명&rdquo; (이하 &ldquo;회사&rdquo;라 합니다)가 제공하는 서비스의 이용조건 및 절차, 회사와 회원 간의 권리, 의무 및 책임사항 등을 규정함을 목적으로 합니다.
+                이 약관은 &ldquo;포켓커스텀&rdquo; (이하 &ldquo;회사&rdquo;라 합니다)이 제공하는 서비스의 이용조건 및 절차, 회사와 회원 간의 권리, 의무 및 책임사항 등을 규정함을 목적으로 합니다.
               </p>
             </article>
 
