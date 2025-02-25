@@ -21,14 +21,14 @@ const CertifiedServices = [
    link: '/services/kc-certification'
  },
  {
-   title: '전략물자 확인',
-   description: '수출물품의 전략물자 여부를 확인할 수 있습니다',
+   title: '식물검역',
+   description: '가공품으로서 식물검역을 받아야하는 대상인지 여부를 확인할 수 있습니다.',
    icon: Rocket,
-   link: '/services/strategic-items'
+   link: '/services/plant-quarantine'
  },
  {
-   title: '원산지증명서 및 인증수출자',
-   description: '수출물품의 원산지증명서 발급방법 등을 확인할 수 있습니다',
+   title: '지식재산권 침해 해당 여부 확인',
+   description: '제품이 디자인권 또는 상표권 그 외 지식재산권을 침해하는 대상인지 여부를 확인할 수 있습니다',
    icon: ScrollText,
    link: '/services/origin-certification'
  }

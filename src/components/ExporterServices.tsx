@@ -33,8 +33,8 @@ const additionalFeatures = [
     link: '/services/export-verification'
   },
   {
-    title: '전략물자 여부 확인',
-    description: '수출입 물품의 전략물자 해당 여부를 검토할 수 있습니다.',
+    title: '우편번호별 관할세관 찾기',
+    description: '수출신고 시 소재지세관을 확인할 수 있습니다',
     icon: Shield,
     link: '/services/strategic-items'
   }
