@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { Factory, Anchor, Building } from 'lucide-react';
 
-
 // 인코텀즈 타입 정의
 interface Incoterm {
   id: string;
@@ -20,8 +19,15 @@ interface HsCode {
 
 export default function CalculationTax() {
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
-  const [step, setStep] = useState<number>(1);
+  const [showHsCodes, setShowHsCodes] = useState<boolean>(false);
   const [hsCodes, setHsCodes] = useState<HsCode[]>([{ id: '1', code: '', description: '' }]);
+  const [formValues, setFormValues] = useState<Record<string, number>>({});
+  const [taxableAmount, setTaxableAmount] = useState<number | null>(null);
+
+  const handleInputChange = (field: string, value: string) => {
+    const numValue = value === '' ? 0 : Number(value);
+    setFormValues({...formValues, [field]: numValue});
+  };
 
   const incoterms: Incoterm[] = [
     { id: 'exw-fca', name: 'EXW/FCA', icon: Factory, description: '수출국 공장 (EXW/FCA)' },
@@ -40,11 +46,40 @@ export default function CalculationTax() {
 
   const handleTermClick = (termId: string) => {
     setSelectedTerm(termId);
-    setStep(1);
+    setShowHsCodes(false);
+    setTaxableAmount(null);
+    setFormValues({});
   };
   
-  const goToNextStep = () => {
-    setStep(step + 1);
+  const calculateTaxableAmount = () => {
+    if (!selectedTerm) return;
+    
+    let total = 0;
+    
+    if (selectedTerm === 'exw-fca') {
+      // EXW/FCA -> 1 + 2 + 3 + 4
+      total = (formValues.invoice || 0) + 
+              (formValues.exportTransport || 0) + 
+              (formValues.importShipping || 0) + 
+              (formValues.exportCustoms || 0);
+    } else if (selectedTerm === 'fob') {
+      // FOB -> 1 + 2
+      total = (formValues.invoice || 0) + 
+              (formValues.importShipping || 0);
+    } else if (selectedTerm === 'cfr-cif') {
+      // CFR/CIF -> 1 + 2 + 3
+      total = (formValues.invoice || 0) + 
+              (formValues.importExtraFees || 0) + 
+              (formValues.insurance || 0);
+    } else if (selectedTerm === 'dap-ddp') {
+      // DAP/DDP -> 1 - 2 - 3
+      total = (formValues.invoice || 0) - 
+              (formValues.importTransport || 0) - 
+              (formValues.importCustoms || 0);
+    }
+    
+    setTaxableAmount(total);
+    setShowHsCodes(true);
   };
 
   return (
@@ -97,166 +132,194 @@ export default function CalculationTax() {
             <p className="text-gray-600">위의 조건 중 하나를 선택하여 세액 계산을 시작하세요</p>
           </>
         ) : (
-          <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 mt-6">
-            {step === 1 && (
-              <>
-                <h2 className="text-xl font-semibold mb-4">
-                  2. 과세표준을 위해 아래 내용을 기입해주세요.
-                </h2>
-                
-                {selectedTerm === 'exw-fca' && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        인보이스 총 금액 (USD로 환산)
-                      </label>
-                      <input
-                        type="number"
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        수출국 내 운송 및 관련된 총 비용
-                      </label>
-                      <input
-                        type="number"
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        수입국 항구까지의 선박운임 및 그 부대비용 중 과세대상
-                      </label>
-                      <input
-                        type="number"
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        EXW인 경우 → 수출국 내 통관 비용
-                      </label>
-                      <input
-                        type="number"
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                        placeholder="0.00"
-                      />
-                    </div>
+          <>
+            <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 mt-6">
+              <h2 className="text-xl font-semibold mb-4">
+                2. 과세표준을 위해 아래 내용을 기입해주세요.
+              </h2>
+              
+              {selectedTerm === 'exw-fca' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      인보이스 총 금액 (USD로 환산)
+                    </label>
+                    <input
+                      type="text"
+                      value={formValues.invoice || ''}
+                      onChange={(e) => handleInputChange('invoice', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      placeholder="0.00"
+                    />
                   </div>
-                )}
-                
-                {selectedTerm === 'fob' && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        인보이스 총 금액 (USD로 환산)
-                      </label>
-                      <input
-                        type="number"
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        수입국 항구까지의 선박운임 및 그 부대비용 중 과세대상
-                      </label>
-                      <input
-                        type="number"
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                        placeholder="0.00"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      수출국 내 운송 및 관련된 총 비용
+                    </label>
+                    <input
+                      type="text"
+                      value={formValues.exportTransport || ''}
+                      onChange={(e) => handleInputChange('exportTransport', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      placeholder="0.00"
+                    />
                   </div>
-                )}
-                
-                {selectedTerm === 'cfr-cif' && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        인보이스 총 금액 (USD로 환산)
-                      </label>
-                      <input
-                        type="number"
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        수입국 항구 도착 시 발생된 운임 부대비용 중 과세대상
-                      </label>
-                      <input
-                        type="number"
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        CIF인 경우 보험비용
-                      </label>
-                      <input
-                        type="number"
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                        placeholder="0.00"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      수입국 항구까지의 선박운임 및 그 부대비용 중 과세대상
+                    </label>
+                    <input
+                      type="text"
+                      value={formValues.importShipping || ''}
+                      onChange={(e) => handleInputChange('importShipping', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      placeholder="0.00"
+                    />
                   </div>
-                )}
-                
-                {selectedTerm === 'dap-ddp' && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        인보이스 총 금액 (USD로 환산)
-                      </label>
-                      <input
-                        type="number"
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        수입국 항구 도착 후 발생한 운임 및 기타 관련 비용
-                      </label>
-                      <input
-                        type="number"
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        DDP인 경우 통관 관련 비용
-                      </label>
-                      <input
-                        type="number"
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                        placeholder="0.00"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      EXW인 경우 → 수출국 내 통관 비용
+                    </label>
+                    <input
+                      type="text"
+                      value={formValues.exportCustoms || ''}
+                      onChange={(e) => handleInputChange('exportCustoms', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      placeholder="0.00"
+                    />
                   </div>
-                )}
-                
-                <div className="mt-6">
-                  <button
-                    onClick={goToNextStep}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    다음
-                  </button>
                 </div>
-              </>
-            )}
+              )}
+              
+              {selectedTerm === 'fob' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      인보이스 총 금액 (USD로 환산)
+                    </label>
+                    <input
+                      type="text"
+                      value={formValues.invoice || ''}
+                      onChange={(e) => handleInputChange('invoice', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      수입국 항구까지의 선박운임 및 그 부대비용 중 과세대상
+                    </label>
+                    <input
+                      type="text"
+                      value={formValues.importShipping || ''}
+                      onChange={(e) => handleInputChange('importShipping', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {selectedTerm === 'cfr-cif' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      인보이스 총 금액 (USD로 환산)
+                    </label>
+                    <input
+                      type="text"
+                      value={formValues.invoice || ''}
+                      onChange={(e) => handleInputChange('invoice', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      수입국 항구 도착 시 발생된 운임 부대비용 중 과세대상
+                    </label>
+                    <input
+                      type="text"
+                      value={formValues.importExtraFees || ''}
+                      onChange={(e) => handleInputChange('importExtraFees', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      CIF인 경우 보험비용
+                    </label>
+                    <input
+                      type="text"
+                      value={formValues.insurance || ''}
+                      onChange={(e) => handleInputChange('insurance', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {selectedTerm === 'dap-ddp' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      인보이스 총 금액 (USD로 환산)
+                    </label>
+                    <input
+                      type="text"
+                      value={formValues.invoice || ''}
+                      onChange={(e) => handleInputChange('invoice', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      수입국 항구 도착 후 발생한 운임 및 기타 관련 비용
+                    </label>
+                    <input
+                      type="text"
+                      value={formValues.importTransport || ''}
+                      onChange={(e) => handleInputChange('importTransport', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      DDP인 경우 통관 관련 비용
+                    </label>
+                    <input
+                      type="text"
+                      value={formValues.importCustoms || ''}
+                      onChange={(e) => handleInputChange('importCustoms', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {taxableAmount !== null && (
+                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+                  <p className="font-medium text-blue-800">과세가격 합계: {taxableAmount.toLocaleString()} USD</p>
+                </div>
+              )}
+              
+              <div className="mt-6">
+                <button
+                  onClick={calculateTaxableAmount}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  계산하기
+                </button>
+              </div>
+            </div>
             
-            {step === 2 && (
-              <>
+            {showHsCodes && (
+              <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 mt-6">
                 <h2 className="text-xl font-semibold mb-4">
                   3. 제품의 HS CODE를 입력해주세요.
                 </h2>
@@ -309,9 +372,9 @@ export default function CalculationTax() {
                     계산하기
                   </button>
                 </div>
-              </>
+              </div>
             )}
-          </div>
+          </>
         )}
       </div>
     </div>
