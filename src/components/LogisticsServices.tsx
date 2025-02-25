@@ -88,7 +88,7 @@ export default function LogisticsServices() {
   return (
     <div className="my-16">
       <h2 className="text-2xl font-bold text-gray-800 mb-8 text-center">
-        물류 서비스
+        {/*물류서비스*/}
       </h2>
       <div className="grid grid-cols-2 gap-8">
         {logisticsServices.map((service, index) => (
