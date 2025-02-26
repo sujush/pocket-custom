@@ -23,11 +23,11 @@ interface Incoterm {
 
 // HS CODE 입력 폼용 타입
 interface HsCodeInput {
-  id: string;           
-  code: string;         
-  description: string;  
-  productUsd: number;   
-  results?: HsApiItem[]; 
+  id: string;
+  code: string;
+  description: string;
+  productUsd: number;
+  results?: HsApiItem[];
   error?: string | null;
 }
 
@@ -234,10 +234,10 @@ export default function TaxCalculationPage() {
       prev.map((item) =>
         item.id === id
           ? {
-              ...item,
-              [field]:
-                field === "productUsd" ? parseFloat(value) || 0 : value
-            }
+            ...item,
+            [field]:
+              field === "productUsd" ? parseFloat(value) || 0 : value
+          }
           : item
       )
     );
@@ -280,10 +280,10 @@ export default function TaxCalculationPage() {
           prev.map((item) =>
             item.id === itemId
               ? {
-                  ...item,
-                  error: "입력하신 HS CODE에 대한 데이터가 없습니다.",
-                  results: []
-                }
+                ...item,
+                error: "입력하신 HS CODE에 대한 데이터가 없습니다.",
+                results: []
+              }
               : item
           )
         );
@@ -319,10 +319,10 @@ export default function TaxCalculationPage() {
         prev.map((item) =>
           item.id === itemId
             ? {
-                ...item,
-                error: "데이터 조회 중 오류가 발생했습니다.",
-                results: []
-              }
+              ...item,
+              error: "데이터 조회 중 오류가 발생했습니다.",
+              results: []
+            }
             : item
         )
       );
@@ -423,9 +423,8 @@ export default function TaxCalculationPage() {
                   `}
                 >
                   <term.icon
-                    className={`w-10 h-10 ${
-                      selectedTerm === term.id ? "text-white" : "text-blue-600"
-                    }`}
+                    className={`w-10 h-10 ${selectedTerm === term.id ? "text-white" : "text-blue-600"
+                      }`}
                   />
                 </div>
                 <div className="mt-3 text-center">
@@ -491,9 +490,9 @@ export default function TaxCalculationPage() {
                 현재 환율 (USD → KRW) :{" "}
                 {usdRate
                   ? `${usdRate.toLocaleString("ko-KR", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2
-                    })} 원`
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                  })} 원`
                   : "정보 없음"}
               </p>
             </div>
@@ -588,8 +587,10 @@ export default function TaxCalculationPage() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         제품별 인보이스 금액 (USD)
                       </label>
+                      {/* 제품별 인보이스 금액 (USD) 입력 */}
                       <input
                         type="number"
+                        step="0.01" // <-- 수정: 소수점 단위로 입력 가능하도록 step 추가
                         value={hsItem.productUsd || ""}
                         onChange={(e) =>
                           updateHsCodeField(
@@ -619,11 +620,10 @@ export default function TaxCalculationPage() {
                         return (
                           <div
                             key={String(i)}
-                            className={`border p-2 rounded-md ${
-                              res.관세율구분 === "A"
+                            className={`border p-2 rounded-md ${res.관세율구분 === "A"
                                 ? "border-blue-400 bg-blue-50"
                                 : "border-gray-200 bg-white"
-                            }`}
+                              }`}
                           >
                             <p className="text-xs text-gray-700">
                               구분: {dutyName} / 관세율: {res.관세율 || "-"}
