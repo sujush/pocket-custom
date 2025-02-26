@@ -519,7 +519,7 @@ export default function TaxCalculationPage() {
       const newHsCodes: HsCodeInput[] = await Promise.all(
         jsonData.map(async (item, idx) => {
           const newId = String(idx + 1);
-          const codeVal = item.code || "";
+          const codeVal = (item.code || "").trim();
           const productVal = item.productUsd || 0;
 
           // 먼저 HS CODE를 채우고, 길이가 10이면 API 조회
