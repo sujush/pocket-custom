@@ -5,7 +5,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
-  ChangeEvent,  
+  ChangeEvent
 } from "react";
 import { Factory, Anchor, Building } from "lucide-react";
 
@@ -17,18 +17,18 @@ import { Factory, Anchor, Building } from "lucide-react";
 interface Incoterm {
   id: string;
   name: string;
-  icon: React.ElementType; // React 컴포넌트 타입
+  icon: React.ElementType;
   description: string;
 }
 
 // HS CODE 입력 폼용 타입
 interface HsCodeInput {
-  id: string;            // 내부 관리용 ID
-  code: string;          // HS CODE
-  description: string;   // 제품 설명
-  productUsd: number;    // 제품 개별 인보이스 금액 (USD)
-  results?: HsApiItem[]; // API 조회 결과 (관세율 목록 등)
-  error?: string | null; // API 조회 에러 메시지
+  id: string;           
+  code: string;         
+  description: string;  
+  productUsd: number;   
+  results?: HsApiItem[]; 
+  error?: string | null;
 }
 
 // 관세율 API 응답 아이템 타입
@@ -36,7 +36,7 @@ interface HsApiItem {
   품목번호: string;
   관세율구분: string;
   관세율?: string;
-  [key: string]: string | undefined; // 필요한 필드가 더 있을 수 있으므로 보완용
+  [key: string]: string | undefined;
 }
 
 // API 응답 구조
@@ -49,16 +49,11 @@ interface HsApiResponse {
   totalCount: number;
 }
 
-
 // 수입 국가 타입 (FTA 등에 따라 달라지는 협정세율을 구분하기 위한 예시)
 interface ImportCountry {
   code: string; // 예: "US", "CN", "EU"
   name: string; // 예: "미국", "중국", "유럽연합"
 }
-
-/* -----------------------------------------------------------------------
-   2. 메인 컴포넌트: TaxCalculationPage
------------------------------------------------------------------------ */
 
 export default function TaxCalculationPage() {
   /* ---------------------------------------------------------------------
@@ -67,39 +62,34 @@ export default function TaxCalculationPage() {
   // (A) 인코텀즈 선택 상태
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
 
-  // (B) 환율 (미국 USD만 필요하다고 가정)
+  // (B) 과세환율 (미국 USD만 필요하다고 가정)
   const [usdRate, setUsdRate] = useState<number>(0);
 
   // (C) 과세환율, 인보이스, 운임 등 입력값
-  //     - 인보이스 금액은 USD
-  //     - 운임, 기타 비용 등은 KRW
   const [invoiceUsd, setInvoiceUsd] = useState<number>(0);  // 인보이스 총 금액(USD)
   const [krwCosts, setKrwCosts] = useState<number>(0);      // 운임/기타비용 합계(KRW)
 
-  // (D) CIF 비율(= (invoiceUsd×usdRate + krwCosts) / invoiceUsd ) 등 계산 결과
+  // (D) CIF 비율 및 CIF 원화 총액
   const [cifRatio, setCifRatio] = useState<number>(0);
-  const [cifInKrw, setCifInKrw] = useState<number>(0); // 인보이스 총액을 원화 환산했을 때 + 비용 합의 합계
+  const [cifInKrw, setCifInKrw] = useState<number>(0);
 
   // (E) HS CODE 리스트(각 제품 입력 폼)
   const [hsCodes, setHsCodes] = useState<HsCodeInput[]>([
     { id: "1", code: "", description: "", productUsd: 0 }
   ]);
 
-  // (F) HS CODE 입력 시 API 호출에 대한 로딩 여부, 오류 메시지
-  //     → 각 제품별로 관리할 수 있지만, 여기서는 간단히 전역 메시지로 처리해도 됨
-  //     → 현재는 HsCodeInput 내부에 error를 둘 수도 있음
+  // (F) 사용자 선택 수입 국가
+  const [selectedCountry, setSelectedCountry] = useState<string>("");
 
-  // (G) 사용자 입력한 수입 국가 (FTA 관세율 결정)
-  const [selectedCountry, setSelectedCountry] = useState<string>(""); // 예: 'US', 'CN' 등
-
-  // (H) 전체 관세액, 부가세 등 최종 결과
-  const [totalDuty, setTotalDuty] = useState<number>(0);
-  const [totalVat, setTotalVat] = useState<number>(0);
+  // (G) 최종 관세 / 부가세: 기본세율용 + 협정세율용
+  const [totalDutyBasic, setTotalDutyBasic] = useState<number>(0);
+  const [totalVatBasic, setTotalVatBasic] = useState<number>(0);
+  const [totalDutyFta, setTotalDutyFta] = useState<number>(0);
+  const [totalVatFta, setTotalVatFta] = useState<number>(0);
 
   /* ---------------------------------------------------------------------
-     2-2) 정적 데이터 예시
+     2-2) 정적 데이터 (인코텀즈, 국가목록, 관세율코드 매핑)
   --------------------------------------------------------------------- */
-  // 인코텀즈 목록
   const incoterms: Incoterm[] = [
     { id: "exw-fca", name: "EXW/FCA", icon: Factory, description: "수출국 공장 (EXW/FCA)" },
     { id: "fob", name: "FOB", icon: Anchor, description: "수출국 항구 (FOB)" },
@@ -107,7 +97,6 @@ export default function TaxCalculationPage() {
     { id: "dap-ddp", name: "DAP/DDP", icon: Building, description: "수입국 도착지 (DAP/DDP)" }
   ];
 
-  // 수입 국가 목록 (예시)
   const importCountries: ImportCountry[] = [
     { code: "US", name: "미국" },
     { code: "CN", name: "중국" },
@@ -116,7 +105,7 @@ export default function TaxCalculationPage() {
     { code: "VN", name: "베트남" }
   ];
 
-  // 관세율구분 코드 매핑 예시 (기본세율 A / 협정세율 등)
+  // 관세율코드 → 이름 매핑
   const RATE_TYPE_MAPPING: Record<string, string> = {
     A: "A (기본세율)",
     C: "C (WTO협정세율)",
@@ -138,7 +127,6 @@ export default function TaxCalculationPage() {
      3. 환율(USD) 가져오는 로직
   --------------------------------------------------------------------- */
   const parseExchangeRates = useCallback((xmlText: string): number => {
-    // XML 파싱
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlText, "text/xml");
     const rateElements = xmlDoc.getElementsByTagName("trifFxrtInfoQryRsltVo");
@@ -151,7 +139,6 @@ export default function TaxCalculationPage() {
         foundUsdRate = parseFloat(rateValue);
       }
     });
-
     return foundUsdRate;
   }, []);
 
@@ -163,7 +150,6 @@ export default function TaxCalculationPage() {
           throw new Error("환율 정보를 가져오는데 실패했습니다.");
         }
         const xmlText = await response.text();
-        // 미국 환율만 추출
         const usd = parseExchangeRates(xmlText);
         setUsdRate(usd);
       } catch (err) {
@@ -175,62 +161,59 @@ export default function TaxCalculationPage() {
   }, [parseExchangeRates]);
 
   /* ---------------------------------------------------------------------
-     4. 이벤트 핸들러 및 로직
+     4. 이벤트 핸들러 및 핵심 로직
   --------------------------------------------------------------------- */
-
   // 인코텀즈 선택 시
   const handleTermClick = (termId: string) => {
     setSelectedTerm(termId);
-    // 리셋할 항목들
+
+    // 선택 바뀔 때마다 리셋
     setInvoiceUsd(0);
     setKrwCosts(0);
     setCifRatio(0);
     setCifInKrw(0);
     setHsCodes([{ id: "1", code: "", description: "", productUsd: 0 }]);
-    setTotalDuty(0);
-    setTotalVat(0);
+    setSelectedCountry("");
+    setTotalDutyBasic(0);
+    setTotalVatBasic(0);
+    setTotalDutyFta(0);
+    setTotalVatFta(0);
   };
 
-  // 인보이스 총 금액(USD) 입력 핸들러
+  // 인보이스 금액(USD)
   const handleInvoiceUsdChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.trim() === "" ? 0 : parseFloat(e.target.value);
-    setInvoiceUsd(isNaN(val) ? 0 : val);
+    const val = parseFloat(e.target.value) || 0;
+    setInvoiceUsd(val);
   };
 
-  // 운임 및 기타 비용(KRW) 입력 핸들러
+  // 운임/기타 비용(KRW)
   const handleKrwCostsChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.trim() === "" ? 0 : parseFloat(e.target.value);
-    setKrwCosts(isNaN(val) ? 0 : val);
+    const val = parseFloat(e.target.value) || 0;
+    setKrwCosts(val);
   };
 
-  // CIF 계산 (비율 + CIF 원화 총액)
+  // CIF 비율 계산
   const handleCalculateCIF = () => {
     if (!selectedTerm) return;
     if (invoiceUsd <= 0 || usdRate <= 0) {
-      alert("인보이스 금액 또는 환율(USD) 값이 올바르지 않습니다.");
+      alert("인보이스 금액 및 환율이 올바르지 않습니다.");
       return;
     }
 
-    // 인코텀즈별로 더하거나 빼야 할 내용이 달라질 수 있지만,
-    // 여기서는 ‘운임/기타비용’ 전체를 단순합(+) 또는 단순차감(-) 하는 예시 구조.
-    // 사용자 요청에 따르면:
-    // EXW/FCA, FOB, CFR/CIF → + 비용
-    // DAP/DDP → - 비용
-    let adjustedKrw = krwCosts; // 기본값 +비용
+    // DAP/DDP는 비용을 빼는 로직 (예시)
+    let adjustedKrw = krwCosts;
     if (selectedTerm === "dap-ddp") {
-      // DAP/DDP는 비용을 빼는 로직
-      adjustedKrw = -1 * Math.abs(krwCosts);
+      adjustedKrw = -Math.abs(krwCosts);
     }
 
-    // (인보이스 × usdRate + (±운임비용)) / 인보이스
     const totalInKrw = invoiceUsd * usdRate + adjustedKrw;
     const ratio = totalInKrw / invoiceUsd;
 
-    setCifInKrw(totalInKrw); // CIF 총 원화금액
-    setCifRatio(ratio);      // CIF 비율
+    setCifInKrw(totalInKrw);
+    setCifRatio(ratio);
   };
 
-  // HS Code 리스트 관리
+  // HS Code 리스트
   const addHsCode = () => {
     setHsCodes((prev) => [
       ...prev,
@@ -253,35 +236,31 @@ export default function TaxCalculationPage() {
           ? {
               ...item,
               [field]:
-                field === "productUsd"
-                  ? isNaN(parseFloat(value)) ? 0 : parseFloat(value)
-                  : value
+                field === "productUsd" ? parseFloat(value) || 0 : value
             }
           : item
       )
     );
   };
 
-  // HS CODE API 조회 (각 제품별)
+  // 관세율 API 조회
   const fetchHsCodeData = async (itemId: string, code: string) => {
-    try {
-      if (code.length !== 10) {
-        // 관세청 API는 10자리일 때만 유효. (예시)
-        setHsCodes((prev) =>
-          prev.map((item) =>
-            item.id === itemId
-              ? { ...item, error: "HS CODE는 10자리여야 합니다.", results: [] }
-              : item
-          )
-        );
-        return;
-      }
+    if (code.length !== 10) {
+      setHsCodes((prev) =>
+        prev.map((item) =>
+          item.id === itemId
+            ? { ...item, error: "HS CODE는 10자리여야 합니다.", results: [] }
+            : item
+        )
+      );
+      return;
+    }
 
-      // env 로부터 API_URL, API_KEY 가져온다고 가정
+    try {
       const apiUrl = process.env.NEXT_PUBLIC_TARIFF_API_URL;
       const apiKey = process.env.NEXT_PUBLIC_TARIFF_API_KEY;
       if (!apiUrl || !apiKey) {
-        throw new Error("관세율 API 설정이 올바르지 않습니다.");
+        throw new Error("관세율 API 설정이 잘못되었습니다.");
       }
 
       const fullUrl = `${apiUrl}?serviceKey=${apiKey}&page=1&perPage=100&returnType=JSON&cond[품목번호::EQ]=${code}`;
@@ -309,7 +288,7 @@ export default function TaxCalculationPage() {
           )
         );
       } else {
-        // 품목번호를 10자리로 맞춤
+        // 품목번호 10자리 보정
         const formattedData = filteredData.map((d) => ({
           ...d,
           품목번호: d.품목번호
@@ -317,11 +296,10 @@ export default function TaxCalculationPage() {
             : "0000000000"
         }));
 
-        // A(기본세율)을 최상단으로, 나머지는 관세율 오름차순
+        // 기본세율(A)을 최상단으로, 나머지는 관세율 오름차순
         const sortedData = formattedData.sort((a, b) => {
           if (a.관세율구분 === "A") return -1;
           if (b.관세율구분 === "A") return 1;
-
           const rateA = parseFloat(a.관세율?.replace(/[^\d.]/g, "") || "0");
           const rateB = parseFloat(b.관세율?.replace(/[^\d.]/g, "") || "0");
           return rateA - rateB;
@@ -335,7 +313,7 @@ export default function TaxCalculationPage() {
           )
         );
       }
-    } catch (error) {
+    } catch (_err) {
       console.error("데이터 조회 오류:", error);
       setHsCodes((prev) =>
         prev.map((item) =>
@@ -356,77 +334,65 @@ export default function TaxCalculationPage() {
     setSelectedCountry(e.target.value);
   };
 
-  // “최종 계산하기” → 각 제품별 관세액, 전체 관세, 부가세 계산
+  // 최종 계산하기 (기본세율/협정세율 각각)
   const handleFinalCalculate = () => {
-    // 1) 제품들의 USD 합계가 invoiceUsd와 일치하는지 체크
-    const sumOfProducts = hsCodes.reduce((acc, cur) => acc + (cur.productUsd || 0), 0);
+    // 1) 제품 USD 합계 vs 인보이스 USD
+    const sumOfProducts = hsCodes.reduce((acc, cur) => acc + cur.productUsd, 0);
     if (sumOfProducts !== invoiceUsd) {
       alert(
-        `제품들의 인보이스 금액 합계(${sumOfProducts.toFixed(2)} USD)가 인보이스 총 금액(${invoiceUsd.toFixed(
+        `제품들의 인보이스 합계(${sumOfProducts.toFixed(2)} USD)가 전체(${invoiceUsd.toFixed(
           2
         )} USD)와 일치하지 않습니다.`
       );
       return;
     }
 
-    // 2) CIF 비율이 0이면 계산 불가
     if (cifRatio === 0) {
-      alert("먼저 ‘CIF 비율 계산’을 진행해주세요.");
+      alert("먼저 ‘CIF 비율 계산’을 해주세요.");
       return;
     }
 
-    // 3) 각 제품별로 (USD 금액 × cifRatio)를 KRW로 환산 → 관세율 적용
-    //    수입 국가에 따라 협정세율 우선 적용 가능(예: FUS1=한-미국)
-    //    아래는 단순 예시 로직: 'A'(기본세율)와 'FUS1'(미국 협정세율)만 찾아서 비교
-    let dutySum = 0;
+    // 2) 각 제품별로 기본세율과 협정세율을 모두 찾아서 계산
+    let basicDutySum = 0;
+    let ftaDutySum = 0;
 
     hsCodes.forEach((item) => {
-      // 제품의 CIF 원화 환산 금액
       const productCifKrw = item.productUsd * cifRatio;
 
-      // HS CODE 조회 결과 중 우선 적용할 세율
-      // 예: selectedCountry가 'US'인 경우, 'FUS1'을 찾아서 존재하면 협정세율 사용, 없으면 'A' 사용
-      let applicableRateStr = "";
+      let basicRateStr = ""; // 기본세율(A)
+      let ftaRateStr = "";   // 협정세율(예: FUS1)
       if (item.results && item.results.length > 0) {
-        // 미국(US) 예시:
+        // 기본세율(A)
+        const foundA = item.results.find((r) => r.관세율구분 === "A");
+        if (foundA && foundA.관세율) {
+          basicRateStr = foundA.관세율;
+        }
+
+        // 국가별 협정세율 (예: 미국=FUS1)
         if (selectedCountry === "US") {
-          const fus1 = item.results.find((r) => r.관세율구분 === "FUS1");
-          if (fus1 && fus1.관세율) {
-            // 협정세율 적용
-            applicableRateStr = fus1.관세율;
-          } else {
-            // 기본세율(A) 찾기
-            const basic = item.results.find((r) => r.관세율구분 === "A");
-            if (basic && basic.관세율) {
-              applicableRateStr = basic.관세율;
-            }
+          const foundFus1 = item.results.find((r) => r.관세율구분 === "FUS1");
+          if (foundFus1 && foundFus1.관세율) {
+            ftaRateStr = foundFus1.관세율;
           }
         }
-        // 그 외 국가에 대한 로직은 비슷하게 추가 가능
-        else {
-          // 일단 기본세율(A)만 찾는 예시
-          const basic = item.results.find((r) => r.관세율구분 === "A");
-          if (basic && basic.관세율) {
-            applicableRateStr = basic.관세율;
-          }
-        }
+        // 필요 시 중국/유럽/베트남 등도 유사하게 추가
       }
 
-      // 관세율 추출(숫자만)
-      const numericDutyRate = parseFloat(applicableRateStr.replace(/[^\d.]/g, "")) || 0;
-      // 관세액(= productCifKrw × (관세율/100))
-      const productDuty = productCifKrw * (numericDutyRate / 100);
+      // 숫자만 추출
+      const basicRateNum = parseFloat(basicRateStr.replace(/[^\d.]/g, "")) || 0;
+      const ftaRateNum = parseFloat(ftaRateStr.replace(/[^\d.]/g, "")) || 0;
 
-      dutySum += productDuty;
+      basicDutySum += productCifKrw * (basicRateNum / 100);
+      ftaDutySum += productCifKrw * (ftaRateNum / 100);
     });
 
-    // 4) 부가세 = (CIF 원화금액 + 관세액) × 10%
-    //    여기서 CIF 원화금액은 “모든 제품 합계”가 아니라 “invoiceUsd × cifRatio” 자체,
-    //    즉 ‘통합 CIF 금액’을 쓰면 됨
-    const vat = (cifInKrw + dutySum) * 0.1;
+    const basicVat = (cifInKrw + basicDutySum) * 0.1;
+    const ftaVat = (cifInKrw + ftaDutySum) * 0.1;
 
-    setTotalDuty(dutySum);
-    setTotalVat(vat);
+    setTotalDutyBasic(basicDutySum);
+    setTotalVatBasic(basicVat);
+    setTotalDutyFta(ftaDutySum);
+    setTotalVatFta(ftaVat);
   };
 
   /* ---------------------------------------------------------------------
@@ -498,7 +464,7 @@ export default function TaxCalculationPage() {
                 </label>
                 <input
                   type="number"
-                  value={invoiceUsd === 0 ? "" : invoiceUsd}
+                  value={invoiceUsd || ""}
                   onChange={handleInvoiceUsdChange}
                   className="w-full p-2 border border-gray-300 rounded-md"
                   placeholder="0.00"
@@ -511,7 +477,7 @@ export default function TaxCalculationPage() {
                 </label>
                 <input
                   type="number"
-                  value={krwCosts === 0 ? "" : krwCosts}
+                  value={krwCosts || ""}
                   onChange={handleKrwCostsChange}
                   className="w-full p-2 border border-gray-300 rounded-md"
                   placeholder="0"
@@ -592,7 +558,6 @@ export default function TaxCalculationPage() {
                           updateHsCodeField(hsItem.id, "code", e.target.value)
                         }
                         onBlur={() => {
-                          // 포커스 잃을 때 API 조회
                           if (hsItem.code.length === 10) {
                             void fetchHsCodeData(hsItem.id, hsItem.code);
                           }
@@ -625,7 +590,7 @@ export default function TaxCalculationPage() {
                       </label>
                       <input
                         type="number"
-                        value={hsItem.productUsd === 0 ? "" : hsItem.productUsd}
+                        value={hsItem.productUsd || ""}
                         onChange={(e) =>
                           updateHsCodeField(
                             hsItem.id,
@@ -687,7 +652,7 @@ export default function TaxCalculationPage() {
           {cifRatio !== 0 && (
             <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 mt-6">
               <h2 className="text-xl font-semibold mb-4">
-                4. 수입 국가를 선택해주세요 (협정세율 반영)
+                4. 수입 국가 선택 (협정세율 반영)
               </h2>
 
               <select
@@ -718,16 +683,31 @@ export default function TaxCalculationPage() {
                 </button>
               </div>
 
-              {totalDuty > 0 && (
+              {/* 기본세율 / 협정세율 결과 */}
+              {(totalDutyBasic > 0 || totalDutyFta > 0) && (
                 <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-                  <p className="font-medium text-yellow-800 mb-1">
-                    총 관세액: {Math.round(totalDuty).toLocaleString()} 원
+                  {/* 기본 세율 */}
+                  <h3 className="font-medium text-yellow-800 mb-2">
+                    기본 세율 적용 시
+                  </h3>
+                  <p className="mb-1">
+                    관세액: {Math.round(totalDutyBasic).toLocaleString()} 원
                   </p>
-                  <p className="font-medium text-yellow-800 mb-1">
-                    총 부가세액: {Math.round(totalVat).toLocaleString()} 원
+                  <p className="mb-4">
+                    부가세: {Math.round(totalVatBasic).toLocaleString()} 원
                   </p>
-                  <p className="text-yellow-700 text-sm mt-2">
-                    (CIF 원화금액 + 관세액) × 10% = 부가세
+
+                  <hr className="my-4" />
+
+                  {/* 협정 세율 */}
+                  <h3 className="font-medium text-yellow-800 mb-2">
+                    협정 세율 적용 시
+                  </h3>
+                  <p className="mb-1">
+                    관세액: {Math.round(totalDutyFta).toLocaleString()} 원
+                  </p>
+                  <p>
+                    부가세: {Math.round(totalVatFta).toLocaleString()} 원
                   </p>
                 </div>
               )}
