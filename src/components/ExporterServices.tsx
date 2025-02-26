@@ -28,7 +28,7 @@ const additionalFeatures = [
   },
   {
     title: '선ㆍ기적 확인 및 재수출이행 확인',
-    description: '수입물품의 선적 기일과 재수출 이행 여부를 확인할 수 있습니다.',
+    description: '수출물품의 선적 기일과 재수출 이행 여부를 확인할 수 있습니다.',
     icon: RefreshCw,
     link: '/services/export-verification'
   },
