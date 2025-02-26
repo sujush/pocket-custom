@@ -33,10 +33,10 @@ const additionalFeatures = [
     link: '/services/export-verification'
   },
   {
-    title: '우편번호별 관할세관 찾기',
-    description: '수출신고 시 소재지세관을 확인할 수 있습니다',
+    title: '수출신고 정보 조회 ',
+    description: '수출신고번호로 수출이행 여부, 정정신고 접수여부 및 적재지 검사 여부 등을 확인할 수 있습니다',
     icon: Shield,
-    link: '/services/find-customs'
+    link: '/services/export-inquiry'
   }
 ];
 
