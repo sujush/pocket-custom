@@ -313,7 +313,7 @@ export default function TaxCalculationPage() {
           )
         );
       }
-    } catch (_err) {
+    } catch (error) {
       console.error("데이터 조회 오류:", error);
       setHsCodes((prev) =>
         prev.map((item) =>
