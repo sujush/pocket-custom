@@ -52,8 +52,7 @@ const ForwarderFinder: React.FC = () => {
   const [forwarderDetail, setForwarderDetail] = useState<ForwarderDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState<boolean>(false);
   
-  // 인증키 설정 (실제 애플리케이션에서는 환경 변수로 관리하는 것이 좋습니다)
-  const API_KEY = 'z220q204y161w234v060f010a0';
+
   
   useEffect(() => {
     const loadData = async (): Promise<void> => {
@@ -137,26 +136,21 @@ const ForwarderFinder: React.FC = () => {
     }
   };
   
-  // 화물운송주선업자 내역 API 호출
-  const fetchForwarderDetail = async (code: string): Promise<void> => {
+// fetchForwarderDetail 함수 수정
+const fetchForwarderDetail = async (code: string): Promise<void> => {
     if (!code || code.length !== 4) return;
     
     setDetailLoading(true);
     setSelectedForwarder(code);
     
     try {
-      const url = `https://unipass.customs.go.kr:38010/ext/rest/frwrBrkdQry/retrieveFrwrBrkd?crkyCn=${API_KEY}&frwrSgn=${encodeURIComponent(code)}`;
+      // 직접 관세청 API 호출 대신 자체 API 라우트 호출
+      const url = `/api/forwarder-detail?code=${encodeURIComponent(code)}`;
       
-      // fetch API를 사용하여 데이터 요청
-      const response = await fetch(url, {
-        headers: {
-          'Accept': 'application/xml',
-          'Content-Type': 'application/xml'
-        }
-      });
+      const response = await fetch(url);
       
       if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
+        throw new Error(`API 응답 오류: ${response.status}`);
       }
       
       const xmlText = await response.text();
@@ -197,7 +191,7 @@ const ForwarderFinder: React.FC = () => {
       setDetailLoading(false);
     }
   };
-  
+
   // XML에서 특정 태그의 값을 추출하는 헬퍼 함수
   const getNodeValue = (xmlDoc: Document, tagName: string): string | null => {
     const node = xmlDoc.getElementsByTagName(tagName)[0];
