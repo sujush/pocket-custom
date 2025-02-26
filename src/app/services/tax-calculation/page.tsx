@@ -5,8 +5,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
-  ChangeEvent,
-
+  ChangeEvent,  
 } from "react";
 import { Factory, Anchor, Building } from "lucide-react";
 
@@ -49,7 +48,6 @@ interface HsApiResponse {
   perPage: number;
   totalCount: number;
 }
-
 
 
 // 수입 국가 타입 (FTA 등에 따라 달라지는 협정세율을 구분하기 위한 예시)
