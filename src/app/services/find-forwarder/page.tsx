@@ -60,7 +60,7 @@ const ForwarderFinder: React.FC = () => {
       try {
         setLoading(true);
         // public 폴더에 저장된 CSV 파일을 fetch로 로드
-        const response = await fetch('/forwarder-list.csv');
+        const response = await fetch('/data/forwarder-list.csv');
         const csvText = await response.text();
         
         // CSV 파싱
