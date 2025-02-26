@@ -26,7 +26,7 @@ interface ForwarderDetail {
     brnchAddr: string;           // 지점주소
     hdofAddr: string;           // 본사주소
     brno: string;             // 사업자등록번호
-    telNo: string;              // 전화번호
+    telno: string;              // 전화번호
     koreConmNm: string;         // 화물운송주선업자한글명
     englConmNm: string;         // 화물운송주선업자영문명
     [key: string]: string;      // 기타 가능한 필드
@@ -173,8 +173,8 @@ const ForwarderFinder: React.FC = () => {
                 frwrSgn: getNodeValue(xmlDoc, 'frwrSgn') || code,
                 brnchAddr: getNodeValue(xmlDoc, 'brnchAddr') || '정보 없음',
                 hdofAddr: getNodeValue(xmlDoc, 'hdofAddr') || '정보 없음',
-                brno: getNodeValue(xmlDoc, 'brNo') || '정보 없음',
-                telNo: getNodeValue(xmlDoc, 'telNo') || '정보 없음',
+                brno: getNodeValue(xmlDoc, 'brno') || '정보 없음',
+                telno: getNodeValue(xmlDoc, 'telno') || '정보 없음',
                 koreConmNm: getNodeValue(xmlDoc, 'koreConmNm') || '정보 없음',
                 englConmNm: getNodeValue(xmlDoc, 'englConmNm') || '정보 없음'
             };
@@ -191,7 +191,7 @@ const ForwarderFinder: React.FC = () => {
                     brnchAddr: '정보를 불러올 수 없습니다',
                     hdofAddr: '정보를 불러올 수 없습니다',
                     brno: '정보를 불러올 수 없습니다',
-                    telNo: '정보를 불러올 수 없습니다',
+                    telno: '정보를 불러올 수 없습니다',
                     koreConmNm: forwarder.nameKr,
                     englConmNm: forwarder.nameEn
                 });
@@ -372,7 +372,7 @@ const ForwarderFinder: React.FC = () => {
 
                                             <div>
                                                 <p className="text-sm text-gray-500">연락처</p>
-                                                <p className="font-semibold">{forwarderDetail.telNo}</p>
+                                                <p className="font-semibold">{forwarderDetail.telno}</p>
                                             </div>
                                         </div>
                                     ) : (
