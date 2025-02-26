@@ -8,12 +8,12 @@ import React, {
   ChangeEvent
 } from "react";
 import { Factory, Anchor, Building } from "lucide-react";
+import * as XLSX from "xlsx";  // 엑셀 처리를 위한 라이브러리 (npm i xlsx)
 
 /* -----------------------------------------------------------------------
    1. 타입 정의
 ----------------------------------------------------------------------- */
 
-// 인코텀즈 아이콘 표시를 위한 타입
 interface Incoterm {
   id: string;
   name: string;
@@ -21,7 +21,6 @@ interface Incoterm {
   description: string;
 }
 
-// 관세율 API 응답 아이템 타입
 interface HsApiItem {
   품목번호: string;
   관세율구분: string;
@@ -29,7 +28,6 @@ interface HsApiItem {
   [key: string]: string | undefined;
 }
 
-// API 응답 구조
 interface HsApiResponse {
   currentCount: number;
   data: HsApiItem[];
@@ -39,10 +37,9 @@ interface HsApiResponse {
   totalCount: number;
 }
 
-// 수입 국가 타입
 interface ImportCountry {
-  code: string; // "US", "CN", "EU", "JP", "VN" 등
-  name: string; // "미국", "중국", "유럽연합", "일본", "베트남" 등
+  code: string;
+  name: string;
 }
 
 // 제품 입력 폼 타입
@@ -61,29 +58,20 @@ export default function TaxCalculationPage() {
   /* ---------------------------------------------------------------------
      2. 상태 정의
   --------------------------------------------------------------------- */
-  // 인코텀즈 선택
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
-
-  // 과세 환율(USD)
   const [usdRate, setUsdRate] = useState<number>(0);
-
-  // 인보이스 금액(USD), 운임 및 기타 비용(KRW)
   const [invoiceUsd, setInvoiceUsd] = useState<number>(0);
   const [krwCosts, setKrwCosts] = useState<number>(0);
 
-  // CIF 계산 결과
   const [cifRatio, setCifRatio] = useState<number>(0);
   const [cifInKrw, setCifInKrw] = useState<number>(0);
 
-  // HS CODE 입력 리스트
   const [hsCodes, setHsCodes] = useState<HsCodeInput[]>([
     { id: "1", code: "", description: "", productUsd: 0 }
   ]);
 
-  // 수입 국가
   const [selectedCountry, setSelectedCountry] = useState<string>("");
 
-  // 최종 관세/부가세 (기본세율 / 협정세율)
   const [totalDutyBasic, setTotalDutyBasic] = useState<number>(0);
   const [totalVatBasic, setTotalVatBasic] = useState<number>(0);
   const [totalDutyFta, setTotalDutyFta] = useState<number>(0);
@@ -92,7 +80,6 @@ export default function TaxCalculationPage() {
   /* ---------------------------------------------------------------------
      2-2) 정적 데이터
   --------------------------------------------------------------------- */
-  // 인코텀즈 목록
   const incoterms: Incoterm[] = [
     { id: "exw-fca", name: "EXW/FCA", icon: Factory, description: "수출국 공장 (EXW/FCA)" },
     { id: "fob", name: "FOB", icon: Anchor, description: "수출국 항구 (FOB)" },
@@ -100,7 +87,6 @@ export default function TaxCalculationPage() {
     { id: "dap-ddp", name: "DAP/DDP", icon: Building, description: "수입국 도착지 (DAP/DDP)" }
   ];
 
-  // 수입 국가 목록
   const importCountries: ImportCountry[] = [
     { code: "US", name: "미국" },
     { code: "CN", name: "중국" },
@@ -109,7 +95,6 @@ export default function TaxCalculationPage() {
     { code: "VN", name: "베트남" }
   ];
 
-  // 관세율 구분 → 표시 문자열 매핑
   const RATE_TYPE_MAPPING: Record<string, string> = {
     A: "A (기본세율)",
     C: "C (WTO협정세율)",
@@ -165,49 +150,38 @@ export default function TaxCalculationPage() {
   }, [parseExchangeRates]);
 
   /* ---------------------------------------------------------------------
-     4. “조회 실패”와 “0% 관세” 구분을 위한 함수
+     4. “조회 실패” vs “0%” 구분 함수
   --------------------------------------------------------------------- */
   function getNumericRate(results: HsApiItem[], code: string): number {
-    // -1: 조회되지 않음, 0 이상: 실제 관세율 (0%도 유효)
     const found = results.find((r) => r.관세율구분 === code);
     if (!found || !found.관세율) {
-      return -1;
+      return -1; // -1: 해당 코드 미존재
     }
     const numeric = parseFloat(found.관세율.replace(/[^\d.]/g, "") || "");
     return isNaN(numeric) ? -1 : numeric;
   }
 
   /* ---------------------------------------------------------------------
-     4-1) 기본세율 찾기 (A vs C 중 낮은 쪽)
+     4-1) 기본세율(A vs C) 중 낮은 값
   --------------------------------------------------------------------- */
-  function findBasicRateWithCode(results: HsApiItem[]): {
-    code: string;
-    rate: number;
-  } {
+  function findBasicRateWithCode(results: HsApiItem[]): { code: string; rate: number } {
     const aRate = getNumericRate(results, "A");
     const cRate = getNumericRate(results, "C");
 
-    // 둘 다 -1이면 “없음”
     if (aRate === -1 && cRate === -1) {
       return { code: "", rate: 0 };
     }
-    // A만 없으면 C
     if (aRate === -1) {
       return { code: "C", rate: cRate };
     }
-    // C만 없으면 A
     if (cRate === -1) {
       return { code: "A", rate: aRate };
     }
-    // 둘 다 유효하면 더 낮은 쪽
-    if (aRate <= cRate) {
-      return { code: "A", rate: aRate };
-    }
-    return { code: "C", rate: cRate };
+    return aRate <= cRate ? { code: "A", rate: aRate } : { code: "C", rate: cRate };
   }
 
   /* ---------------------------------------------------------------------
-     4-2) 협정세율 찾기 (국가별)
+     4-2) 협정세율 (국가별)
   --------------------------------------------------------------------- */
   function findFtaRateWithCode(
     results: HsApiItem[],
@@ -217,46 +191,33 @@ export default function TaxCalculationPage() {
   ): { code: string; rate: number } {
     switch (country) {
       case "US": {
-        // 미국 → FUS1
         const fus1 = getNumericRate(results, "FUS1");
-        return fus1 >= 0 ? { code: fus1 === -1 ? "" : "FUS1", rate: Math.max(fus1, 0) } : { code: "", rate: 0 };
+        if (fus1 === -1) return { code: "", rate: 0 };
+        return { code: "FUS1", rate: fus1 };
       }
       case "CN": {
-        // 중국 → FCN1 vs E1 중 낮은 쪽
         const fcn1 = getNumericRate(results, "FCN1");
         const e1   = getNumericRate(results, "E1");
-
-        const bothNotFound = (fcn1 === -1 && e1 === -1);
-        if (bothNotFound) return { code: "", rate: 0 };
-
+        if (fcn1 === -1 && e1 === -1) return { code: "", rate: 0 };
         if (fcn1 === -1) return { code: "E1", rate: e1 };
         if (e1 === -1)  return { code: "FCN1", rate: fcn1 };
-
-        // 둘 다 0 이상이므로 작은 쪽 우선
-        return fcn1 <= e1
-          ? { code: "FCN1", rate: fcn1 }
-          : { code: "E1",   rate: e1 };
+        return fcn1 <= e1 ? { code: "FCN1", rate: fcn1 } : { code: "E1", rate: e1 };
       }
       case "EU": {
         const feu1 = getNumericRate(results, "FEU1");
-        return feu1 >= 0
-          ? { code: feu1 === -1 ? "" : "FEU1", rate: Math.max(feu1, 0) }
-          : { code: "", rate: 0 };
+        if (feu1 === -1) return { code: "", rate: 0 };
+        return { code: "FEU1", rate: feu1 };
       }
       case "VN": {
-        // 베트남 → FAS1 vs FVN1
         const fas1 = getNumericRate(results, "FAS1");
         const fvn1 = getNumericRate(results, "FVN1");
-
         if (fas1 === -1 && fvn1 === -1) return { code: "", rate: 0 };
         if (fas1 === -1) return { code: "FVN1", rate: fvn1 };
         if (fvn1 === -1) return { code: "FAS1", rate: fas1 };
-        return fas1 <= fvn1
-          ? { code: "FAS1", rate: fas1 }
-          : { code: "FVN1", rate: fvn1 };
+        return fas1 <= fvn1 ? { code: "FAS1", rate: fas1 } : { code: "FVN1", rate: fvn1 };
       }
       case "JP": {
-        // 일본 → 기본세율과 동일, 별도 안내
+        // 일본은 기본세율 동일 + 추가 안내
         return { code: basicCode, rate: basicRate };
       }
       default:
@@ -284,13 +245,13 @@ export default function TaxCalculationPage() {
     setTotalVatFta(0);
   };
 
-  // 인보이스 금액(USD)
+  // 인보이스 USD
   const handleInvoiceUsdChange = (e: ChangeEvent<HTMLInputElement>) => {
     const val = parseFloat(e.target.value) || 0;
     setInvoiceUsd(val);
   };
 
-  // 운임/기타 비용(KRW)
+  // 운임 KRW
   const handleKrwCostsChange = (e: ChangeEvent<HTMLInputElement>) => {
     const val = parseFloat(e.target.value) || 0;
     setKrwCosts(val);
@@ -316,7 +277,7 @@ export default function TaxCalculationPage() {
     setCifRatio(ratio);
   };
 
-  // HS CODE 리스트 조작
+  // HS CODE 관리
   const addHsCode = () => {
     setHsCodes((prev) => [
       ...prev,
@@ -342,7 +303,7 @@ export default function TaxCalculationPage() {
     );
   };
 
-  // 관세율 API 조회
+  // 관세율 조회
   const fetchHsCodeData = async (itemId: string, code: string) => {
     if (code.length !== 10) {
       setHsCodes((prev) =>
@@ -387,7 +348,6 @@ export default function TaxCalculationPage() {
           )
         );
       } else {
-        // 품목번호 10자리 보정
         const formattedData = filteredData.map((d) => ({
           ...d,
           품목번호: d.품목번호
@@ -395,7 +355,6 @@ export default function TaxCalculationPage() {
             : "0000000000"
         }));
 
-        // 기본세율(A)을 맨 앞에, 나머지는 오름차순
         const sortedData = formattedData.sort((a, b) => {
           if (a.관세율구분 === "A") return -1;
           if (b.관세율구분 === "A") return 1;
@@ -428,14 +387,13 @@ export default function TaxCalculationPage() {
     }
   };
 
-  // 수입 국가 선택
+  // 수입 국가
   const handleCountryChange = (e: ChangeEvent<HTMLSelectElement>) => {
     setSelectedCountry(e.target.value);
   };
 
-  // 최종 계산 (기본/협정)
+  // 최종 계산
   const handleFinalCalculate = () => {
-    // 제품별 USD 합 vs 전체 인보이스 USD
     const sumOfProducts = hsCodes.reduce((acc, cur) => acc + cur.productUsd, 0);
     if (sumOfProducts !== invoiceUsd) {
       alert(
@@ -457,10 +415,10 @@ export default function TaxCalculationPage() {
     const updatedHsCodes = hsCodes.map((item) => {
       const productCifKrw = item.productUsd * cifRatio;
 
-      // 기본세율
-      const { code: basicCode, rate: basicRate } = findBasicRateWithCode(item.results || []);
+      const { code: basicCode, rate: basicRate } = findBasicRateWithCode(
+        item.results || []
+      );
 
-      // 협정세율
       const { code: ftaCode, rate: ftaRate } = findFtaRateWithCode(
         item.results || [],
         selectedCountry,
@@ -468,7 +426,6 @@ export default function TaxCalculationPage() {
         basicRate
       );
 
-      // 관세액 계산
       const dutyBasic = productCifKrw * (basicRate / 100);
       const dutyFta   = productCifKrw * (ftaRate / 100);
 
@@ -498,11 +455,77 @@ export default function TaxCalculationPage() {
   };
 
   /* ---------------------------------------------------------------------
-     6. 렌더링 - 단계 순서:
-       1) 인코텀즈 선택
-       2) 과세표준(CIF) 계산
-       3) 수입 국가 선택
-       4) 제품 정보 입력
+     6-A. “물류 비용 계산하기” 버튼 (추후 기능 연동 예정)
+  --------------------------------------------------------------------- */
+  const handleLogisticsCalc = () => {
+    alert("물류 비용 계산 기능(추가 예정)으로 이동합니다.");
+    // 추후 로직 연동
+  };
+
+  /* ---------------------------------------------------------------------
+     6-B. 엑셀 업/다운로드 기능
+  --------------------------------------------------------------------- */
+
+  // 1) 엑셀 양식 다운로드
+  const downloadExcelTemplate = () => {
+    // 샘플 데이터: [ { code, description, productUsd }, ... ]
+    const sampleData = [
+      { code: "8471300000", description: "노트북", productUsd: 1000 },
+      { code: "8525800000", description: "카메라", productUsd: 500 }
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(sampleData);
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "제품목록");
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+
+    // 다운로드
+    const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "제품입력양식.xlsx";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // 2) 업로드된 파일 파싱
+  const handleExcelUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const data = evt.target?.result;
+      if (!data) return;
+
+      // XLSX 라이브러리로 파싱
+      const workbook = XLSX.read(data, { type: "binary" });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json<{ code: string; description: string; productUsd: number }>(
+        worksheet
+      );
+
+      // jsonData를 이용해 hsCodes 갱신
+      // 기존 데이터는 초기화하고, 엑셀 데이터로 대체
+      const newHsCodes: HsCodeInput[] = jsonData.map((item, idx) => ({
+        id: String(idx + 1),
+        code: item.code || "",
+        description: item.description || "",
+        productUsd: item.productUsd || 0
+      }));
+
+      setHsCodes(newHsCodes);
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  /* ---------------------------------------------------------------------
+     7. 렌더링 - 단계 순서: (1) 인코텀즈 선택 → (2) CIF 계산 → (3) 수입국가
+                   (4) 제품 입력 + 엑셀 업/다운
   --------------------------------------------------------------------- */
   return (
     <div className="min-h-screen p-8">
@@ -543,7 +566,7 @@ export default function TaxCalculationPage() {
         </div>
       </div>
 
-      {/* 2) 과세표준(CIF) 계산 */}
+      {/* 2. CIF 계산 */}
       {selectedTerm && (
         <div className="space-y-4 mt-12">
           <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
@@ -558,7 +581,7 @@ export default function TaxCalculationPage() {
                 </label>
                 <input
                   type="number"
-                  step="0.01"
+                  step="any"
                   value={invoiceUsd || ""}
                   onChange={handleInvoiceUsdChange}
                   className="w-full p-2 border border-gray-300 rounded-md"
@@ -613,7 +636,7 @@ export default function TaxCalculationPage() {
             </div>
           </div>
 
-          {/* 3) 수입 국가 선택 */}
+          {/* 3. 수입 국가 선택 */}
           {cifRatio !== 0 && (
             <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 mt-6">
               <h2 className="text-xl font-semibold mb-4">
@@ -634,12 +657,28 @@ export default function TaxCalculationPage() {
             </div>
           )}
 
-          {/* 4) 제품 정보 입력 */}
+          {/* 4. 제품 정보 입력 + 엑셀 업/다운로드 */}
           {cifRatio !== 0 && selectedCountry && (
             <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 mt-6">
               <h2 className="text-xl font-semibold mb-4">
                 4. 제품의 HS CODE 및 개별 인보이스 금액(USD)
               </h2>
+
+              {/* 엑셀 업/다운로드 UI */}
+              <div className="flex items-center space-x-4 mb-6">
+                <button
+                  onClick={downloadExcelTemplate}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                >
+                  엑셀 양식 다운로드
+                </button>
+                <input
+                  type="file"
+                  accept=".xlsx, .xls"
+                  onChange={handleExcelUpload}
+                  className="cursor-pointer"
+                />
+              </div>
 
               {hsCodes.map((hsItem, index) => (
                 <div
@@ -703,7 +742,7 @@ export default function TaxCalculationPage() {
                       </label>
                       <input
                         type="number"
-                        step="0.01"
+                        step="any"
                         value={hsItem.productUsd || ""}
                         onChange={(e) =>
                           updateHsCodeField(
@@ -718,7 +757,6 @@ export default function TaxCalculationPage() {
                     </div>
                   </div>
 
-                  {/* 조회 결과 표시 */}
                   {hsItem.error && (
                     <p className="text-sm text-red-600 mt-2">{hsItem.error}</p>
                   )}
@@ -736,8 +774,12 @@ export default function TaxCalculationPage() {
                         const isSelectedFta =
                           res.관세율구분 === hsItem.selectedFtaCode;
 
-                        const basicMark = isSelectedBasic ? "✔ (기본세율 적용)" : "";
-                        const ftaMark   = isSelectedFta   ? "✔ (협정세율 적용)" : "";
+                        const basicMark = isSelectedBasic
+                          ? "✔ (기본세율 적용)"
+                          : "";
+                        const ftaMark = isSelectedFta
+                          ? "✔ (협정세율 적용)"
+                          : "";
 
                         return (
                           <div
@@ -773,7 +815,7 @@ export default function TaxCalculationPage() {
                 </button>
               </div>
 
-              {/* 최종 계산하기 버튼 */}
+              {/* 최종 계산 */}
               <div className="mt-6">
                 <button
                   onClick={handleFinalCalculate}
@@ -783,30 +825,44 @@ export default function TaxCalculationPage() {
                 </button>
               </div>
 
-              {/* 기본세율/협정세율 결과 */}
+              {/* 결과 카드 */}
               {(totalDutyBasic > 0 || totalDutyFta > 0) && (
                 <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-                  <h3 className="font-medium text-yellow-800 mb-2">
-                    기본세율 적용 시
-                  </h3>
-                  <p className="mb-1">
-                    관세액: {Math.round(totalDutyBasic).toLocaleString()} 원
-                  </p>
-                  <p className="mb-4">
-                    부가세: {Math.round(totalVatBasic).toLocaleString()} 원
-                  </p>
+                  {/* 우측에 “물류 비용 계산하기” 버튼 */}
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-medium text-yellow-800 mb-2">
+                        기본세율 적용 시
+                      </h3>
+                      <p className="mb-1">
+                        관세액: {Math.round(totalDutyBasic).toLocaleString()} 원
+                      </p>
+                      <p className="mb-4">
+                        부가세: {Math.round(totalVatBasic).toLocaleString()} 원
+                      </p>
 
-                  <hr className="my-4" />
+                      <hr className="my-4" />
 
-                  <h3 className="font-medium text-yellow-800 mb-2">
-                    협정세율 적용 시
-                  </h3>
-                  <p className="mb-1">
-                    관세액: {Math.round(totalDutyFta).toLocaleString()} 원
-                  </p>
-                  <p>
-                    부가세: {Math.round(totalVatFta).toLocaleString()} 원
-                  </p>
+                      <h3 className="font-medium text-yellow-800 mb-2">
+                        협정세율 적용 시
+                      </h3>
+                      <p className="mb-1">
+                        관세액: {Math.round(totalDutyFta).toLocaleString()} 원
+                      </p>
+                      <p>
+                        부가세: {Math.round(totalVatFta).toLocaleString()} 원
+                      </p>
+                    </div>
+
+                    <div>
+                      <button
+                        onClick={handleLogisticsCalc}
+                        className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+                      >
+                        물류 비용 계산하기
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
