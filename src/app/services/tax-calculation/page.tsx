@@ -427,12 +427,13 @@ export default function TaxCalculationPage() {
 
   // 최종 계산
   const handleFinalCalculate = () => {
-    // 제품별 금액 합계 vs 상단 인보이스 금액 비교
     const sumOfProducts = hsCodes.reduce(
       (acc, cur) => acc + Number(cur.productUsd),
       0
     );
-    if (sumOfProducts !== Number(invoiceUsd)) {
+  
+    // [수정] 부동소수점 오차 허용: 0.000001 내외면 동일로 간주
+    if (Math.abs(sumOfProducts - Number(invoiceUsd)) > 0.000001) {
       alert(
         `제품들의 인보이스 합계(${sumOfProducts.toFixed(2)} USD)가 전체(${Number(
           invoiceUsd
@@ -440,7 +441,7 @@ export default function TaxCalculationPage() {
       );
       return;
     }
-
+    
     if (cifRatio === 0) {
       alert("먼저 ‘CIF 비율 계산’을 진행해주세요.");
       return;
