@@ -13,10 +13,10 @@ import { useAuthStore } from '@/lib/store/authStore';
 
 const logisticsServices = [
   {
-    title: 'FCL 물류비용 계산',
-    description: '컨테이너 단위(FCL) 해상운송에 대한 예상 비용을 계산해보세요.',
+    title: '내륙운송사 찾기',
+    description: '내륙운송사를 찾아보세요.',
     icon: Ship,
-    link: '/services/fcl-calculator'
+    link: '/services/find-inland-transporter'
   },
   {
     title: 'LCL 물류비용 계산',
