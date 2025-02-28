@@ -221,7 +221,7 @@ const InlandTransporterFinder: React.FC = () => {
                       onClick={() => handleCheckInfo(t.name)}
                       className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
                     >
-                      운송사 정보 확인
+                      상세 확인
                     </button>
                   </td>
                 </tr>
