@@ -4,8 +4,6 @@ import React, { useState, useEffect } from 'react';
 import Papa from 'papaparse';
 
 // CSV 각 행(Row)에 해당하는 데이터 구조를 정의합니다.
-// CSV 파일이 다음과 같은 헤더를 가졌다고 가정합니다:
-// no, 보세운송업자부호, 보세운송업체명, 영업소재지
 interface CSVRow {
   no: string;
   보세운송업자부호: string;
@@ -19,27 +17,48 @@ interface InlandTransporter {
   code: string;     // 보세운송업자부호
   name: string;     // 보세운송업체명
   address: string;  // 영업소재지
-  city: string;     // 지역(시 단위로 추출하여 저장)
+  city: string;     // 지역(시 단위 또는 '기타')
+}
+
+// 추천(특정) 운송사 데이터 구조 예시
+interface RecommendedTransporter {
+  id: number;
+  name: string;       // 업체명
+  address: string;    // 주소
+  capability: string; // 핵심 역량
+  contact: string;    // 연락처
 }
 
 const InlandTransporterFinder: React.FC = () => {
-  // 전체 내륙운송사 리스트
   const [transporters, setTransporters] = useState<InlandTransporter[]>([]);
-  // 선택된 지역
   const [selectedCity, setSelectedCity] = useState<string>('');
-  // 로딩 상태
   const [loading, setLoading] = useState<boolean>(true);
-  // 지역 목록 (중복 제거)
   const [cityList, setCityList] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+
+  // 추천(특정) 운송사 예시 데이터
+  const recommendedTransporters: RecommendedTransporter[] = [
+    {
+      id: 1,
+      name: '(주)대한로지스',
+      address: '서울특별시 강남구 테헤란로 123',
+      capability: '화물운송, 특수화물, 전국배송',
+      contact: '02-1234-5678',
+    },
+    {
+      id: 2,
+      name: '(주)코리아트랜스',
+      address: '부산광역시 중구 충장대로 456',
+      capability: '컨테이너 운송, 항만하역',
+      contact: '051-987-6543',
+    },
+  ];
 
   useEffect(() => {
-    // CSV 파일을 로딩하고 파싱하는 함수
+    // CSV 파일 로딩 & 파싱
     const loadTransporterData = async () => {
       try {
         setLoading(true);
-
-        // public 폴더 아래 data 폴더에 csv 파일이 있다고 가정합니다.
-        // e.g. public/data/inland-transporter-list.csv
         const response = await fetch('/data/inland-transporter-list.csv');
         const csvText = await response.text();
 
@@ -47,13 +66,12 @@ const InlandTransporterFinder: React.FC = () => {
           header: true,
           skipEmptyLines: true,
           complete: (results) => {
-            // CSV 파싱이 완료되면 results.data 로 데이터를 가져올 수 있습니다.
             const parsedData: InlandTransporter[] = results.data.map((row) => {
-              // 시 단위(예: "서울특별시", "부산광역시", "경기도", ...)를 주소에서 추출하는 로직
-              // 가장 간단하게는 공백으로 잘라 첫 번째 단어를 city로 간주합니다.
-              // (데이터 구조에 따라 적절히 로직을 수정하세요)
+              // 주소에서 공백으로 나눠 첫 단어를 city로 사용.
               const splittedAddress = row.영업소재지?.split(' ') || [];
-              const cityCandidate = splittedAddress.length > 0 ? splittedAddress[0] : '주소 정보 없음';
+              // 공백 제거한 결과가 빈 문자열이면 "기타"로 처리
+              const firstCityPart = splittedAddress[0]?.trim() || '';
+              const cityCandidate = firstCityPart === '' ? '기타' : firstCityPart;
 
               return {
                 no: row.no,
@@ -66,7 +84,8 @@ const InlandTransporterFinder: React.FC = () => {
 
             setTransporters(parsedData);
 
-            // 지역 목록 추출(중복 제거)
+            // 지역 목록 추출 (중복 제거)
+            // "기타"도 포함하여 보여줄 수 있도록 필터링 최소화
             const cities = Array.from(new Set(parsedData.map(item => item.city)));
             setCityList(cities.sort());
 
@@ -86,53 +105,98 @@ const InlandTransporterFinder: React.FC = () => {
     loadTransporterData();
   }, []);
 
-  // 선택된 지역에 맞춰 필터링된 내륙운송사 목록
-  const filteredTransporters = transporters.filter(
-    (t) => !selectedCity || t.city === selectedCity
-  );
-
-  // 지역 선택 시 상태 업데이트
+  // 지역 선택 이벤트
   const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedCity(e.target.value);
   };
 
-  // "운송사 정보 확인" 버튼을 눌렀을 때 네이버 검색으로 이동하는 함수
+  // 검색어 입력 이벤트
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+
+  // 운송사 네이버 검색
   const handleCheckInfo = (transporterName: string) => {
     const query = encodeURIComponent(transporterName);
     const naverSearchUrl = `https://search.naver.com/search.naver?query=${query}`;
     window.open(naverSearchUrl, '_blank');
   };
 
+  // 지역 & 검색어에 따른 필터링
+  const filteredTransporters = transporters.filter((t) => {
+    const matchCity = selectedCity ? t.city === selectedCity : true;
+    const searchLower = searchTerm.toLowerCase();
+    const matchSearch =
+      t.name.toLowerCase().includes(searchLower) ||
+      t.code.toLowerCase().includes(searchLower) ||
+      t.address.toLowerCase().includes(searchLower);
+
+    return matchCity && matchSearch;
+  });
+
   return (
-    <div className="max-w-4xl mx-auto p-4">
+    <div className="max-w-5xl mx-auto p-4">
       <h1 className="text-2xl font-bold mb-6">내륙운송사 찾기</h1>
 
-      {/* 지역 선택 드롭다운 */}
-      <div className="mb-4">
-        <label htmlFor="citySelect" className="block mb-2 font-medium">
-          지역(시)을 선택하세요:
-        </label>
-        <select
-          id="citySelect"
-          className="border p-2"
-          value={selectedCity}
-          onChange={handleCityChange}
-        >
-          <option value="">전체 지역</option>
-          {cityList.map((city) => (
-            <option key={city} value={city}>
-              {city}
-            </option>
+      {/* 추천(특정) 운송사 카드 섹션 */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-4">추천 내륙운송사</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {recommendedTransporters.map((trans) => (
+            <div key={trans.id} className="bg-blue-50 border border-blue-200 p-4 rounded shadow-sm">
+              <h3 className="text-lg font-bold text-blue-800">{trans.name}</h3>
+              <p className="text-sm text-gray-600 mb-2">{trans.address}</p>
+              <p className="mb-1"><span className="font-semibold">핵심 역량:</span> {trans.capability}</p>
+              <p className="mb-1"><span className="font-semibold">연락처:</span> {trans.contact}</p>
+            </div>
           ))}
-        </select>
+        </div>
       </div>
 
-      {/* 데이터 로딩 상태 */}
+      {/* 지역 선택 & 검색창 */}
+      <div className="flex flex-col md:flex-row gap-4 mb-4">
+        {/* 지역(시) 드롭다운 */}
+        <div className="flex-1">
+          <label htmlFor="citySelect" className="block mb-2 font-medium">
+            지역(시)을 선택하세요:
+          </label>
+          <select
+            id="citySelect"
+            className="border p-2 w-full"
+            value={selectedCity}
+            onChange={handleCityChange}
+          >
+            <option value="">전체 지역</option>
+            {cityList.map((city) => (
+              <option key={city} value={city}>
+                {city}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* 검색창 */}
+        <div className="flex-1">
+          <label htmlFor="searchInput" className="block mb-2 font-medium">
+            검색(운송사명, 부호, 주소):
+          </label>
+          <input
+            id="searchInput"
+            type="text"
+            className="border p-2 w-full"
+            placeholder="검색어를 입력하세요..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+          />
+        </div>
+      </div>
+
+      {/* 로딩 상태 표시 */}
       {loading && (
         <p className="text-center text-gray-600 mt-4">데이터를 불러오는 중입니다...</p>
       )}
 
-      {/* 필터링된 내륙운송사 목록 */}
+      {/* 필터링된 운송사 목록 */}
       {!loading && filteredTransporters.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="min-w-full bg-white border">
@@ -168,7 +232,7 @@ const InlandTransporterFinder: React.FC = () => {
       ) : (
         !loading && (
           <p className="text-center text-gray-500 mt-4">
-            선택하신 지역에 해당하는 내륙운송사가 없습니다.
+            선택하신 조건에 해당하는 내륙운송사가 없습니다.
           </p>
         )
       )}
