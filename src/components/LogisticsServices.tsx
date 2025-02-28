@@ -13,8 +13,8 @@ import { useAuthStore } from '@/lib/store/authStore';
 
 const logisticsServices = [
   {
-    title: 'LCL 물류비용 계산',
-    description: '소량화물(LCL) 해상운송에 대한 예상 비용을 확인할 수 있습니다.',
+    title: '중국 LCL 물류비용 계산',
+    description: '알리바바, 1688 등에서 사입하는 LCL 화물에 대한 물류 예상비용을 확인할 수 있습니다',
     icon: Package,
     link: '/services/lcl-calculator'
   },
