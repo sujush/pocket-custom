@@ -72,6 +72,10 @@ export async function GET(request: Request) {
       timeout: 10000,
     });
 
+    // 로그 추가
+    console.log('[DEBUG] response.status:', response.status);
+    console.log('[DEBUG] response.data (first 300 chars):', response.data?.substring?.(0, 300));
+
     // 7) XML -> JSON 변환
     const parsedResult = (await parseStringPromise(response.data)) as SimlXamrttXtrnUserQryResponse;
 
