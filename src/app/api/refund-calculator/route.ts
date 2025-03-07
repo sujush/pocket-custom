@@ -1,3 +1,5 @@
+// app/api/refund-calculator/route.ts
+
 import axios, { AxiosError } from 'axios';
 import https from 'https';
 import { parseStringPromise } from 'xml2js';
@@ -52,17 +54,23 @@ export async function GET(request: Request) {
     });
 
     // 4) 베이스 URL 생성
-    //    (여기에 ?crkyCn=... 등 쿼리는 붙이지 않고, 아래서 파라미터로 추가)
     const urlObj = new URL(process.env.NEXT_PUBLIC_REFUND_API);
 
-    // 5) 필수 파라미터를 코드에서 붙임
+    // 5) baseDt를 "오늘 날짜(YYYYMMDD)"로 설정
+    const now = new Date();
+    const y = now.getFullYear().toString();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    const todayYYYYMMDD = `${y}${m}${d}`;
+
+    // 6) 필수 파라미터 설정
     urlObj.searchParams.set('crkyCn', process.env.NEXT_PUBLIC_CUSTOMS_KEY);
-    urlObj.searchParams.set('baseDt', '20250101');
+    urlObj.searchParams.set('baseDt', todayYYYYMMDD);
     urlObj.searchParams.set('hsSgn', hsCode);
 
     console.log('[DEBUG] 최종 호출 URL:', urlObj.toString());
 
-    // 6) API 호출
+    // 7) API 호출
     const response = await axios.get(urlObj.toString(), {
       httpsAgent,
       headers: {
@@ -72,14 +80,10 @@ export async function GET(request: Request) {
       timeout: 10000,
     });
 
-    // 로그 추가
-    console.log('[DEBUG] response.status:', response.status);
-    console.log('[DEBUG] response.data (first 300 chars):', response.data?.substring?.(0, 300));
-
-    // 7) XML -> JSON 변환
+    // 8) XML -> JSON 변환
     const parsedResult = (await parseStringPromise(response.data)) as SimlXamrttXtrnUserQryResponse;
 
-    // 8) 응답 검증
+    // 9) 응답 검증
     if (!parsedResult.simlXamrttXtrnUserQryRtnVo) {
       throw new Error('API 응답 형식이 올바르지 않습니다.');
     }
