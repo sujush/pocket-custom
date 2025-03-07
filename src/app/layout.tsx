@@ -4,6 +4,9 @@ import './globals.css'
 import Navigation from '@/components/Navigation'
 import { Toaster } from "@/components/ui/toaster"
 
+// 1) Vercel Analytics 컴포넌트 임포트 추가
+import { Analytics } from "@vercel/analytics/react"
+
 const inter = Inter({ subsets: ['latin'] })
 const notoSans = Noto_Sans({ 
   subsets: ['latin'],
@@ -26,6 +29,8 @@ export default function RootLayout({
         <Navigation />
         {children}
         <Toaster />
+        {/* 2) Vercel Analytics 컴포넌트 렌더링 */}
+        <Analytics />
       </body>
     </html>
   )
