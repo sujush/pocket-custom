@@ -1,35 +1,28 @@
-//app/api/refund-calculator/route.ts
-
 import axios, { AxiosError } from 'axios';
 import https from 'https';
 import { parseStringPromise } from 'xml2js';
 import { NextResponse } from 'next/server';
 
 interface SimlXamrttXtrnUserQryResponse {
-    simlXamrttXtrnUserQryRtnVo: {
-      ntceInfo: string;
-      tCnt: string;
-      simlXamrttXtrnUserQryRsltVo: Array<{
-        prutDrwbWncrAmt: string; // 단위당 환급금액
-        stsz: string;            // 품목명
-        drwbAmtBaseTpcd: string; // 환급액계기준구분코드
-        aplyDd: string;          // 적용일자
-        ceseDt: string;          // 중지일자
-        hs10: string;            // HS 10자리 코드
-      }>;
-    };
-  }
-
-interface ApiErrorResponse {
-  status: number;
-  message: string;
-  code?: string;
+  simlXamrttXtrnUserQryRtnVo: {
+    ntceInfo: string;
+    tCnt: string;
+    simlXamrttXtrnUserQryRsltVo: Array<{
+      prutDrwbWncrAmt: string;
+      stsz: string;
+      drwbAmtBaseTpcd: string;
+      aplyDd: string;
+      ceseDt: string;
+      hs10: string;
+    }>;
+  };
 }
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const hsCode = searchParams.get('hsCode');
 
+  // 1) hsCode가 누락되었는지 확인
   if (!hsCode) {
     return NextResponse.json(
       { error: 'hsCode 파라미터가 필요합니다.' },
@@ -37,64 +30,62 @@ export async function GET(request: Request) {
     );
   }
 
+  // 2) 환경변수가 있는지 확인
   if (!process.env.NEXT_PUBLIC_REFUND_API) {
     return NextResponse.json(
-      { error: 'API 설정이 누락되었습니다.' },
+      { error: 'API 경로(NEXT_PUBLIC_REFUND_API)가 설정되지 않았습니다.' },
+      { status: 500 }
+    );
+  }
+  if (!process.env.NEXT_PUBLIC_CUSTOMS_KEY) {
+    return NextResponse.json(
+      { error: '인증키(NEXT_PUBLIC_CUSTOMS_KEY)가 설정되지 않았습니다.' },
       { status: 500 }
     );
   }
 
   try {
-    // HTTPS Agent 설정 (TLS 1.2 이상 사용)
+    // 3) HTTPS Agent 설정 (TLS 1.2 이상)
     const httpsAgent = new https.Agent({
       rejectUnauthorized: true,
-      minVersion: 'TLSv1.2'
+      minVersion: 'TLSv1.2',
     });
 
-    // API URL 구성
+    // 4) 베이스 URL 생성
+    //    (여기에 ?crkyCn=... 등 쿼리는 붙이지 않고, 아래서 파라미터로 추가)
     const urlObj = new URL(process.env.NEXT_PUBLIC_REFUND_API);
-    
-    // 필수 파라미터 설정
-    const params = {
-      baseDt: '19930201',          // 기준일자
-      hs10: hsCode,                // HS코드
-      stsz: '500',                 // 규격
-      drwbAmtBaseTpcd: '1',        // 환급액계기준구분코드
-      aplyDd: '19930201',          // 적용일자
-      ceseDt: '19940131'           // 중지일자
-    };
 
-    Object.entries(params).forEach(([key, value]) => {
-      urlObj.searchParams.append(key, value);
-    });
+    // 5) 필수 파라미터를 코드에서 붙임
+    urlObj.searchParams.set('crkyCn', process.env.NEXT_PUBLIC_CUSTOMS_KEY);
+    urlObj.searchParams.set('baseDt', '19930201');
+    urlObj.searchParams.set('hsSgn', hsCode);
 
-    // API 호출 설정
+    console.log('[DEBUG] 최종 호출 URL:', urlObj.toString());
+
+    // 6) API 호출
     const response = await axios.get(urlObj.toString(), {
       httpsAgent,
       headers: {
-        'Accept': 'application/xml',
-        'Content-Type': 'application/xml'
+        Accept: 'application/xml',
+        'Content-Type': 'application/xml',
       },
-      timeout: 10000 // 10초 타임아웃
+      timeout: 10000,
     });
-    
-    // XML 응답 파싱
+
+    // 7) XML -> JSON 변환
     const parsedResult = (await parseStringPromise(response.data)) as SimlXamrttXtrnUserQryResponse;
-    
-    // 응답 검증
+
+    // 8) 응답 검증
     if (!parsedResult.simlXamrttXtrnUserQryRtnVo) {
-      throw new Error('잘못된 응답 형식입니다.');
+      throw new Error('API 응답 형식이 올바르지 않습니다.');
     }
 
     return NextResponse.json(parsedResult);
-
   } catch (error) {
     console.error('API Error:', error);
 
     if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError<ApiErrorResponse>;
-      
-      // HTTP 상태코드별 에러 처리
+      const axiosError = error as AxiosError;
       switch (axiosError.response?.status) {
         case 401:
         case 403:
@@ -104,7 +95,7 @@ export async function GET(request: Request) {
           );
         case 404:
           return NextResponse.json(
-            { error: '요청한 정보를 찾을 수 없습니다.' },
+            { error: '요청한 정보를 찾을 수 없습니다(404).' },
             { status: 404 }
           );
         case 429:
