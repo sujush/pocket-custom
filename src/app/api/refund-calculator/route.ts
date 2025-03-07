@@ -57,7 +57,7 @@ export async function GET(request: Request) {
 
     // 5) 필수 파라미터를 코드에서 붙임
     urlObj.searchParams.set('crkyCn', process.env.NEXT_PUBLIC_CUSTOMS_KEY);
-    urlObj.searchParams.set('baseDt', '19930201');
+    urlObj.searchParams.set('baseDt', '20250101');
     urlObj.searchParams.set('hsSgn', hsCode);
 
     console.log('[DEBUG] 최종 호출 URL:', urlObj.toString());
