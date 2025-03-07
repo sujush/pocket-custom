@@ -6,8 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+/**
+ * 실제 XML 구조에 맞춰 인터페이스 수정
+ * - simlXamrttXtrnUserQryRtnVo: "객체"
+ * - 그 내부의 simlXamrttXtrnUserQryRsltVo: "배열"
+ */
 interface SimlXamrttXtrnUserQryResponse {
-  simlXamrttXtrnUserQryRtnVo?: Array<{
+  simlXamrttXtrnUserQryRtnVo?: {
+    ntceInfo?: string[];
+    tCnt?: string[];
     simlXamrttXtrnUserQryRsltVo?: Array<{
       prutDrwbWncrAmt?: string[]; // 단위당 환급금액
       stsz?: string[];            // 품목명
@@ -16,7 +23,7 @@ interface SimlXamrttXtrnUserQryResponse {
       ceseDt?: string[];          // 중지일자
       drwbAmtBaseTpcd?: string[]; // 환급액계기준구분코드 (1: 10$당 환급액, 2: 1만원당 환급액)
     }>;
-  }>;
+  };
 }
 
 export default function RefundCalculatorPage() {
@@ -151,62 +158,60 @@ export default function RefundCalculatorPage() {
             )}
 
             {/* 결과 표시 */}
-            {refundData?.simlXamrttXtrnUserQryRtnVo && (
+            {refundData?.simlXamrttXtrnUserQryRtnVo?.simlXamrttXtrnUserQryRsltVo && (
               <div className="mt-6 space-y-4">
-                {refundData.simlXamrttXtrnUserQryRtnVo.map((result, index) =>
-                  result.simlXamrttXtrnUserQryRsltVo?.map((item, idx) => {
-                    const drwbAmtBaseTpcd = item.drwbAmtBaseTpcd?.[0];
-                    const prutAmt = item.prutDrwbWncrAmt?.[0];
-                    const refundAmount = calculateRefund(drwbAmtBaseTpcd, prutAmt);
+                {refundData.simlXamrttXtrnUserQryRtnVo.simlXamrttXtrnUserQryRsltVo.map((item, idx) => {
+                  const drwbAmtBaseTpcd = item.drwbAmtBaseTpcd?.[0];
+                  const prutAmt = item.prutDrwbWncrAmt?.[0];
+                  const refundAmount = calculateRefund(drwbAmtBaseTpcd, prutAmt);
 
-                    return (
-                      <Card key={`${index}-${idx}`} className="p-4 space-y-2">
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <p className="text-sm font-medium text-gray-500">품목명</p>
-                            <p>{item.stsz?.[0] || 'N/A'}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-500">HS Code</p>
-                            <p>{item.hs10?.[0] || 'N/A'}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-500">단위당 환급금액</p>
-                            <p>{prutAmt || 'N/A'}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-500">적용일자</p>
-                            <p>{item.aplyDd?.[0] ? formatDate(item.aplyDd[0]) : 'N/A'}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-500">중지일자</p>
-                            <p>{item.ceseDt?.[0] ? formatDate(item.ceseDt[0]) : 'N/A'}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-500">환급액기준구분</p>
-                            <p>
-                              {drwbAmtBaseTpcd === '1'
-                                ? '10$당 환급액'
-                                : drwbAmtBaseTpcd === '2'
-                                ? '1만원당 환급액'
-                                : 'N/A'}
-                            </p>
-                          </div>
+                  return (
+                    <Card key={idx} className="p-4 space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">품목명</p>
+                          <p>{item.stsz?.[0] || 'N/A'}</p>
                         </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">HS Code</p>
+                          <p>{item.hs10?.[0] || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">단위당 환급금액</p>
+                          <p>{prutAmt || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">적용일자</p>
+                          <p>{item.aplyDd?.[0] ? formatDate(item.aplyDd[0]) : 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">중지일자</p>
+                          <p>{item.ceseDt?.[0] ? formatDate(item.ceseDt[0]) : 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">환급액기준구분</p>
+                          <p>
+                            {drwbAmtBaseTpcd === '1'
+                              ? '10$당 환급액'
+                              : drwbAmtBaseTpcd === '2'
+                              ? '1만원당 환급액'
+                              : 'N/A'}
+                          </p>
+                        </div>
+                      </div>
 
-                        {/* drwbAmtBaseTpcd가 '2'인 경우에만 계산 결과 표시 */}
-                        {refundAmount !== null && (
-                          <div>
-                            <p className="text-sm font-medium text-gray-500">계산된 환급액(원)</p>
-                            <p className="text-lg font-semibold">
-                              {Math.floor(refundAmount).toLocaleString()} 원
-                            </p>
-                          </div>
-                        )}
-                      </Card>
-                    );
-                  })
-                )}
+                      {/* drwbAmtBaseTpcd가 '2'인 경우에만 계산 결과 표시 */}
+                      {refundAmount !== null && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">계산된 환급액(원)</p>
+                          <p className="text-lg font-semibold">
+                            {Math.floor(refundAmount).toLocaleString()} 원
+                          </p>
+                        </div>
+                      )}
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </form>
