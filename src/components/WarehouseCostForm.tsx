@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 const formSchema = z.object({
   port: z.enum(['incheon', 'busan']),
@@ -67,122 +68,136 @@ export function WarehouseCostForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="grid grid-cols-2 gap-6">
-          <div className="space-y-4 border p-4 rounded">
-            <FormField
-              control={form.control}
-              name="port"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>항구 선택</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">항구 및 보관 정보</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="port"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>항구 선택</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="항구를 선택하세요" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="incheon">인천항</SelectItem>
+                        <SelectItem value="busan">부산항</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="storageDays"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>창고 보관일수</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="항구를 선택하세요" />
-                      </SelectTrigger>
+                      <Input
+                        type="number"
+                        placeholder="일수 입력"
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.valueAsNumber || undefined)}
+                      />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="incheon">인천항</SelectItem>
-                      <SelectItem value="busan">부산항</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="storageDays"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>창고 보관일수</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="일수 입력"
-                      {...field}
-                      onChange={(e) => field.onChange(e.target.valueAsNumber || undefined)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="appraisedValue"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>감정가액</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="감정가액 = CIF 과세가격 + 관세"
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.valueAsNumber || undefined)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
 
-            <FormField
-              control={form.control}
-              name="appraisedValue"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>감정가액</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="감정가액 = CIF 과세가격 + 관세"
-                      {...field}
-                      onChange={(e) => field.onChange(e.target.valueAsNumber || undefined)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">물품 정보</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="cbm"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CBM</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="CBM = 가로x세로x높이x박스개수"
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.valueAsNumber || undefined)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <div className="space-y-4 border p-4 rounded">
-            <FormField
-              control={form.control}
-              name="cbm"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>CBM</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="CBM = 가로x세로x높이x박스개수"
-                      {...field}
-                      onChange={(e) => field.onChange(e.target.valueAsNumber || undefined)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="weight"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>중량</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="kg단위"
-                      {...field}
-                      onChange={(e) => field.onChange(e.target.valueAsNumber || undefined)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+              <FormField
+                control={form.control}
+                name="weight"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>중량</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="kg단위"
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.valueAsNumber || undefined)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
         </div>
 
-        <Button type="submit" disabled={isLoading}>
+        <Button type="submit" disabled={isLoading} className="w-full">
           {isLoading ? '계산 중...' : '계산하기'}
         </Button>
 
         {calculationResult !== null && (
-          <div className="mt-4 p-4 bg-blue-100 rounded-md">
-            <h2 className="text-xl font-semibold mb-2">계산 결과</h2>
-            <p className="text-2xl font-bold text-blue-800">
-              {form.getValues('port') === 'incheon' ? '인천항' : '부산항'} 창고료: {calculationResult.toLocaleString()}원
-            </p>
-          </div>
+          <Card className="bg-blue-50 border-blue-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl text-blue-800">계산 결과</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-blue-800">
+                {form.getValues('port') === 'incheon' ? '인천항' : '부산항'} 창고료: {calculationResult.toLocaleString()}원
+              </p>
+            </CardContent>
+          </Card>
         )}
       </form>
     </Form>

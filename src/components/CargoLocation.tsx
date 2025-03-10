@@ -237,7 +237,8 @@ export default function CargoLocation() {
 
         return (
             <div className="mt-4 mb-6">
-                <div className="flex justify-between items-center">
+                {/* 데스크톱 버전의 진행 바 */}
+                <div className="hidden md:flex justify-between items-center">
                     {steps.map((step, index) => (
                         <React.Fragment key={index}>
                             <div className="flex flex-col items-center">
@@ -248,6 +249,17 @@ export default function CargoLocation() {
                                 <div className={`flex-1 h-1 mx-2 ${step.completed ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
                             )}
                         </React.Fragment>
+                    ))}
+                </div>
+                
+                {/* 모바일 버전의 진행 바 */}
+                <div className="md:hidden">
+                    {steps.map((step, index) => (
+                        <div key={index} className="flex items-center mb-2">
+                            <div className={`w-6 h-6 rounded-full flex-shrink-0 ${step.completed ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
+                            <span className="ml-3 text-sm">{step.label}</span>
+                            {step.completed && <span className="ml-auto text-blue-500">✓</span>}
+                        </div>
                     ))}
                 </div>
             </div>
@@ -337,9 +349,12 @@ export default function CargoLocation() {
     return (
         <div className="container mx-auto p-4">
             <Navigation />
-            <div className="flex justify-between mb-8">
-                <div className="w-1/2 p-4 bg-white shadow-md rounded-lg mr-4">
-                    <h1 className="text-2xl font-bold mb-4">화물 위치 및 통관 상태 확인</h1>
+            
+            {/* 화물 위치 조회 폼 - 모바일에선 세로배치, 태블릿/데스크톱에선 가로배치 */}
+            <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0 mb-8">
+                {/* 화물 위치 및 통관 상태 확인 */}
+                <div className="w-full md:w-1/2 p-4 bg-white shadow-md rounded-lg">
+                    <h1 className="text-xl md:text-2xl font-bold mb-4">화물 위치 및 통관 상태 확인</h1>
                     <form onSubmit={handleSubmit}>
                         <div className="mb-4">
                             <span className="text-gray-700 font-semibold">B/L 종류 선택:</span>
@@ -418,63 +433,64 @@ export default function CargoLocation() {
 
                         <button
                             type="submit"
-                            className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 mt-4"
+                            className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 mt-4 w-full"
                         >
                             조회
                         </button>
                     </form>
                 </div>
 
-                <div className="w-1/2 p-4 bg-gray-50 shadow-md rounded-lg">
+                {/* 요약 정보 */}
+                <div className="w-full md:w-1/2 p-4 bg-gray-50 shadow-md rounded-lg">
                     <h2 className="text-xl font-semibold mb-4">요약 정보</h2>
                     <p className="text-gray-700">{getSummaryText()}</p>
                 </div>
             </div>
 
-            {loading && <p>데이터를 불러오는 중입니다...</p>}
-            {error && <p className="text-red-500">{error}</p>}
+            {loading && <p className="text-center py-4">데이터를 불러오는 중입니다...</p>}
+            {error && <p className="text-red-500 text-center py-4">{error}</p>}
+            
             {cargoData && (
                 <div>
                     <CargoStatus data={cargoData} formData={formData} />
-                    <h2 className="text-xl font-semibold">조회 결과:</h2>
-                    <table className="w-full border-collapse border border-gray-300">
-                        <tbody>
-                            {/* 기존 테이블 내용 유지 */}
-                        </tbody>
-                    </table>
-
+                    
                     {cargoData.cargCsclPrgsInfoDtlQryVo && (
-                        <>
-                            <h3 className="text-xl font-semibold mt-4">장치장 정보</h3>
-                            <table className="w-full border-collapse border border-gray-300 mt-4">
-                                <thead>
-                                    <tr>
-                                        <th className="border px-4 py-2">장치장명</th>
-                                        <th className="border px-4 py-2">처리일시</th>
-                                        <th className="border px-4 py-2">중량</th>
-                                        <th className="border px-4 py-2">중량단위</th>
-                                        <th className="border px-4 py-2">포장개수</th>
-                                        <th className="border px-4 py-2">처리구분</th>
-                                        <th className="border px-4 py-2">포장단위</th>
-                                        <th className="border px-4 py-2">장치장부호</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {cargoData.cargCsclPrgsInfoDtlQryVo.map((item, index) => (
-                                        <tr key={index}>
-                                            <td className="border px-4 py-2">{item.장치장명}</td>
-                                            <td className="border px-4 py-2">{formatDate(item.처리일시)}</td>
-                                            <td className="border px-4 py-2">{item.중량}</td>
-                                            <td className="border px-4 py-2">{item.중량단위}</td>
-                                            <td className="border px-4 py-2">{item.포장개수}</td>
-                                            <td className="border px-4 py-2">{item.처리구분}</td>
-                                            <td className="border px-4 py-2">{item.포장단위}</td>
-                                            <td className="border px-4 py-2">{item.장치장부호}</td>
+                        <div className="mt-6">
+                            <h3 className="text-lg md:text-xl font-semibold mb-2">장치장 정보</h3>
+                            <div className="overflow-x-auto">
+                                <table className="w-full border-collapse border border-gray-300 text-sm">
+                                    <thead className="bg-gray-100">
+                                        <tr>
+                                            <th className="border px-2 py-1">장치장명</th>
+                                            <th className="border px-2 py-1">처리일시</th>
+                                            <th className="border px-2 py-1">중량</th>
+                                            <th className="border px-2 py-1 hidden md:table-cell">중량단위</th>
+                                            <th className="border px-2 py-1">포장개수</th>
+                                            <th className="border px-2 py-1">처리구분</th>
+                                            <th className="border px-2 py-1 hidden md:table-cell">포장단위</th>
+                                            <th className="border px-2 py-1 hidden md:table-cell">장치장부호</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </>
+                                    </thead>
+                                    <tbody>
+                                        {cargoData.cargCsclPrgsInfoDtlQryVo.map((item, index) => (
+                                            <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                                <td className="border px-2 py-1">{item.장치장명}</td>
+                                                <td className="border px-2 py-1">{formatDate(item.처리일시)}</td>
+                                                <td className="border px-2 py-1">{item.중량}</td>
+                                                <td className="border px-2 py-1 hidden md:table-cell">{item.중량단위}</td>
+                                                <td className="border px-2 py-1">{item.포장개수}</td>
+                                                <td className="border px-2 py-1">{item.처리구분}</td>
+                                                <td className="border px-2 py-1 hidden md:table-cell">{item.포장단위}</td>
+                                                <td className="border px-2 py-1 hidden md:table-cell">{item.장치장부호}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p className="mt-2 text-xs text-gray-500">
+                                * 모바일에서는 일부 정보가 표시되지 않습니다. 전체 정보를 보려면 가로로 스크롤하거나 더 큰 화면에서 확인하세요.
+                            </p>
+                        </div>
                     )}
                 </div>
             )}

@@ -178,7 +178,7 @@ export default function RefundCalculatorPage() {
             {refundData && (
               <div className="mt-6">
                 <p className="text-xl font-semibold">
-                  총 환급액: <span className="font-bold">{totalRefund.toLocaleString()} 원</span>
+                  2025년 기준 총 환급액 : <span className="font-bold">{totalRefund.toLocaleString()} 원</span>
                 </p>
               </div>
             )}
