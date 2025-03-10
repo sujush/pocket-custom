@@ -12,6 +12,9 @@ interface ExchangeRate {
 }
 
 const Hero: FC = () => {
+  // ==========================
+  // = 기존 상태/로직 그대로 =
+  // ==========================
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [currentRateIndex, setCurrentRateIndex] = useState<number>(0);
   const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([
@@ -30,9 +33,9 @@ const Hero: FC = () => {
     const sunday = new Date(curr.setDate(curr.getDate() - curr.getDay()));
     const saturday = new Date(curr.setDate(curr.getDate() + 6));
     
-    const formatDate = (date: Date): string => {
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
+    const formatDate = (d: Date): string => {
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
       return `${month}.${day}`;
     };
 
@@ -57,7 +60,7 @@ const Hero: FC = () => {
       const countryCode = rateElement.getElementsByTagName("cntySgn")[0]?.textContent || '';
       const rateValue = rateElement.getElementsByTagName("fxrt")[0]?.textContent || '0';
       
-      // 우리가 관심있는 국가의 환율만 저장
+      // 우리가 관심 있는 국가의 환율만 업데이트
       Object.entries(countryMapping).forEach(([key, data]) => {
         if (countryCode.includes(key)) {
           data.rate = parseFloat(rateValue);
@@ -66,14 +69,13 @@ const Hero: FC = () => {
     });
   
     return Object.values(countryMapping);
-  }, []); // 의존성 배열이 비어있으므로 컴포넌트가 마운트될 때 한 번만 생성됨
+  }, []);
 
   // 환율 데이터 가져오기
   useEffect(() => {
     const fetchExchangeRates = async (): Promise<void> => {
       try {
         const response = await fetch('/api/exchange-rates');
-
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || '환율 정보를 가져오는데 실패했습니다');
@@ -106,7 +108,6 @@ const Hero: FC = () => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
-
     return () => clearInterval(timer);
   }, []);
 
@@ -115,7 +116,6 @@ const Hero: FC = () => {
     const rotationTimer = setInterval(() => {
       setCurrentRateIndex((prevIndex) => (prevIndex + 1) % exchangeRates.length);
     }, 2000);
-
     return () => clearInterval(rotationTimer);
   }, [exchangeRates.length]);
 
@@ -123,7 +123,7 @@ const Hero: FC = () => {
   const hour = currentTime.getHours();
   const isDaytime = hour >= 6 && hour < 18;
 
-  // 날짜 포맷팅
+  // 날짜/시간 포맷팅
   const days = ['일', '월', '화', '수', '목', '금', '토'] as const;
   const formattedDate = `${currentTime.getFullYear()}년 ${currentTime.getMonth() + 1}월 ${currentTime.getDate()}일 ${days[currentTime.getDay()]}요일`;
   const formattedTime = currentTime.toLocaleTimeString('ko-KR');
@@ -131,10 +131,13 @@ const Hero: FC = () => {
   // 현재 표시할 환율
   const currentRate = exchangeRates[currentRateIndex];
 
+  // =============================
+  // = 수정된 return 부분 시작  =
+  // =============================
   return (
-    <div className="flex justify-between items-center px-8 mb-16">
+    <div className="block md:flex md:justify-between items-center px-4 md:px-8 mb-8 md:mb-16">
       {/* 왼쪽 날짜/시간 위젯 */}
-      <div className="w-64">
+      <div className="w-full md:w-64 mb-4 md:mb-0">
         <div className="flex items-center gap-2 mb-2">
           {isDaytime ? (
             <Sun className="h-6 w-6 text-yellow-500" />
@@ -149,24 +152,30 @@ const Hero: FC = () => {
         </div>
       </div>
 
-      {/* 중앙 로고 및 제목 */}
-      <div className="text-center">
+      {/* 중앙 로고/제목 */}
+      <div className="text-center mb-4 md:mb-0">
         <div className="flex items-center justify-center mb-4">
-          <Avatar className="h-24 w-24 mr-4">
+          {/* 모바일: h-16 w-16 / md 이상: h-24 w-24 */}
+          <Avatar className="h-16 w-16 md:h-24 md:w-24 mr-4">
             <AvatarImage src="/eyeon_logo.png" alt="eyeon_logo" />
             <AvatarFallback>DR</AvatarFallback>
           </Avatar>
-          <h1 className="text-5xl font-bold text-indigo-600">이연 관세사무소</h1>
+          {/* 폰트 사이즈도 모바일/데스크탑 분리 */}
+          <h1 className="text-3xl md:text-5xl font-bold text-indigo-600">
+            이연 관세사무소
+          </h1>
         </div>
-        <p className="text-xl text-gray-700 mb-8">
+        <p className="text-lg md:text-xl text-gray-700 mb-4 md:mb-8">
           모바일은 데스크탑 모드를 이용해주세요.
         </p>
       </div>
 
       {/* 오른쪽 환율 위젯 */}
-      <div className="w-64">
+      <div className="w-full md:w-64">
         <div className="flex items-center gap-2 mb-2">
-          <span className="font-semibold">주간 관세환율 [{weekRange}]</span>
+          <span className="font-semibold">
+            주간 관세환율 [{weekRange}]
+          </span>
         </div>
         {error ? (
           <div className="text-red-500">{error}</div>
@@ -186,6 +195,9 @@ const Hero: FC = () => {
       </div>
     </div>
   );
+  // =============================
+  // = 수정된 return 부분 끝    =
+  // =============================
 };
 
 export default Hero;
