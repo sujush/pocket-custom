@@ -4,7 +4,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Search, FileCheck, FileText, Calculator, Box } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/authStore';
-import Image from 'next/image';
+
 
 // -------------------------------
 // 서비스 데이터들
