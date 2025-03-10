@@ -1,25 +1,22 @@
 // components/Header.tsx
-"use client";
-
-import { useState } from "react";
-import Link from "next/link";
-import { useAuthStore } from "@/lib/store/authStore";
-import LogoutButton from "./LogoutButon";
+import Link from 'next/link';
+import { useAuthStore } from '@/lib/store/authStore'
+import LogoutButton from './LogoutButon';
 import { Button } from "@/components/ui/button";
-// 햄버거 아이콘
-import { Menu, X } from "lucide-react";
 
 export default function Header() {
-  const user = useAuthStore((state) => state.user);
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-
-  // 햄버거 메뉴 열림/닫힘
-  const [menuOpen, setMenuOpen] = useState(false);
+  const user = useAuthStore(state => state.user);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
   return (
     <header className="bg-white shadow">
+      {/* 
+        flex + justify-between + items-center 
+        => 가로 일렬 배치 
+      */}
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-        {/* 왼쪽: 환영 메세지 or 로그인 */}
+        
+        {/* 왼쪽: 환영메시지 or 로그인 링크 */}
         <div>
           {isAuthenticated ? (
             <>
@@ -37,64 +34,40 @@ export default function Header() {
           )}
         </div>
 
-        {/* 햄버거 아이콘 (sm:hidden) */}
-        <button
-          className="sm:hidden p-2 text-gray-600 hover:text-gray-800"
-          onClick={() => setMenuOpen(!menuOpen)}
-        >
-          {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
-
-        {/* 
-          오른쪽 버튼들 (Logout, 회원가입, 프리미엄)
-          - sm 이하: menuOpen 일 때만 표시
-          - sm 이상: 가로로 표시
-        */}
-        <div
-          className={`
-            ${menuOpen ? "block" : "hidden"}
-            absolute top-[64px] right-0 w-full bg-white sm:bg-transparent sm:static
-            sm:w-auto sm:flex sm:items-center sm:space-x-4
-          `}
-        >
-          {/* 만약 로그인됐다면 로그아웃 / 프리미엄 등 */}
+        {/* 오른쪽: 로그아웃 or 회원가입/프리미엄 등 */}
+        <div className="flex items-center space-x-4">
           {isAuthenticated ? (
-            <div className="px-4 py-2 sm:py-0 flex flex-col sm:flex-row sm:items-center sm:space-x-4">
+            <>
+              {/* 로그아웃 버튼 */}
               <LogoutButton />
 
+              {/* 모바일에서는 숨기고, sm 이상에서만 보이도록 */}
               {!user?.isPremium && (
-                <Link href="/upgrade">
-                  <Button
-                    className="bg-yellow-500 text-white hover:bg-yellow-600"
-                    onClick={() => setMenuOpen(false)}
-                  >
+                <Link href="/upgrade" className="hidden sm:block">
+                  <Button className="bg-yellow-500 text-white hover:bg-yellow-600">
                     프리미엄 회원 전환
                   </Button>
                 </Link>
               )}
-            </div>
+            </>
           ) : (
-            <div className="px-4 py-2 sm:py-0 flex flex-col sm:flex-row sm:items-center sm:space-x-4">
+            <>
               <Link href="/signup">
-                <Button
-                  className="bg-indigo-600 text-white hover:bg-indigo-700"
-                  onClick={() => setMenuOpen(false)}
-                >
+                <Button className="bg-indigo-600 text-white hover:bg-indigo-700">
                   회원가입
                 </Button>
               </Link>
-              <Link href="/upgrade">
-                <Button
-                  className="bg-yellow-500 text-white hover:bg-yellow-600"
-                  onClick={() => setMenuOpen(false)}
-                >
+
+              {/* 모바일에서는 숨기고, sm 이상에서만 보이도록 */}
+              <Link href="/upgrade" className="hidden sm:block">
+                <Button className="bg-yellow-500 text-white hover:bg-yellow-600">
                   프리미엄 회원 전환
                 </Button>
               </Link>
-            </div>
+            </>
           )}
         </div>
       </div>
     </header>
-  );
+  )
 }
