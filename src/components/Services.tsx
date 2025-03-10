@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Search, FileCheck, FileText, Calculator, Box } from 'lucide-react';
+import { ArrowRight, Search, FileCheck, FileText, Calculator, Box, Mail, Phone, Globe } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/authStore';
 
 
@@ -46,9 +46,15 @@ const additionalServices = [
     link: 'cargo-location'
   },
   {
-    title: '이연관세사무소',
+    title: '통관 대행사 : 이연 관세사무소',
+    description: '전문적인 통관 서비스를 제공합니다.',
+    color: 'blue',
     link: 'https://www.e-yeon.co.kr/', //외부링크
-    ImagePath: '/Images/ad-eyeon.jpg'
+    contactInfo: {
+      phone: '032-710-9432',
+      email: 'e-yeon@e-yeon.com',
+      website: 'e-yeon@e-yeon.co.kr'
+    }
   }
 ];
 
@@ -133,6 +139,11 @@ type AdditionalServiceProps = {
   link: string;
   color?: string;
   ImagePath?: string;
+  contactInfo?: {
+    phone: string;
+    email: string;
+    website: string;
+  };
 };
 
 const AdditionalServiceCard: React.FC<{ service: AdditionalServiceProps }> = ({ service }) => {
@@ -154,31 +165,65 @@ const AdditionalServiceCard: React.FC<{ service: AdditionalServiceProps }> = ({ 
     }
   };
 
-  // 이미지 배너형이면 예전 로직 유지
-  if (service.ImagePath) {
+  // 이연 관세사무소 정보 카드 (특별 처리)
+  if (service.contactInfo) {
     return (
       <div
-        className="relative h-full rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg cursor-pointer transform hover:-translate-y-1 hover:scale-105"
-        onClick={() => window.open(service.link, '_blank')}
+        className={`
+          ${classes} ${!isAuthenticated ? 'opacity-75' : ''}
+          rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg border border-indigo-200 p-6 transform hover:-translate-y-1 hover:scale-105
+        `}
       >
-        {/* ... */}
+        <div className="flex items-center mb-4">
+          <div className="bg-indigo-100 rounded-full p-2 mr-4">
+            <FileCheck className="h-6 w-6 text-indigo-600" />
+          </div>
+          <h2 className="text-xl font-semibold text-indigo-800">{service.title}</h2>
+        </div>
+        {service.description && (
+          <p className="text-gray-700 mb-4 text-sm">{service.description}</p>
+        )}
+        
+        <div className="space-y-2 mb-4">
+          <div className="flex items-center">
+            <Phone className="h-4 w-4 text-gray-500 mr-2" />
+            <span className="text-sm">연락처: {service.contactInfo.phone}</span>
+          </div>
+          <div className="flex items-center">
+            <Mail className="h-4 w-4 text-gray-500 mr-2" />
+            <span className="text-sm">이메일 주소: {service.contactInfo.email}</span>
+          </div>
+          <div className="flex items-center">
+            <Globe className="h-4 w-4 text-gray-500 mr-2" />
+            <span className="text-sm">홈페이지: {service.contactInfo.website}</span>
+          </div>
+        </div>
+        
+        <button
+          onClick={handleServiceNavigation}
+          className="inline-flex items-center text-indigo-600 hover:text-indigo-700 font-medium text-sm"
+        >
+          홈페이지 방문하기
+          <ArrowRight className="ml-2 h-4 w-4" />
+        </button>
       </div>
     );
   }
 
-  // 일반 카드 -> 중앙 정렬 적용
+  // 일반 서비스 카드
   return (
     <div
       className={`
         ${classes} ${!isAuthenticated ? 'opacity-75' : ''}
-        rounded-lg overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md border p-4 transform hover:-translate-y-1 hover:scale-105
-        flex flex-col items-center text-center
+        rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg border border-indigo-200 p-6 transform hover:-translate-y-1 hover:scale-105
       `}
     >
-      {service.icon && <service.icon className="h-8 w-8 mb-2" />}
-      <h2 className="text-lg font-semibold mb-2">{service.title}</h2>
+      <div className="flex items-center mb-4">
+        {service.icon && <service.icon className="h-8 w-8 text-indigo-600 mr-4" />}
+        <h2 className="text-xl font-semibold text-indigo-800">{service.title}</h2>
+      </div>
       {service.description && (
-        <p className="text-sm whitespace-pre-line mb-2">{service.description}</p>
+        <p className="text-gray-700 mb-4 text-sm">{service.description}</p>
       )}
       {service.link && (
         <button
@@ -192,6 +237,7 @@ const AdditionalServiceCard: React.FC<{ service: AdditionalServiceProps }> = ({ 
     </div>
   );
 };
+
 // -------------------------------
 // Services (메인 컴포넌트)
 // -------------------------------
@@ -210,21 +256,15 @@ export default function Services() {
 
       {/* 오른쪽(추가서비스) 반응형 변경 */}
       <div
-        className="grid grid-cols-1 md:grid-cols-2 gap-4"
-        // 모바일: 1열, md 이상: 2열
+        className="grid grid-cols-1 gap-8"
       >
         {/* 추가서비스 첫 두 개 */}
         {additionalServices.slice(0, 2).map((service, index) => (
           <AdditionalServiceCard key={index} service={service} />
         ))}
 
-        {/* 
-          마지막 하나(이연관세사무소)는 md에서 가로 두 칸 전부 차지하도록 
-          => md:col-span-2 
-        */}
-        <div className="md:col-span-2">
-          <AdditionalServiceCard service={additionalServices[2]} />
-        </div>
+        {/* 마지막 하나(이연관세사무소) */}
+        <AdditionalServiceCard service={additionalServices[2]} />
       </div>
     </div>
   );

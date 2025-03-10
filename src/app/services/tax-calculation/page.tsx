@@ -851,7 +851,8 @@ export default function TaxCalculationPage() {
 
                   {/* 추가 문구 */}
                   <p className="text-sm text-gray-700">
-                    원산지증명서 발행 시 적용되는 세율입니다.
+                    협정세율은 원산지증명서 발행 시 적용되는 세율입니다.
+                    * 주의! 부가세 면세 여부는 별도 적용되지 않습니다. 미가공식료품 등 부가세 면세대상인지 여부는 관세사와 상의하세요.
                   </p>
                 </div>
               )}
