@@ -82,7 +82,7 @@ const LCLCostCalculationPage = () => {
       setNeedsOriginCertificate(parsedData.needsOriginCertificate || false);
       setNeedsDelivery(parsedData.needsDelivery || false);
       setNeedsOriginLabel(parsedData.needsOriginLabel || false);
-  
+
       // 세션 스토리지에 저장
       if (parsedData.totalCost) {
         setTotalCost(parsedData.totalCost);
@@ -91,25 +91,25 @@ const LCLCostCalculationPage = () => {
         // 계산 결과가 있으면 통관세금 입력 필드 표시
         setShowCustomsTaxInput(true);
       }
-  
+
       if (parsedData.customsTax) {
         setCustomsTax(parsedData.customsTax);
         setCustomsTaxInput(parsedData.customsTax.toString());
       }
     }
-  
+
     // 통관세금 데이터 로드
     const taxData = sessionStorage.getItem('customsTaxData');
     if (taxData) {
       const parsedTaxData = JSON.parse(taxData);
       const taxAmount = parsedTaxData.taxAmount || 0;
-  
+
       // 통관세금이 있다면 설정
       if (taxAmount) {
         setCustomsTax(taxAmount);
         setCustomsTaxInput(taxAmount.toString());
         setShowCustomsTaxInput(true);
-  
+
         // 기존 계산 결과가 있다면 합산된 새 계산 결과 생성
         if (totalCost) {
           const newTotal = totalCost + taxAmount;
@@ -119,7 +119,7 @@ const LCLCostCalculationPage = () => {
             max: Math.round(newTotal * 1.1)
           });
         }
-  
+
         // 세금이 적용되었음을 표시하기 위해 세션 스토리지 업데이트
         sessionStorage.removeItem('customsTaxData');
       }
@@ -463,23 +463,33 @@ const LCLCostCalculationPage = () => {
                       <Label htmlFor={`totalCBM-${product.id}`}>제품 총 CBM (㎥)</Label>
                       <Input
                         id={`totalCBM-${product.id}`}
-                        type="text"  // number 타입에서 text 타입으로 변경
-                        inputMode="decimal"  // 숫자 키패드 표시
+                        type="text"
+                        inputMode="decimal"
                         placeholder="0.0"
-                        value={product.totalCBM === 0 ? '0.0' : product.totalCBM.toString()}  // 0일 때 '0.0'으로 설정
-                        onFocus={(e) => {
-                          if (product.totalCBM === 0) {
-                            e.target.value = '';  // 포커스 시 '0.0' 지우기
-                          }
-                        }}
+                        value={product.totalCBM === 0 ? '' : product.totalCBM.toString()}
                         onChange={(e) => {
-                          const value = e.target.value;  // 입력된 값 그대로 가져오기
-                          // 숫자와 소수점만 허용 (소수점은 한 번만 허용)
-                          const regex = /^\d*\.?\d*$/;  // 정수와 소수점 숫자 허용
-                          if (regex.test(value)) {
+                          // 사용자 입력값 가져오기
+                          let value = e.target.value;
+
+                          // 빈 입력은 0으로 처리
+                          if (value === '') {
+                            updateProduct(product.id, 'totalCBM', 0);
+                            return;
+                          }
+
+                          // 숫자와 소수점만 허용 (정규식)
+                          if (/^[0-9]*\.?[0-9]*$/.test(value)) {
+                            // 앞에 0이 여러 개 있는 경우 (예: 00.5) 하나로 줄임
+                            if (value.startsWith('0') && value.length > 1 && value[1] !== '.') {
+                              value = value.replace(/^0+/, '0');
+                            }
+
                             const parsedValue = parseFloat(value);
-                            if (!isNaN(parsedValue) && parsedValue >= 0) {
+                            if (!isNaN(parsedValue)) {
                               updateProduct(product.id, 'totalCBM', parsedValue);
+                            } else if (value === '.' || value === '0.') {
+                              // 소수점만 입력된 경우 문자열 그대로 저장 (유효하지 않은 숫자지만 입력 과정 중)
+                              e.target.value = value;
                             }
                           }
                         }}
