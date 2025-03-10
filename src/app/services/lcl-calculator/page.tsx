@@ -463,17 +463,20 @@ const LCLCostCalculationPage = () => {
                       <Label htmlFor={`totalCBM-${product.id}`}>제품 총 CBM (㎥)</Label>
                       <Input
                         id={`totalCBM-${product.id}`}
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={product.totalCBM || ''}
-                        onChange={(e) =>
-                          updateProduct(
-                            product.id,
-                            'totalCBM',
-                            parseFloat(e.target.value) || 0
-                          )
-                        }
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="0.0"
+                        value={product.totalCBM === 0 ? '0' : product.totalCBM.toString()}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // 숫자와 소수점만 허용
+                          if (/^[0-9]*\.?[0-9]*$/.test(value)) {
+                            const parsedValue = value === '' ? 0 : parseFloat(value);
+                            if (!isNaN(parsedValue)) {
+                              updateProduct(product.id, 'totalCBM', parsedValue);
+                            }
+                          }
+                        }}
                       />
                     </div>
                   </div>
