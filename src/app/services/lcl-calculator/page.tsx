@@ -37,7 +37,7 @@ interface Product {
 
 const LCLCostCalculationPage = () => {
   const router = useRouter();
-  
+
   const [location, setLocation] = useState<string>('');
   const [products, setProducts] = useState<Product[]>([
     {
@@ -57,20 +57,20 @@ const LCLCostCalculationPage = () => {
   const [needsOriginLabel, setNeedsOriginLabel] = useState<boolean>(false);
   const [totalCost, setTotalCost] = useState<number | null>(null);
   const [lclOnlyCost, setLclOnlyCost] = useState<number | null>(null);
-  
+
   // 비용 범위를 저장할 상태 추가
   const [costRange, setCostRange] = useState<{
     min: number;
     max: number;
   } | null>(null);
-  
+
   // 통관세금 정보를 저장할 상태 추가
   const [customsTax, setCustomsTax] = useState<number | null>(null);
-  
+
   // 통관세금 입력 필드 상태
   const [customsTaxInput, setCustomsTaxInput] = useState<string>('');
   const [showCustomsTaxInput, setShowCustomsTaxInput] = useState<boolean>(false);
-  
+
   // 세션 스토리지에서 저장된 데이터 로드
   useEffect(() => {
     // LCL 계산 데이터 로드
@@ -82,32 +82,32 @@ const LCLCostCalculationPage = () => {
       setNeedsOriginCertificate(parsedData.needsOriginCertificate || false);
       setNeedsDelivery(parsedData.needsDelivery || false);
       setNeedsOriginLabel(parsedData.needsOriginLabel || false);
-      
+
       // 세션 스토리지에 저장
       if (parsedData.totalCost) {
         setTotalCost(parsedData.totalCost);
         setLclOnlyCost(parsedData.lclOnlyCost || parsedData.totalCost);
         setCostRange(parsedData.costRange || null);
       }
-      
+
       if (parsedData.customsTax) {
         setCustomsTax(parsedData.customsTax);
         setCustomsTaxInput(parsedData.customsTax.toString());
       }
     }
-    
+
     // 통관세금 데이터 로드
     const taxData = sessionStorage.getItem('customsTaxData');
     if (taxData) {
       const parsedTaxData = JSON.parse(taxData);
       const taxAmount = parsedTaxData.taxAmount || 0;
-      
+
       // 통관세금이 있다면 설정
       if (taxAmount) {
         setCustomsTax(taxAmount);
         setCustomsTaxInput(taxAmount.toString());
         setShowCustomsTaxInput(true);
-        
+
         // 기존 계산 결과가 있다면 합산된 새 계산 결과 생성
         if (totalCost) {
           const newTotal = totalCost + taxAmount;
@@ -117,13 +117,13 @@ const LCLCostCalculationPage = () => {
             max: Math.round(newTotal * 1.1)
           });
         }
-        
+
         // 세금이 적용되었음을 표시하기 위해 세션 스토리지 업데이트
         sessionStorage.removeItem('customsTaxData');
       }
     }
   }, []);
-  
+
   // HS CODE 페이지로 이동하기 전 데이터 저장
   const navigateToHsCode = () => {
     // 현재 상태를 세션 스토리지에 저장
@@ -139,7 +139,7 @@ const LCLCostCalculationPage = () => {
       customsTax
     };
     sessionStorage.setItem('lclCalculationData', JSON.stringify(dataToSave));
-    
+
     // HS CODE 페이지로 이동
     router.push('/services/hscode');
   };
@@ -181,9 +181,9 @@ const LCLCostCalculationPage = () => {
       alert('유효한 통관세금을 입력해주세요.');
       return;
     }
-    
+
     setCustomsTax(taxValue);
-    
+
     // 기존 LCL 비용에 통관세금 추가
     if (lclOnlyCost) {
       const newTotal = lclOnlyCost + taxValue;
@@ -192,7 +192,7 @@ const LCLCostCalculationPage = () => {
         min: Math.round(newTotal * 0.9),
         max: Math.round(newTotal * 1.1)
       });
-      
+
       // 세션 스토리지 업데이트
       const savedData = sessionStorage.getItem('lclCalculationData');
       if (savedData) {
@@ -242,10 +242,10 @@ const LCLCostCalculationPage = () => {
 
     // Calculate total CBM across all products
     const totalCBM = products.reduce((sum, product) => sum + product.totalCBM, 0);
-    
+
     // Calculate total product count across all products
     const totalProductCount = products.reduce((sum, product) => sum + product.totalCount, 0);
-    
+
     // Calculate total package count across all products
     const totalPackageCount = products.reduce((sum, product) => sum + product.totalPackageCount, 0);
 
@@ -260,18 +260,18 @@ const LCLCostCalculationPage = () => {
     // Calculate total cost without customs tax
     const lclCost = transportationCost + blCost + customsCost + deliveryCost + originCertificateCost + originLabelCost;
     setLclOnlyCost(lclCost);
-    
+
     // Apply customs tax if available
     const total = customsTax ? lclCost + customsTax : lclCost;
     setTotalCost(total);
-    
+
     // Calculate cost range (±10%)
     const range = {
       min: Math.round(total * 0.9),
       max: Math.round(total * 1.1)
     };
     setCostRange(range);
-    
+
     // 계산 결과를 세션 스토리지에 저장
     const dataToSave = {
       location,
@@ -285,14 +285,14 @@ const LCLCostCalculationPage = () => {
       customsTax
     };
     sessionStorage.setItem('lclCalculationData', JSON.stringify(dataToSave));
-    
+
     // 계산 후 통관세금 입력 영역 표시
     setShowCustomsTaxInput(true);
   };
-  
+
   // 지역 이름 반환 함수
   const getLocationName = () => {
-    switch(location) {
+    switch (location) {
       case 'weihai': return '웨이하이';
       case 'yiwu': return '이우';
       case 'guangzhou': return '광저우';
@@ -314,14 +314,14 @@ const LCLCostCalculationPage = () => {
               <CardContent className="pt-6">
                 <h3 className="text-lg font-semibold mb-2">사용법을 설명하겠습니다</h3>
                 <p className="text-sm text-gray-700">
-                  본 페이지는 LCL 사업자 통관 시 발생하는 배송대행비용을 계산하는 도구입니다. 
+                  본 페이지는 LCL 사업자 통관 시 발생하는 배송대행비용을 계산하는 도구입니다.
                   우선 웨이하이, 이우, 광저우 중 출발지를 선택하신 후 제품 정보를 입력해주세요.
                   여러 제품을 추가할 수 있으며, 각 제품별로 HS CODE 확인이 필요하시면 &apos;HS CODE 찾기&apos; 버튼을 이용하세요.
                   모든 정보 입력 후 &apos;비용 계산하기&apos; 버튼을 클릭하시면 예상 비용이 계산됩니다.
                 </p>
               </CardContent>
             </Card>
-            
+
             {/* Location Selection */}
             <div className="space-y-2">
               <Label htmlFor="location">지역 선택</Label>
@@ -386,8 +386,8 @@ const LCLCostCalculationPage = () => {
                             updateProduct(product.id, 'hsCode', e.target.value)
                           }
                         />
-                        <Button 
-                          variant="secondary" 
+                        <Button
+                          variant="secondary"
                           size="sm"
                           onClick={navigateToHsCode}
                         >
@@ -460,19 +460,18 @@ const LCLCostCalculationPage = () => {
                       <Label htmlFor={`totalCBM-${product.id}`}>제품 총 CBM (㎥)</Label>
                       <Input
                         id={`totalCBM-${product.id}`}
-                        type="text"
-                        inputMode="decimal"
-                        placeholder="0.0"
+                        type="number"
+                        step="0.01"        // 소수점 2자리까지 입력 가능
+                        min="0"            // 음수 방지
                         value={product.totalCBM === 0 ? '' : product.totalCBM}
                         onChange={(e) => {
-                          const value = e.target.value.replace(/[^0-9.]/g, '');
-                          if (value === '' || value === '.') {
-                            updateProduct(product.id, 'totalCBM', 0);
+                          const newValue = e.target.value;          // 사용자가 입력한 문자열 그대로 받음
+                          const parsedValue = parseFloat(newValue); // 소수로 변환 시도
+                          if (!isNaN(parsedValue) && parsedValue >= 0) {
+                            updateProduct(product.id, 'totalCBM', parsedValue);
                           } else {
-                            const parsedValue = parseFloat(value);
-                            if (!isNaN(parsedValue) && parsedValue >= 0) {
-                              updateProduct(product.id, 'totalCBM', parsedValue);
-                            }
+                            // 사용자가 입력을 지워서 빈값이면 0으로 처리
+                            updateProduct(product.id, 'totalCBM', 0);
                           }
                         }}
                       />
@@ -535,7 +534,7 @@ const LCLCostCalculationPage = () => {
 
             {/* Result Section */}
             {totalCost !== null && costRange !== null && (
-              <div className="mt-6 p-6 bg-slate-50 rounded-lg space-y-4">                
+              <div className="mt-6 p-6 bg-slate-50 rounded-lg space-y-4">
                 <div>
                   <h3 className="text-xl font-semibold mb-2">예상 비용 범위</h3>
                   <div className="flex items-end gap-2">
@@ -548,7 +547,7 @@ const LCLCostCalculationPage = () => {
                       </p>
                     )}
                   </div>
-                  
+
                   {/* 통관세금 입력 필드 */}
                   {showCustomsTaxInput && (
                     <div className="mt-4 space-y-2">
@@ -568,7 +567,7 @@ const LCLCostCalculationPage = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   {customsTax && customsTax > 0 && (
                     <div className="mt-2 p-2 bg-green-50 rounded border border-green-200">
                       <p className="text-sm font-medium text-green-700">
@@ -576,7 +575,7 @@ const LCLCostCalculationPage = () => {
                       </p>
                     </div>
                   )}
-                  
+
                   {/* 통관세금 포함된 전체 비용 표시 */}
                   {customsTax && customsTax > 0 && lclOnlyCost && (
                     <div className="mt-4 p-3 bg-blue-100 rounded-md">
@@ -598,9 +597,9 @@ const LCLCostCalculationPage = () => {
                     </div>
                   )}
                 </div>
-                
-                <Button 
-                  variant="outline" 
+
+                <Button
+                  variant="outline"
                   className="w-full"
                   onClick={() => {
                     // 통관세금 계산에 필요한 제품 정보를 쿼리 파라미터로 전달
@@ -610,16 +609,16 @@ const LCLCostCalculationPage = () => {
                       source: location,
                       returnToLCL: 'true' // 돌아오기 위한 플래그
                     }).toString();
-                    
+
                     router.push(`/services/tax-calculation?${queryParams}`);
                   }}
                 >
                   통관세금 확인하기 <ExternalLink className="ml-2 h-4 w-4" />
                 </Button>
-                
+
                 {/* 배송대행지 찾기 버튼 */}
-                <Button 
-                  variant="secondary" 
+                <Button
+                  variant="secondary"
                   className="w-full"
                   onClick={() => router.push('/services/delivery-agents')}
                 >
