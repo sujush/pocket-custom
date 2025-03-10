@@ -82,32 +82,34 @@ const LCLCostCalculationPage = () => {
       setNeedsOriginCertificate(parsedData.needsOriginCertificate || false);
       setNeedsDelivery(parsedData.needsDelivery || false);
       setNeedsOriginLabel(parsedData.needsOriginLabel || false);
-
+  
       // 세션 스토리지에 저장
       if (parsedData.totalCost) {
         setTotalCost(parsedData.totalCost);
         setLclOnlyCost(parsedData.lclOnlyCost || parsedData.totalCost);
         setCostRange(parsedData.costRange || null);
+        // 계산 결과가 있으면 통관세금 입력 필드 표시
+        setShowCustomsTaxInput(true);
       }
-
+  
       if (parsedData.customsTax) {
         setCustomsTax(parsedData.customsTax);
         setCustomsTaxInput(parsedData.customsTax.toString());
       }
     }
-
+  
     // 통관세금 데이터 로드
     const taxData = sessionStorage.getItem('customsTaxData');
     if (taxData) {
       const parsedTaxData = JSON.parse(taxData);
       const taxAmount = parsedTaxData.taxAmount || 0;
-
+  
       // 통관세금이 있다면 설정
       if (taxAmount) {
         setCustomsTax(taxAmount);
         setCustomsTaxInput(taxAmount.toString());
         setShowCustomsTaxInput(true);
-
+  
         // 기존 계산 결과가 있다면 합산된 새 계산 결과 생성
         if (totalCost) {
           const newTotal = totalCost + taxAmount;
@@ -117,7 +119,7 @@ const LCLCostCalculationPage = () => {
             max: Math.round(newTotal * 1.1)
           });
         }
-
+  
         // 세금이 적용되었음을 표시하기 위해 세션 스토리지 업데이트
         sessionStorage.removeItem('customsTaxData');
       }
@@ -460,18 +462,19 @@ const LCLCostCalculationPage = () => {
                       <Label htmlFor={`totalCBM-${product.id}`}>제품 총 CBM (㎥)</Label>
                       <Input
                         id={`totalCBM-${product.id}`}
-                        type="number"
-                        step="0.01"        // 소수점 2자리까지 입력 가능
-                        min="0"            // 음수 방지
-                        value={product.totalCBM === 0 ? '' : product.totalCBM}
+                        type="text"  // number 타입에서 text 타입으로 변경
+                        inputMode="decimal"  // 숫자 키패드 표시
+                        placeholder="0.0"
+                        value={product.totalCBM === 0 ? '0' : product.totalCBM.toString()}  // 0인 경우 '0'으로 표시
                         onChange={(e) => {
-                          const newValue = e.target.value;          // 사용자가 입력한 문자열 그대로 받음
-                          const parsedValue = parseFloat(newValue); // 소수로 변환 시도
-                          if (!isNaN(parsedValue) && parsedValue >= 0) {
-                            updateProduct(product.id, 'totalCBM', parsedValue);
-                          } else {
-                            // 사용자가 입력을 지워서 빈값이면 0으로 처리
+                          const value = e.target.value.replace(/[^0-9.]/g, '');  // 숫자와 소수점만 허용
+                          if (value === '' || value === '.') {
                             updateProduct(product.id, 'totalCBM', 0);
+                          } else {
+                            const parsedValue = parseFloat(value);
+                            if (!isNaN(parsedValue) && parsedValue >= 0) {
+                              updateProduct(product.id, 'totalCBM', parsedValue);
+                            }
                           }
                         }}
                       />
