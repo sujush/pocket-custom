@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Trash2, ExternalLink } from 'lucide-react';
+import { Trash2, ExternalLink, Search } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useRouter } from 'next/navigation';
 
@@ -38,61 +38,6 @@ interface Product {
 const LCLCostCalculationPage = () => {
   const router = useRouter();
   
-  // 세션 스토리지에서 저장된 데이터 로드
-  useEffect(() => {
-    // LCL 계산 데이터 로드
-    const savedData = sessionStorage.getItem('lclCalculationData');
-    if (savedData) {
-      const parsedData = JSON.parse(savedData);
-      setLocation(parsedData.location || '');
-      setProducts(parsedData.products || []);
-      setNeedsOriginCertificate(parsedData.needsOriginCertificate || false);
-      setNeedsDelivery(parsedData.needsDelivery || false);
-      setNeedsOriginLabel(parsedData.needsOriginLabel || false);
-      
-      // 세션 스토리지에 저장
-      if (parsedData.totalCost) {
-        setTotalCost(parsedData.totalCost);
-        setCostRange(parsedData.costRange || null);
-      }
-    }
-    
-    // 통관세금 데이터 로드
-    const taxData = sessionStorage.getItem('customsTaxData');
-    if (taxData) {
-      const parsedTaxData = JSON.parse(taxData);
-      setCustomsTax(parsedTaxData.taxAmount || null);
-      
-      // 통관세금이 있고 기존 계산 결과가 있다면 합산된 새 계산 결과 생성
-      if (parsedTaxData.taxAmount && totalCost) {
-        const newTotal = totalCost + parsedTaxData.taxAmount;
-        setTotalCost(newTotal);
-        setCostRange({
-          min: Math.round(newTotal * 0.9),
-          max: Math.round(newTotal * 1.1)
-        });
-        
-        // 세금이 적용되었음을 표시하기 위해 세션 스토리지 업데이트
-        sessionStorage.removeItem('customsTaxData');
-      }
-    }
-  }, []);
-  
-  // HS CODE 페이지로 이동하기 전 데이터 저장
-  const navigateToHsCode = () => {
-    // 현재 상태를 세션 스토리지에 저장
-    const dataToSave = {
-      location,
-      products,
-      needsOriginCertificate,
-      needsDelivery,
-      needsOriginLabel
-    };
-    sessionStorage.setItem('lclCalculationData', JSON.stringify(dataToSave));
-    
-    // HS CODE 페이지로 이동
-    router.push('/services/hscode');
-  };
   const [location, setLocation] = useState<string>('');
   const [products, setProducts] = useState<Product[]>([
     {
@@ -111,6 +56,93 @@ const LCLCostCalculationPage = () => {
   const [needsDelivery, setNeedsDelivery] = useState<boolean>(false);
   const [needsOriginLabel, setNeedsOriginLabel] = useState<boolean>(false);
   const [totalCost, setTotalCost] = useState<number | null>(null);
+  const [lclOnlyCost, setLclOnlyCost] = useState<number | null>(null);
+  
+  // 비용 범위를 저장할 상태 추가
+  const [costRange, setCostRange] = useState<{
+    min: number;
+    max: number;
+  } | null>(null);
+  
+  // 통관세금 정보를 저장할 상태 추가
+  const [customsTax, setCustomsTax] = useState<number | null>(null);
+  
+  // 통관세금 입력 필드 상태
+  const [customsTaxInput, setCustomsTaxInput] = useState<string>('');
+  const [showCustomsTaxInput, setShowCustomsTaxInput] = useState<boolean>(false);
+  
+  // 세션 스토리지에서 저장된 데이터 로드
+  useEffect(() => {
+    // LCL 계산 데이터 로드
+    const savedData = sessionStorage.getItem('lclCalculationData');
+    if (savedData) {
+      const parsedData = JSON.parse(savedData);
+      setLocation(parsedData.location || '');
+      setProducts(parsedData.products || []);
+      setNeedsOriginCertificate(parsedData.needsOriginCertificate || false);
+      setNeedsDelivery(parsedData.needsDelivery || false);
+      setNeedsOriginLabel(parsedData.needsOriginLabel || false);
+      
+      // 세션 스토리지에 저장
+      if (parsedData.totalCost) {
+        setTotalCost(parsedData.totalCost);
+        setLclOnlyCost(parsedData.lclOnlyCost || parsedData.totalCost);
+        setCostRange(parsedData.costRange || null);
+      }
+      
+      if (parsedData.customsTax) {
+        setCustomsTax(parsedData.customsTax);
+        setCustomsTaxInput(parsedData.customsTax.toString());
+      }
+    }
+    
+    // 통관세금 데이터 로드
+    const taxData = sessionStorage.getItem('customsTaxData');
+    if (taxData) {
+      const parsedTaxData = JSON.parse(taxData);
+      const taxAmount = parsedTaxData.taxAmount || 0;
+      
+      // 통관세금이 있다면 설정
+      if (taxAmount) {
+        setCustomsTax(taxAmount);
+        setCustomsTaxInput(taxAmount.toString());
+        setShowCustomsTaxInput(true);
+        
+        // 기존 계산 결과가 있다면 합산된 새 계산 결과 생성
+        if (totalCost) {
+          const newTotal = totalCost + taxAmount;
+          setTotalCost(newTotal);
+          setCostRange({
+            min: Math.round(newTotal * 0.9),
+            max: Math.round(newTotal * 1.1)
+          });
+        }
+        
+        // 세금이 적용되었음을 표시하기 위해 세션 스토리지 업데이트
+        sessionStorage.removeItem('customsTaxData');
+      }
+    }
+  }, []);
+  
+  // HS CODE 페이지로 이동하기 전 데이터 저장
+  const navigateToHsCode = () => {
+    // 현재 상태를 세션 스토리지에 저장
+    const dataToSave = {
+      location,
+      products,
+      needsOriginCertificate,
+      needsDelivery,
+      needsOriginLabel,
+      totalCost,
+      lclOnlyCost,
+      costRange,
+      customsTax
+    };
+    sessionStorage.setItem('lclCalculationData', JSON.stringify(dataToSave));
+    
+    // HS CODE 페이지로 이동
+    router.push('/services/hscode');
+  };
 
   const addProduct = () => {
     setProducts([
@@ -142,14 +174,39 @@ const LCLCostCalculationPage = () => {
     );
   };
 
-  // 비용 범위를 저장할 상태 추가
-  const [costRange, setCostRange] = useState<{
-    min: number;
-    max: number;
-  } | null>(null);
-  
-  // 통관세금 정보를 저장할 상태 추가
-  const [customsTax, setCustomsTax] = useState<number | null>(null);
+  // 통관세금 적용 함수
+  const applyCustomsTax = () => {
+    const taxValue = parseInt(customsTaxInput, 10);
+    if (isNaN(taxValue) || taxValue < 0) {
+      alert('유효한 통관세금을 입력해주세요.');
+      return;
+    }
+    
+    setCustomsTax(taxValue);
+    
+    // 기존 LCL 비용에 통관세금 추가
+    if (lclOnlyCost) {
+      const newTotal = lclOnlyCost + taxValue;
+      setTotalCost(newTotal);
+      setCostRange({
+        min: Math.round(newTotal * 0.9),
+        max: Math.round(newTotal * 1.1)
+      });
+      
+      // 세션 스토리지 업데이트
+      const savedData = sessionStorage.getItem('lclCalculationData');
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        parsedData.customsTax = taxValue;
+        parsedData.totalCost = newTotal;
+        parsedData.costRange = {
+          min: Math.round(newTotal * 0.9),
+          max: Math.round(newTotal * 1.1)
+        };
+        sessionStorage.setItem('lclCalculationData', JSON.stringify(parsedData));
+      }
+    }
+  };
 
   const calculateTotalCost = () => {
     // Base transportation costs per location
@@ -200,9 +257,12 @@ const LCLCostCalculationPage = () => {
     const originCertificateCost = needsOriginCertificate ? 44000 : 0; // 원산지증명서 발행 비용 (제품 개수와 무관)
     const originLabelCost = needsOriginLabel ? totalProductCount * 77 : 0; // 원산지 표시 비용
 
-
-    // Calculate total cost
-    const total = transportationCost + blCost + customsCost + deliveryCost + originCertificateCost + originLabelCost;
+    // Calculate total cost without customs tax
+    const lclCost = transportationCost + blCost + customsCost + deliveryCost + originCertificateCost + originLabelCost;
+    setLclOnlyCost(lclCost);
+    
+    // Apply customs tax if available
+    const total = customsTax ? lclCost + customsTax : lclCost;
     setTotalCost(total);
     
     // Calculate cost range (±10%)
@@ -220,9 +280,24 @@ const LCLCostCalculationPage = () => {
       needsDelivery,
       needsOriginLabel,
       totalCost: total,
-      costRange: range
+      lclOnlyCost: lclCost,
+      costRange: range,
+      customsTax
     };
     sessionStorage.setItem('lclCalculationData', JSON.stringify(dataToSave));
+    
+    // 계산 후 통관세금 입력 영역 표시
+    setShowCustomsTaxInput(true);
+  };
+  
+  // 지역 이름 반환 함수
+  const getLocationName = () => {
+    switch(location) {
+      case 'weihai': return '웨이하이';
+      case 'yiwu': return '이우';
+      case 'guangzhou': return '광저우';
+      default: return '';
+    }
   };
 
   return (
@@ -385,20 +460,19 @@ const LCLCostCalculationPage = () => {
                       <Label htmlFor={`totalCBM-${product.id}`}>제품 총 CBM (㎥)</Label>
                       <Input
                         id={`totalCBM-${product.id}`}
-                        type="number"
-                        min="0"
-                        step="any"
+                        type="text"
+                        inputMode="decimal"
                         placeholder="0.0"
-                        value={product.totalCBM || ''}
+                        value={product.totalCBM === 0 ? '' : product.totalCBM}
                         onChange={(e) => {
-                          const value = e.target.value;
-                          // 빈 문자열이거나 0 이상의 숫자만 허용
-                          if (value === '' || (parseFloat(value) >= 0)) {
-                            updateProduct(
-                              product.id,
-                              'totalCBM',
-                              value === '' ? 0 : parseFloat(value)
-                            );
+                          const value = e.target.value.replace(/[^0-9.]/g, '');
+                          if (value === '' || value === '.') {
+                            updateProduct(product.id, 'totalCBM', 0);
+                          } else {
+                            const parsedValue = parseFloat(value);
+                            if (!isNaN(parsedValue) && parsedValue >= 0) {
+                              updateProduct(product.id, 'totalCBM', parsedValue);
+                            }
                           }
                         }}
                       />
@@ -475,11 +549,52 @@ const LCLCostCalculationPage = () => {
                     )}
                   </div>
                   
-                  {customsTax && (
+                  {/* 통관세금 입력 필드 */}
+                  {showCustomsTaxInput && (
+                    <div className="mt-4 space-y-2">
+                      <Label htmlFor="customsTaxInput">통관세금 (원)</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="customsTaxInput"
+                          type="number"
+                          min="0"
+                          placeholder="통관세금 입력"
+                          value={customsTaxInput}
+                          onChange={(e) => setCustomsTaxInput(e.target.value)}
+                        />
+                        <Button variant="secondary" onClick={applyCustomsTax}>
+                          적용
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {customsTax && customsTax > 0 && (
                     <div className="mt-2 p-2 bg-green-50 rounded border border-green-200">
                       <p className="text-sm font-medium text-green-700">
                         ✓ 통관세금 {customsTax.toLocaleString()}원이 포함되었습니다
                       </p>
+                    </div>
+                  )}
+                  
+                  {/* 통관세금 포함된 전체 비용 표시 */}
+                  {customsTax && customsTax > 0 && lclOnlyCost && (
+                    <div className="mt-4 p-3 bg-blue-100 rounded-md">
+                      <h4 className="font-medium text-blue-800">
+                        LCL [{getLocationName()}] 전체 비용
+                      </h4>
+                      <div className="flex justify-between text-blue-900 mt-1">
+                        <span>배송대행 비용:</span>
+                        <span>{lclOnlyCost.toLocaleString()} 원</span>
+                      </div>
+                      <div className="flex justify-between text-blue-900">
+                        <span>통관세금:</span>
+                        <span>{customsTax.toLocaleString()} 원</span>
+                      </div>
+                      <div className="flex justify-between text-blue-900 font-semibold mt-2 pt-2 border-t border-blue-200">
+                        <span>합계:</span>
+                        <span>{totalCost.toLocaleString()} 원</span>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -500,6 +615,15 @@ const LCLCostCalculationPage = () => {
                   }}
                 >
                   통관세금 확인하기 <ExternalLink className="ml-2 h-4 w-4" />
+                </Button>
+                
+                {/* 배송대행지 찾기 버튼 */}
+                <Button 
+                  variant="secondary" 
+                  className="w-full"
+                  onClick={() => router.push('/services/delivery-agents')}
+                >
+                  배송대행지 찾기 <Search className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             )}

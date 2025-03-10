@@ -851,7 +851,7 @@ export default function TaxCalculationPage() {
 
                   {/* 추가 문구 */}
                   <p className="text-sm text-gray-700">
-                    관세청에서 아직 API 수정 전이라 2024년 세율이 적용되므로, 현재 세액보다 약간 더 낮아질 수 있습니다
+                    원산지증명서 발행 시 적용되는 세율입니다.
                   </p>
                 </div>
               )}
