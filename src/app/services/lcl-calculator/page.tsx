@@ -463,36 +463,17 @@ const LCLCostCalculationPage = () => {
                       <Label htmlFor={`totalCBM-${product.id}`}>제품 총 CBM (㎥)</Label>
                       <Input
                         id={`totalCBM-${product.id}`}
-                        type="text"
-                        inputMode="decimal"
-                        placeholder="0.0"
-                        value={product.totalCBM === 0 ? '' : product.totalCBM.toString()}
-                        onChange={(e) => {
-                          // 사용자 입력값 가져오기
-                          let value = e.target.value;
-
-                          // 빈 입력은 0으로 처리
-                          if (value === '') {
-                            updateProduct(product.id, 'totalCBM', 0);
-                            return;
-                          }
-
-                          // 숫자와 소수점만 허용 (정규식)
-                          if (/^[0-9]*\.?[0-9]*$/.test(value)) {
-                            // 앞에 0이 여러 개 있는 경우 (예: 00.5) 하나로 줄임
-                            if (value.startsWith('0') && value.length > 1 && value[1] !== '.') {
-                              value = value.replace(/^0+/, '0');
-                            }
-
-                            const parsedValue = parseFloat(value);
-                            if (!isNaN(parsedValue)) {
-                              updateProduct(product.id, 'totalCBM', parsedValue);
-                            } else if (value === '.' || value === '0.') {
-                              // 소수점만 입력된 경우 문자열 그대로 저장 (유효하지 않은 숫자지만 입력 과정 중)
-                              e.target.value = value;
-                            }
-                          }
-                        }}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={product.totalCBM || ''}
+                        onChange={(e) =>
+                          updateProduct(
+                            product.id,
+                            'totalCBM',
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
                       />
                     </div>
                   </div>

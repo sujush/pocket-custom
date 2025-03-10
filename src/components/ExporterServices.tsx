@@ -20,7 +20,7 @@ const additionalFeatures = [
     link: '/services/refund-calculator'
   },
   {
-    title: '선ㆍ기적 확인 및 재수출이행 확인',
+    title: '재수출 면세 재수입면세 해외임가공 물품 등 감세 적용 여부 확인',
     description: '수출물품의 선적 기일과 재수출 이행 여부를 확인할 수 있습니다.',
     icon: RefreshCw,
     link: '/services/export-verification'
