@@ -19,8 +19,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Trash2 } from 'lucide-react';
+import { Trash2, ExternalLink } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { useRouter } from 'next/navigation';
 
 interface Product {
   id: number;
@@ -35,6 +36,7 @@ interface Product {
 }
 
 const LCLCostCalculationPage = () => {
+  const router = useRouter();
   const [location, setLocation] = useState<string>('');
   const [products, setProducts] = useState<Product[]>([
     {
@@ -84,6 +86,16 @@ const LCLCostCalculationPage = () => {
     );
   };
 
+  // 비용 상세 내역을 저장할 상태 추가
+  const [costBreakdown, setCostBreakdown] = useState<{
+    transportationCost: number;
+    blCost: number;
+    customsCost: number;
+    deliveryCost: number;
+    originCertificateCost: number;
+    originLabelCost: number;
+  } | null>(null);
+
   const calculateTotalCost = () => {
     // Base transportation costs per location
     const transportationRates = {
@@ -127,11 +139,21 @@ const LCLCostCalculationPage = () => {
 
     // Calculate costs
     const transportationCost = totalCBM * transportationRates[location as keyof typeof transportationRates];
-    const blCost = 22000; // BL 발행비
-    const customsCost = 33000; // 관세사 수수료
+    const blCost = 22000; // BL 발행비 (제품 개수와 무관)
+    const customsCost = 33000; // 관세사 수수료 (제품 개수와 무관)
     const deliveryCost = needsDelivery ? totalPackageCount * 11000 : 0; // 택배 발송 비용
-    const originCertificateCost = needsOriginCertificate ? 44000 : 0; // 원산지증명서 발행 비용
+    const originCertificateCost = needsOriginCertificate ? 44000 : 0; // 원산지증명서 발행 비용 (제품 개수와 무관)
     const originLabelCost = needsOriginLabel ? totalProductCount * 77 : 0; // 원산지 표시 비용
+
+    // 비용 상세 내역 저장
+    setCostBreakdown({
+      transportationCost,
+      blCost,
+      customsCost,
+      deliveryCost,
+      originCertificateCost,
+      originLabelCost
+    });
 
     // Calculate total cost
     const total = transportationCost + blCost + customsCost + deliveryCost + originCertificateCost + originLabelCost;
@@ -203,13 +225,22 @@ const LCLCostCalculationPage = () => {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor={`hsCode-${product.id}`}>HS CODE</Label>
-                      <Input
-                        id={`hsCode-${product.id}`}
-                        value={product.hsCode}
-                        onChange={(e) =>
-                          updateProduct(product.id, 'hsCode', e.target.value)
-                        }
-                      />
+                      <div className="flex gap-2">
+                        <Input
+                          id={`hsCode-${product.id}`}
+                          value={product.hsCode}
+                          onChange={(e) =>
+                            updateProduct(product.id, 'hsCode', e.target.value)
+                          }
+                        />
+                        <Button 
+                          variant="secondary" 
+                          size="sm"
+                          onClick={() => router.push('/services/hscode')}
+                        >
+                          확인하기
+                        </Button>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor={`totalCount-${product.id}`}>제품 총 개수</Label>
@@ -346,12 +377,60 @@ const LCLCostCalculationPage = () => {
             </Button>
 
             {/* Result Section */}
-            {totalCost !== null && (
-              <div className="mt-6 p-6 bg-slate-50 rounded-lg">
-                <h3 className="text-xl font-semibold mb-2">총 비용</h3>
-                <p className="text-3xl font-bold text-primary">
-                  {totalCost.toLocaleString()} 원
-                </p>
+            {totalCost !== null && costBreakdown !== null && (
+              <div className="mt-6 p-6 bg-slate-50 rounded-lg space-y-4">
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">비용 상세 내역</h3>
+                  <ul className="space-y-1 text-sm">
+                    <li className="flex justify-between">
+                      <span>운송비 (CBM × 지역별 요율)</span>
+                      <span>{costBreakdown.transportationCost.toLocaleString()} 원</span>
+                    </li>
+                    <li className="flex justify-between">
+                      <span>BL 발행비</span>
+                      <span>{costBreakdown.blCost.toLocaleString()} 원</span>
+                    </li>
+                    <li className="flex justify-between">
+                      <span>관세사 수수료</span>
+                      <span>{costBreakdown.customsCost.toLocaleString()} 원</span>
+                    </li>
+                    {costBreakdown.deliveryCost > 0 && (
+                      <li className="flex justify-between">
+                        <span>택배 발송 비용</span>
+                        <span>{costBreakdown.deliveryCost.toLocaleString()} 원</span>
+                      </li>
+                    )}
+                    {costBreakdown.originCertificateCost > 0 && (
+                      <li className="flex justify-between">
+                        <span>원산지증명서 발행 비용</span>
+                        <span>{costBreakdown.originCertificateCost.toLocaleString()} 원</span>
+                      </li>
+                    )}
+                    {costBreakdown.originLabelCost > 0 && (
+                      <li className="flex justify-between">
+                        <span>원산지 표시 비용</span>
+                        <span>{costBreakdown.originLabelCost.toLocaleString()} 원</span>
+                      </li>
+                    )}
+                  </ul>
+                </div>
+                
+                <Separator />
+                
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">총 비용</h3>
+                  <p className="text-3xl font-bold text-primary">
+                    {totalCost.toLocaleString()} 원
+                  </p>
+                </div>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => router.push('/services/tax-calculation')}
+                >
+                  통관세금 확인하기 <ExternalLink className="ml-2 h-4 w-4" />
+                </Button>
               </div>
             )}
           </div>
