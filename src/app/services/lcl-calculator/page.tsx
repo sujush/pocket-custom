@@ -466,7 +466,12 @@ const LCLCostCalculationPage = () => {
                         type="text"  // number 타입에서 text 타입으로 변경
                         inputMode="decimal"  // 숫자 키패드 표시
                         placeholder="0.0"
-                        value={product.totalCBM === 0 ? '' : product.totalCBM.toString()}  // 0일 때 빈 문자열로 설정
+                        value={product.totalCBM === 0 ? '0.0' : product.totalCBM.toString()}  // 0일 때 '0.0'으로 설정
+                        onFocus={(e) => {
+                          if (product.totalCBM === 0) {
+                            e.target.value = '';  // 포커스 시 '0.0' 지우기
+                          }
+                        }}
                         onChange={(e) => {
                           const value = e.target.value;  // 입력된 값 그대로 가져오기
                           // 숫자와 소수점만 허용 (소수점은 한 번만 허용)
