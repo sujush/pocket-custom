@@ -314,12 +314,13 @@ const LCLCostCalculationPage = () => {
             {/* 설명 카드 */}
             <Card className="bg-blue-50">
               <CardContent className="pt-6">
-                <h3 className="text-lg font-semibold mb-2">사용법을 설명하겠습니다</h3>
+                <h3 className="text-lg font-semibold mb-2">사용법 설명</h3>
                 <p className="text-sm text-gray-700">
                   본 페이지는 LCL 사업자 통관 시 발생하는 배송대행비용을 계산하는 도구입니다.
                   우선 웨이하이, 이우, 광저우 중 출발지를 선택하신 후 제품 정보를 입력해주세요.
                   여러 제품을 추가할 수 있으며, 각 제품별로 HS CODE 확인이 필요하시면 &apos;HS CODE 찾기&apos; 버튼을 이용하세요.
                   모든 정보 입력 후 &apos;비용 계산하기&apos; 버튼을 클릭하시면 예상 비용이 계산됩니다.
+                  예상 비용이므로 실제 비용과 차이가 날 수 있으니 단순 참고용으로 활용하시기 바랍니다.
                 </p>
               </CardContent>
             </Card>
@@ -467,10 +468,10 @@ const LCLCostCalculationPage = () => {
                         placeholder="0.0"
                         value={product.totalCBM === 0 ? '0' : product.totalCBM.toString()}  // 0인 경우 '0'으로 표시
                         onChange={(e) => {
-                          const value = e.target.value.replace(/[^0-9.]/g, '');  // 숫자와 소수점만 허용
-                          if (value === '' || value === '.') {
-                            updateProduct(product.id, 'totalCBM', 0);
-                          } else {
+                          const value = e.target.value;  // 입력된 값 그대로 가져오기
+                          // 숫자와 소수점만 허용 (소수점은 한 번만 허용)
+                          const regex = /^\d*\.?\d*$/;  // 정수와 소수점 숫자 허용
+                          if (regex.test(value)) {
                             const parsedValue = parseFloat(value);
                             if (!isNaN(parsedValue) && parsedValue >= 0) {
                               updateProduct(product.id, 'totalCBM', parsedValue);

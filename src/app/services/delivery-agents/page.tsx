@@ -196,7 +196,7 @@ export default function DeliveryAgentsPage() {
             </CardContent>
             <CardFooter>
               <Button variant="outline" className="w-full" onClick={() => window.open('https://goldasia.co.kr/', '_blank')}>
-                배송비 확인하기 <ExternalLink className="h-4 w-4 ml-2" />
+                홈페이지 확인 <ExternalLink className="h-4 w-4 ml-2" />
               </Button>
             </CardFooter>
           </Card>
