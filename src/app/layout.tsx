@@ -19,7 +19,7 @@ const notoSans = Noto_Sans({
 // ======================
 export const metadata: Metadata = {
   title: '포켓커스텀',
-  description: '통관 및 물류 컨설팅 웹사이트',
+  description: '내 손 안의 작은 관세사',
   // (1) 뷰포트 설정 추가
   viewport: {
     width: 'device-width',

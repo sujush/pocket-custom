@@ -37,7 +37,7 @@ export default function Navigation() {
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         {/* 왼쪽: 로고 */}
         <Link href="/" className="text-2xl font-bold text-gray-800">
-          내 손 안의 작은 관세사
+          포켓커스텀
         </Link>
 
         {/* 햄버거 아이콘 (모바일 전용, sm:hidden) */}

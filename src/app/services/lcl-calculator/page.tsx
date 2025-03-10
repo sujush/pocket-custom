@@ -468,12 +468,34 @@ const LCLCostCalculationPage = () => {
                         placeholder="0.0"
                         value={product.totalCBM === 0 ? '0' : product.totalCBM.toString()}
                         onChange={(e) => {
-                          const value = e.target.value;
-                          // 숫자와 소수점만 허용
+                          // 입력된 값을 그대로 가져옴
+                          let value = e.target.value;
+
+                          // 처음 '.' 입력 시 '0.' 자동 추가
+                          if (value === '.') {
+                            value = '0.';
+                            e.target.value = '0.';  // 실제 input 요소 값도 변경
+                          }
+
+                          // 숫자와 소수점만 허용 (보다 유연한 정규식)
                           if (/^[0-9]*\.?[0-9]*$/.test(value)) {
-                            const parsedValue = value === '' ? 0 : parseFloat(value);
-                            if (!isNaN(parsedValue)) {
-                              updateProduct(product.id, 'totalCBM', parsedValue);
+                            if (value === '') {
+                              // 빈 입력은 0으로 처리
+                              updateProduct(product.id, 'totalCBM', 0);
+                            } else if (value === '0.') {
+                              // '0.' 입력 시 특별 처리 - 상태는 업데이트하지만 표시는 '0.'으로
+                              // 필요시 내부적으로는 0으로 저장
+                              updateProduct(product.id, 'totalCBM', 0);
+                              setTimeout(() => {
+                                const inputEl = document.getElementById(`totalCBM-${product.id}`);
+                                if (inputEl) (inputEl as HTMLInputElement).value = '0.';
+                              }, 0);
+                            } else {
+                              // 일반적인 숫자 처리
+                              const parsedValue = parseFloat(value);
+                              if (!isNaN(parsedValue)) {
+                                updateProduct(product.id, 'totalCBM', parsedValue);
+                              }
                             }
                           }
                         }}

@@ -8,7 +8,7 @@ import { useAuthStore } from '@/lib/store/authStore';
 // 추가 기능 리스트
 const additionalFeatures = [
   {
-    title: '인보이스 및 패킹리스트 자동 작성',
+    title: '인보이스와 패킹리스트 자동 작성',
     description: '무역 서류 작성을 자동화하여 시간을 절약하고 오류를 방지합니다.',
     icon: FileText,
     link: '/services/auto-documents'
@@ -20,7 +20,7 @@ const additionalFeatures = [
     link: '/services/refund-calculator'
   },
   {
-    title: '재수출 면세 재수입면세 해외임가공 물품 등 감세 적용 여부 확인',
+    title: '재수출/재수입면세 및 임가공물품등 감세 적용대상 확인',
     description: '수출물품의 선적 기일과 재수출 이행 여부를 확인할 수 있습니다.',
     icon: RefreshCw,
     link: '/services/export-verification'
