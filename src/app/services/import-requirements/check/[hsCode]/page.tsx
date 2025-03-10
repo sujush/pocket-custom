@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';  // 이 줄을 추가
+import React from 'react';
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import xml2js from 'xml2js';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface RequirementResult {
   dcerCfrmLworNm: string;
@@ -59,6 +60,7 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
     application: ''
   });
   const [selectedReqName, setSelectedReqName] = useState<string>('');
+  const [expandedRequirement, setExpandedRequirement] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchRequirementsData = async () => {
@@ -73,7 +75,6 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
         setRequirements(uniqueData);
       } catch (error) {
         console.error(error);
-        // 수정 필요: requirementDescription -> requirementDetail로 변경
         setRequirementDetail({
           description: '수입요건 조회 중 오류가 발생했습니다.',
           exemption: '수입요건 조회 중 오류가 발생했습니다.',
@@ -126,8 +127,17 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
     }
   };
 
-  const handleRequirementClick = (reqCfrmIstmNm: string) => {
-    fetchRequirementDescriptions(reqCfrmIstmNm);
+  const handleRequirementClick = (requirement: RequirementResult) => {
+    const requirementId = `${requirement.dcerCfrmLworNm}-${requirement.reqCfrmIstmNm}`;
+    
+    // 이미 펼쳐진 요건이라면 접기
+    if (expandedRequirement === requirementId) {
+      setExpandedRequirement(null);
+    } else {
+      // 새로운 요건이라면 펼치고 상세 정보 가져오기
+      setExpandedRequirement(requirementId);
+      fetchRequirementDescriptions(requirement.reqCfrmIstmNm);
+    }
   };
 
   const formatText = (text: string | null | undefined) => {
@@ -149,26 +159,34 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
     }
   };
 
+  // 각 요건이 현재 확장되어 있는지 확인하는 함수
+  const isRequirementExpanded = (requirement: RequirementResult) => {
+    const requirementId = `${requirement.dcerCfrmLworNm}-${requirement.reqCfrmIstmNm}`;
+    return expandedRequirement === requirementId;
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-4">수입요건 확인</h1>
 
-      <div className="flex">
-        {/* 왼쪽 패널 - 요건 목록 */}
-        <div className="w-1/2 pr-4">
-          <Card className="mb-4">
-            <CardHeader>
-              <CardTitle>조회 품목번호: {params.hsCode}</CardTitle>
-            </CardHeader>
-          </Card>
+      {/* 모바일 및 데스크톱 모두에서 표시할 상단 정보 */}
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>조회 품목번호: {params.hsCode}</CardTitle>
+        </CardHeader>
+      </Card>
 
-          {/* 여기에 안내메시지 Card 추가 */}
-          <Card className="mb-4">
-            <CardContent className="p-4">
-              <p className="text-gray-700">법령상 적용대상이 아닌 물품은 요건비대상으로 보면 됩니다</p>
-            </CardContent>
-          </Card>
+      {/* 안내메시지 Card */}
+      <Card className="mb-6">
+        <CardContent className="p-4">
+          <p className="text-gray-700">법령상 적용대상이 아닌 물품은 요건비대상으로 보면 됩니다</p>
+        </CardContent>
+      </Card>
 
+      {/* 반응형 레이아웃 */}
+      <div className="flex flex-col lg:flex-row lg:space-x-6">
+        {/* 요건 목록 */}
+        <div className="w-full lg:w-1/2 mb-6 lg:mb-0">
           {isLoading ? (
             <div className="flex justify-center items-center p-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
@@ -176,24 +194,84 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
           ) : requirements.length > 0 ? (
             <div className="space-y-4">
               {requirements.map((requirement, index) => (
-                <Card
-                  key={index}
-                  onClick={() => handleRequirementClick(requirement.reqCfrmIstmNm)}
-                  className="cursor-pointer transition transform hover:scale-105 hover:bg-gray-100"
-                >
-                  <CardContent className="p-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <p className="font-semibold">법령명</p>
-                        <p>{requirement.dcerCfrmLworNm || '정보 없음'}</p>
+                <div key={index} className="space-y-4">
+                  <Card
+                    onClick={() => handleRequirementClick(requirement)}
+                    className={`cursor-pointer transition-all ${isRequirementExpanded(requirement) ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'}`}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-center">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
+                          <div className="space-y-1">
+                            <p className="font-semibold text-gray-700">법령명</p>
+                            <p className="text-gray-900">{requirement.dcerCfrmLworNm || '정보 없음'}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="font-semibold text-gray-700">요건확인서</p>
+                            <p className="text-gray-900">{requirement.reqCfrmIstmNm || '정보 없음'}</p>
+                          </div>
+                        </div>
+                        <div className="ml-2">
+                          {isRequirementExpanded(requirement) ? (
+                            <ChevronUp className="h-5 w-5 text-gray-500" />
+                          ) : (
+                            <ChevronDown className="h-5 w-5 text-gray-500" />
+                          )}
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <p className="font-semibold">요건확인서</p>
-                        <p>{requirement.reqCfrmIstmNm || '정보 없음'}</p>
-                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* 모바일용 상세 정보 - 확장된 경우에만 표시 */}
+                  {isRequirementExpanded(requirement) && (
+                    <div className="lg:hidden space-y-4 pl-2 pr-2 animate-fadeIn">
+                      {/* 요건 설명 카드 */}
+                      <Card className="bg-white shadow border-l-4 border-l-blue-500">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base text-blue-600">
+                            요건 설명
+                            {selectedReqName && (
+                              <span className="text-sm text-gray-500 ml-2">({selectedReqName})</span>
+                            )}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-0 px-4 pb-4">
+                          <div className="text-sm text-gray-700 leading-relaxed">
+                            {formatText(requirementDetail.description)}
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* 요건 면제방법 카드 */}
+                      <Card className="bg-white shadow border-l-4 border-l-green-500">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base text-green-600">
+                            요건 면제방법
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-0 px-4 pb-4">
+                          <div className="text-sm text-gray-700 leading-relaxed">
+                            {formatText(requirementDetail.exemption)}
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* 요건 신청방법 카드 */}
+                      <Card className="bg-white shadow border-l-4 border-l-purple-500">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base text-purple-600">
+                            요건 신청방법
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-0 px-4 pb-4">
+                          <div className="text-sm text-gray-700 leading-relaxed">
+                            {formatText(requirementDetail.application)}
+                          </div>
+                        </CardContent>
+                      </Card>
                     </div>
-                  </CardContent>
-                </Card>
+                  )}
+                </div>
               ))}
             </div>
           ) : (
@@ -205,8 +283,8 @@ export default function ImportRequirementsCheckPage({ params }: { params: { hsCo
           )}
         </div>
 
-        {/* 오른쪽 패널 - 상세 정보 */}
-        <div className="w-1/2 pl-4 space-y-6">
+        {/* 데스크톱용 상세 정보 패널 - 항상 표시 */}
+        <div className="hidden lg:block lg:w-1/2 space-y-6">
           {/* 요건 설명 카드 */}
           <Card className="bg-white shadow-lg transition-all duration-200 hover:shadow-xl">
             <CardHeader className="border-b border-gray-100">

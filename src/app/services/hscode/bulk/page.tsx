@@ -452,95 +452,202 @@ const BulkHSCodePage = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      <div className="w-1/2 p-4 bg-white">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-gray-100">
+      {/* 입력 폼 섹션 */}
+      <div className="w-full lg:w-1/2 p-4 bg-white overflow-auto">
         <RemainingSearchesDisplay remaining={remainingSearches} />
+        
         <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md shadow-sm">
-          <p>이곳은 사용자가 제품별로 HS CODE를 조회할 수 있는 기능입니다.</p>
-          <p>좌측에서 제품 정보를 입력하고, 조회 버튼을 클릭하세요.</p>
-          <p>최대 10개까지 입력 가능합니다. 엑셀 양식을 활용하세요</p>
-          <p>엑셀 파일을 업로드하면 파일의 내용이 자동 입력됩니다.</p>
-          <p>조회된 HS CODE는 우측 결과 창에 표시됩니다.</p>
+          <p className="text-sm mb-1">이곳은 사용자가 제품별로 HS CODE를 조회할 수 있는 기능입니다.</p>
+          <p className="text-sm mb-1">좌측에서 제품 정보를 입력하고, 조회 버튼을 클릭하세요.</p>
+          <p className="text-sm mb-1">최대 10개까지 입력 가능합니다. 엑셀 양식을 활용하세요</p>
+          <p className="text-sm mb-1">엑셀 파일을 업로드하면 파일의 내용이 자동 입력됩니다.</p>
+          <p className="text-sm">조회된 HS CODE는 우측 결과 창에 표시됩니다.</p>
         </div>
-
+  
         {/* File upload and sample download section */}
-        <div className="mb-4 flex items-center justify-between">
-          <input
-            type="file"
-            accept=".xlsx, .xls"
-            onChange={handleFileUpload}
-            className="block"
-          />
+        <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <div className="w-full sm:w-auto">
+            <input
+              type="file"
+              accept=".xlsx, .xls"
+              onChange={handleFileUpload}
+              className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            />
+          </div>
           <button
             onClick={downloadSampleExcel}
-            className="text-blue-500 hover:text-blue-600 flex items-center"
+            className="text-blue-500 hover:text-blue-600 flex items-center text-sm whitespace-nowrap"
           >
             <span className="mr-1">📥</span>
             엑셀 입력 양식 다운로드
           </button>
         </div>
-
+  
         {/* Products input section */}
         <div className="bg-white p-4 rounded-md shadow-sm">
           {products.map((product, index) => (
             <div key={index} className="mb-4 border p-4 rounded-md">
-              <label className="block mb-2">제품명</label>
+              <label className="block mb-2 text-sm font-medium">제품명</label>
               <input
                 type="text"
                 value={product.name}
                 onChange={(e) => handleProductChange(index, 'name', e.target.value)}
-                className="w-full p-2 mb-4 border rounded-md"
+                className="w-full p-2 mb-4 border rounded-md text-sm"
                 placeholder="제품명을 입력하세요"
               />
-
-              <label className="block mb-2">재질</label>
+  
+              <label className="block mb-2 text-sm font-medium">재질</label>
               <select
                 value={product.material}
                 onChange={(e) => handleProductChange(index, 'material', e.target.value)}
-                className="w-full p-2 mb-4 border rounded-md"
+                className="w-full p-2 mb-4 border rounded-md text-sm"
               >
                 <option value="">재질을 선택하세요</option>
                 {Object.entries(MATERIAL_CODES).map(([code, name]) => (
                   <option key={code} value={name}>{name}</option>
                 ))}
               </select>
-
-              <label className="block mb-2">기타</label>
+  
+              <label className="block mb-2 text-sm font-medium">기타</label>
               <textarea
                 value={product.description}
                 onChange={(e) => handleProductChange(index, 'description', e.target.value)}
-                className="w-full p-2 border rounded-md"
+                className="w-full p-2 border rounded-md text-sm"
                 placeholder="추가 설명을 입력하세요"
+                rows={3}
               />
               <button
                 onClick={() => removeProduct(index)}
-                className="text-red-500 mt-2"
+                className="text-red-500 mt-2 text-sm hover:text-red-700"
+                aria-label="제품 삭제"
               >
                 삭제
               </button>
             </div>
           ))}
-
-          <div className="flex items-center justify-between">
+  
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
             <button
               onClick={addProduct}
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
             >
               + 제품 추가
             </button>
             <button
               onClick={fetchHSCode}
-              className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+              className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 text-sm"
             >
               조회
             </button>
           </div>
         </div>
+        
+        {/* 모바일에서 결과 섹션 - 큰 화면에서는 숨김 */}
+        <div className="mt-6 lg:hidden">
+          <div className="bg-white p-4 rounded-md shadow-sm">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="font-bold">조회 결과</h2>
+              {results.length > 0 && (
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    onClick={fetch10DigitHSCodeForAll}
+                    className="px-3 py-1 text-xs sm:text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                  >
+                    10자리 전체 조회
+                  </button>
+                  <button
+                    onClick={downloadSelectedItems}
+                    className="px-3 py-1 text-xs sm:text-sm bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+                  >
+                    📥 선택 항목 다운로드
+                  </button>
+                </div>
+              )}
+            </div>
+  
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center space-y-2 p-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+                <p className="text-sm text-gray-500">조회 중...</p>
+              </div>
+            ) : results.length > 0 ? (
+              <>
+                {results.map((result, index) => (
+                  <div key={index} className="mb-4 p-3 border rounded-md bg-white shadow-sm">
+                    {'items' in result ? (
+                      <>
+                        <div className="flex justify-between items-center mb-2">
+                          <p className="font-bold text-sm sm:text-base">{result.title}</p>
+                          <button
+                            onClick={() => toggleExpand(result.title)}
+                            className="px-2 py-1 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs"
+                          >
+                            {expandedResults[result.title] ? '접기' : '펼치기'}
+                          </button>
+                        </div>
+                        {expandedResults[result.title] && (
+                          <div className="space-y-2">
+                            {result.items?.map((item, itemIndex) => (
+                              <div key={itemIndex} className="pl-3 border-l-2 border-gray-200 flex flex-col sm:flex-row sm:justify-between items-start sm:items-center py-2 gap-2">
+                                <div className="text-xs sm:text-sm">
+                                  <p>제품명: {item.name}</p>
+                                  <p className="text-gray-700">HS CODE: {item.hscode}</p>
+                                </div>
+                                <div className="flex space-x-2 mt-1 sm:mt-0">
+                                  {selectedItems[result.title]?.hscode === item.hscode ? (
+                                    <button
+                                      onClick={() => handleItemDeselect(result.title)}
+                                      className="px-2 py-1 rounded-md bg-blue-600 text-white text-xs"
+                                    >
+                                      선택됨
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleItemSelect(result.title, item)}
+                                      className="px-2 py-1 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs"
+                                    >
+                                      선택
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                        <div className="text-xs sm:text-sm">
+                          <p className="font-bold">제품명: {result.name}</p>
+                          <p className="text-gray-700">HS CODE: {result.hscode}</p>
+                        </div>
+                        <button
+                          onClick={() => fetch10DigitHSCodeForSingle(result.hscode, result.name)}
+                          className="px-2 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700 text-xs self-start sm:self-auto"
+                        >
+                          10자리 조회
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-32 text-gray-400 p-4">
+                <p className="text-center text-sm">제품 정보를 입력하고 조회 버튼을 클릭하세요.</p>
+                <p className="text-center text-xs mt-1">결과가 여기에 표시됩니다.</p>
+              </div>
+            )}
+  
+            <p className="mt-2 text-center text-xs text-gray-500">{queryStatus}</p>
+          </div>
+        </div>
       </div>
-
-      {/* Results section */}
-      <div className="w-1/2 p-4 bg-white">
-        <div className="bg-white p-4 rounded-md shadow-sm">
+  
+      {/* 결과 섹션 - 데스크톱 버전 */}
+      <div className="hidden lg:block lg:w-1/2 p-4 bg-white">
+        <div className="bg-white p-4 rounded-md shadow-sm h-full overflow-auto">
           <div className="flex justify-between items-center mb-4">
             <h2 className="font-bold">조회 결과</h2>
             {results.length > 0 && (
@@ -560,7 +667,7 @@ const BulkHSCodePage = () => {
               </div>
             )}
           </div>
-
+  
           {isLoading ? (
             <div className="flex flex-col items-center justify-center space-y-2 p-4">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
@@ -636,11 +743,11 @@ const BulkHSCodePage = () => {
               <p className="text-sm mt-2">결과가 여기에 표시됩니다.</p>
             </div>
           )}
-
+  
           <p className="mt-2 text-center">{queryStatus}</p>
         </div>
       </div>
-
+  
       <LoadingStatus isLoading={isLoading} status={queryStatus} />
     </div>
   );

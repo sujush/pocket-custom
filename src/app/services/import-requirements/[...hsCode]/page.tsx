@@ -242,7 +242,7 @@ export default function ImportRequirementsPage({ params }: { params: { hsCode?: 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-4">HS CODE 조회</h1>
-
+  
       <div className="space-y-4">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -254,7 +254,7 @@ export default function ImportRequirementsPage({ params }: { params: { hsCode?: 
               maxLength={10}
             />
           </div>
-
+  
           <div>
             <Select value={selectedCountry} onValueChange={handleCountryChange}>
               <SelectTrigger className="w-full">
@@ -279,13 +279,12 @@ export default function ImportRequirementsPage({ params }: { params: { hsCode?: 
               </SelectContent>
             </Select>
           </div>
-
+  
           <Button type="submit" disabled={isLoading} className="w-full">
-            {isLoading ? '조회 중...' : '조회하기'
-            }
+            {isLoading ? '조회 중...' : '조회하기'}
           </Button>
         </form>
-
+  
         {isLoading ? (
           <div className="flex justify-center items-center p-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
@@ -307,26 +306,36 @@ export default function ImportRequirementsPage({ params }: { params: { hsCode?: 
                 {results.map((item, index) => (
                   <div
                     key={index}
-                    className={`border p-4 rounded-lg bg-white shadow-sm ${item.관세율구분 === 'A' ? 'border-blue-500 bg-blue-50' : ''
-                      }`}
+                    className={`border p-4 rounded-lg bg-white shadow-sm ${
+                      item.관세율구분 === 'A' ? 'border-blue-500 bg-blue-50' : ''
+                    }`}
                   >
-                    <div className="grid grid-cols-4 gap-4 items-center">
+                    {/* 상단 영역: 품목번호 및 관세율구분 */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
                       <div className="space-y-1">
                         <p className="font-semibold text-gray-700">품목번호</p>
                         <p className="text-gray-900 font-mono">{item.품목번호}</p>
                       </div>
                       <div className="space-y-1">
                         <p className="font-semibold text-gray-700">관세율구분</p>
-                        <p className={`text-gray-900 ${item.관세율구분 === 'A' ? 'font-bold text-blue-600' : ''
-                          }`}>
+                        <p className={`text-gray-900 ${
+                          item.관세율구분 === 'A' ? 'font-bold text-blue-600' : ''
+                        }`}>
                           {RATE_TYPE_MAPPING[item.관세율구분 as keyof typeof RATE_TYPE_MAPPING] || item.관세율구분 || '-'}
                         </p>
                       </div>
+                    </div>
+                    
+                    {/* 구분선 */}
+                    <div className="border-t border-gray-200 my-2"></div>
+                    
+                    {/* 하단 영역: 관세율 및 버튼 */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 items-center mt-3">
                       <div className="space-y-1">
                         <p className="font-semibold text-gray-700">관세율</p>
-                        <p className="text-gray-900">{item.관세율 || '-'}</p>
+                        <p className="text-gray-900 font-medium">{item.관세율 || '-'}</p>
                       </div>
-                      <div className="flex justify-end">
+                      <div className="flex justify-start sm:justify-end mt-2 sm:mt-0">
                         {item.관세율구분 === 'A' && (
                           <Button
                             onClick={() => router.push(`/services/import-requirements/check/${item.품목번호}`)}
@@ -347,5 +356,5 @@ export default function ImportRequirementsPage({ params }: { params: { hsCode?: 
         )}
       </div>
     </div>
-  )
+  );
 }

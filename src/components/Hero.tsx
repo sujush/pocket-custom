@@ -142,10 +142,10 @@ const Hero: FC = () => {
       */}
       <div className="order-1 md:order-2 text-center mb-4 md:mb-0">
         <h1 className="text-3xl md:text-5xl font-bold text-indigo-600 mb-4">
-          이연 관세사무소
+          포켓 커스텀
         </h1>
         <p className="text-lg md:text-xl text-gray-700 mb-4 md:mb-8">
-          모바일은 데스크탑 모드를 이용해주세요.
+          통관 및 물류 정보를 한 눈에 확인하세요
         </p>
       </div>
 

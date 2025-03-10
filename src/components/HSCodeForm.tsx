@@ -360,13 +360,14 @@ export const HSCodeForm: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <div className="w-1/2 p-4 flex flex-col overflow-auto">
+    <div className="flex flex-col lg:flex-row w-full overflow-hidden">
+      {/* 입력 폼 */}
+      <div className="w-full lg:w-1/2 p-4 overflow-auto">
         <h1 className="text-2xl font-bold mb-4">10단위 조회</h1>
-
+  
         <RemainingSearchesDisplay remaining={remainingSearches} />
-
-        <Card className="mb-4 flex-shrink-0">
+  
+        <Card className="mb-4">
           <CardHeader>
             <CardTitle>코드를 조회하기 전에 아래의 내용을 확인하세요</CardTitle>
           </CardHeader>
@@ -386,8 +387,8 @@ export const HSCodeForm: React.FC = () => {
             ))}
           </CardContent>
         </Card>
-
-        <Card className="flex-shrink-0">
+  
+        <Card>
           <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-4">
               <Select onValueChange={handleCategoryChange}>
@@ -402,33 +403,38 @@ export const HSCodeForm: React.FC = () => {
                   ))}
                 </SelectContent>
               </Select>
-
+  
               {product.category && product.category !== '해당사항 없음' && (
                 <>
                   {functionOptions.map(question => (
                     <div key={question}>
                       <p>{question}</p>
-                      <div onChange={(e) => {
-                        const target = e.target as HTMLInputElement;
-                        setFunctions(prev => ({
-                          ...prev,
-                          [question]: target.value
-                        }));
-                        setProduct(prev => ({
-                          ...prev,
-                          functions: { ...prev.functions, [question]: target.value }
-                        }));
-                      }}>
-                        <label style={{ marginRight: '10px' }}>
-                          <input type="radio" value="예" name={question} /> 예
+                      <div 
+                        className="flex flex-row gap-4 mt-1"
+                        onChange={(e) => {
+                          const target = e.target as HTMLInputElement;
+                          setFunctions(prev => ({
+                            ...prev,
+                            [question]: target.value
+                          }));
+                          setProduct(prev => ({
+                            ...prev,
+                            functions: { ...prev.functions, [question]: target.value }
+                          }));
+                        }}
+                      >
+                        <label className="flex items-center space-x-2">
+                          <input type="radio" value="예" name={question} className="w-4 h-4" /> 
+                          <span>예</span>
                         </label>
-                        <label>
-                          <input type="radio" value="아니오" name={question} /> 아니오
+                        <label className="flex items-center space-x-2">
+                          <input type="radio" value="아니오" name={question} className="w-4 h-4" /> 
+                          <span>아니오</span>
                         </label>
                       </div>
                     </div>
                   ))}
-
+  
                   <Select onValueChange={value => setProduct(prev => ({ ...prev, material: value }))}>
                     <SelectTrigger>
                       <SelectValue placeholder="제품의 재질을 선택해주세요" />
@@ -441,7 +447,7 @@ export const HSCodeForm: React.FC = () => {
                       ))}
                     </SelectContent>
                   </Select>
-
+  
                   <Input
                     type="text"
                     name="name"
@@ -467,7 +473,7 @@ export const HSCodeForm: React.FC = () => {
                   />
                 </>
               )}
-
+  
               {product.category === '해당사항 없음' && (
                 <Textarea
                   name="additionalInput"
@@ -478,21 +484,95 @@ export const HSCodeForm: React.FC = () => {
                   rows={10}
                 />
               )}
-
+  
               <Button type="submit" disabled={isSubmitting} className="w-full">
                 {isSubmitting ? '조회 중...' : 'HS CODE 조회'}
               </Button>
             </form>
           </CardContent>
         </Card>
+        
+        {/* 모바일에서 결과가 입력 폼 아래에 나타나도록 */}
+        <div className="block lg:hidden mt-6">
+          <h2 className="text-2xl font-bold mb-4">조회 결과</h2>
+          <Card className="w-full">
+            <CardContent className="p-4">
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center space-y-2 p-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                  <p className="text-sm text-gray-500">HS CODE를 조회하고 있습니다...</p>
+                </div>
+              ) : error ? (
+                <Alert variant="destructive">
+                  <ExclamationTriangleIcon className="h-4 w-4" />
+                  <AlertTitle>오류</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              ) : hsCode ? (
+                <div className="space-y-4">
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                    <p className="text-lg font-semibold text-blue-800">
+                      HS CODE 6자리: {hsCode}
+                    </p>
+                  </div>
+  
+                  {hsCodeResults.length > 0 && (
+                    <div className="space-y-4">
+                      <p className="font-medium text-gray-600">
+                        검색된 품목 수: {hsCodeResults.length}개
+                      </p>
+                      <div className="grid gap-4">
+                        {hsCodeResults.map((result, index) => (
+                          <Card key={index} className="hover:shadow-md transition-shadow">
+                            <CardContent className="p-4">
+                              <div className="grid gap-2">
+                                <div className="flex justify-between items-center">
+                                  <span className="font-mono text-lg font-bold">
+                                    {result.품목번호}
+                                  </span>
+                                  <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm">
+                                    {result.단위}
+                                  </span>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-gray-900 break-words">{result.품목명}</p>
+                                  <p className="text-gray-500 text-sm break-words">{result.영문명}</p>
+                                </div>
+                                <div className="text-sm text-gray-600 pt-2">
+                                  <p>적용기간: {result.적용시작일} ~ {result.적용종료일}</p>
+                                </div>
+                                <div className='pt-2'>
+                                  <Button
+                                    className='w-full'
+                                    onClick={() => handleNavigateToRequirements(result.품목번호)}
+                                  >
+                                    세율 및 요건확인
+                                  </Button>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                  <p>제품 정보를 입력하고 조회 버튼을 클릭하세요.</p>
+                  <p className="text-sm mt-2">결과가 여기에 표시됩니다.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
-
-      <div className="w-1/2 p-4">
-        <Card className="h-full overflow-auto">
-          <CardHeader>
-            <CardTitle>조회 결과</CardTitle>
-          </CardHeader>
-          <CardContent>
+  
+      {/* 데스크톱에서는 결과가 오른쪽에 나타나도록 */}
+      <div className="hidden lg:block lg:w-1/2 p-4">
+        <h2 className="text-2xl font-bold mb-4">조회 결과</h2>
+        <Card className="h-[calc(100vh-140px)] overflow-auto">
+          <CardContent className="p-4">
             {isLoading ? (
               <div className="flex flex-col items-center justify-center space-y-2 p-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -511,7 +591,7 @@ export const HSCodeForm: React.FC = () => {
                     HS CODE 6자리: {hsCode}
                   </p>
                 </div>
-
+  
                 {hsCodeResults.length > 0 && (
                   <div className="space-y-4">
                     <p className="font-medium text-gray-600">
