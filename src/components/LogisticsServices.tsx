@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/authStore';
 
+// 물류서비스 항목들
 const logisticsServices = [
   {
     title: '중국 LCL 물류비용 계산',
@@ -38,6 +39,7 @@ const logisticsServices = [
   }
 ];
 
+// 개별 카드
 const ServiceCard: React.FC<{
   service: {
     title: string;
@@ -86,13 +88,22 @@ const ServiceCard: React.FC<{
   );
 };
 
+// 메인 컴포넌트
 export default function LogisticsServices() {
   return (
     <div className="my-16">
+      {/* 원하는 제목이 있으면 여기에 표시 */}
       <h2 className="text-2xl font-bold text-gray-800 mb-8 text-center">
-        {/*물류서비스*/}
+        {/* 예: 물류서비스 */}
       </h2>
-      <div className="grid grid-cols-2 gap-8">
+
+      {/* 
+        수정 포인트:
+        - grid-cols-2 -> grid-cols-1 md:grid-cols-2
+        - 좁은 화면: 1열
+        - 중간 이상: 2열 
+      */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {logisticsServices.map((service, index) => (
           <ServiceCard key={index} service={service} />
         ))}

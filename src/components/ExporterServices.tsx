@@ -1,18 +1,11 @@
-//app/page.tsx 에 추가
-
-"use client"
+"use client";
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  FileText, 
-  Calculator, 
-  RefreshCw, 
-  Shield,
-  ArrowRight 
-} from 'lucide-react';
+import { FileText, Calculator, RefreshCw, Shield, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/authStore';
 
+// 추가 기능 리스트
 const additionalFeatures = [
   {
     title: '인보이스 및 패킹리스트 자동 작성',
@@ -40,6 +33,7 @@ const additionalFeatures = [
   }
 ];
 
+// 개별 카드
 const FeatureCard: React.FC<{
   feature: {
     title: string;
@@ -64,10 +58,10 @@ const FeatureCard: React.FC<{
   return (
     <div className={`
       ${!isAuthenticated ? 'opacity-75' : ''}
-      bg-gradient-to-r from-emerald-50 to-emerald-100 
-      rounded-lg overflow-hidden shadow-md 
-      transition-all duration-300 hover:shadow-lg 
-      border border-emerald-200 p-6 
+      bg-gradient-to-r from-emerald-50 to-emerald-100
+      rounded-lg overflow-hidden shadow-md
+      transition-all duration-300 hover:shadow-lg
+      border border-emerald-200 p-6
       transform hover:-translate-y-1 hover:scale-105
     `}>
       <div className="flex items-center mb-4">
@@ -86,13 +80,20 @@ const FeatureCard: React.FC<{
   );
 };
 
+// 메인 컴포넌트
 export default function AdditionalFeatures() {
   return (
     <div className="my-16">
+      {/* (원하시면 제목/문구를 넣으셔도 됩니다) */}
       <h2 className="text-2xl font-bold text-gray-800 mb-8 text-center">
-        {/* "추가기능" 문구를 제거했습니다. */}
+        {/* 예: 추가 기능 */}
       </h2>
-      <div className="grid grid-cols-2 gap-8">
+
+      {/* 
+        수정: grid-cols-2 -> grid-cols-1 md:grid-cols-2
+        => 모바일: 1열, md 이상: 2열
+      */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {additionalFeatures.map((feature, index) => (
           <FeatureCard key={index} feature={feature} />
         ))}
