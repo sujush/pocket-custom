@@ -1,7 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect, type FC, useCallback } from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useState, useEffect, type FC, useCallback } from "react";
 import { Sun, Moon } from "lucide-react";
 
 interface ExchangeRate {
@@ -13,7 +12,7 @@ interface ExchangeRate {
 
 const Hero: FC = () => {
   // ==========================
-  // = 기존 상태/로직 그대로 =
+  // = 기존 상태와 로직들 =
   // ==========================
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [currentRateIndex, setCurrentRateIndex] = useState<number>(0);
@@ -25,7 +24,7 @@ const Hero: FC = () => {
     { country: '영국', code: 'GBP', rate: 0, currency: 'Pound' }
   ]);
   const [error, setError] = useState<string | null>(null);
-  const [weekRange, setWeekRange] = useState<string>('');
+  const [weekRange, setWeekRange] = useState<string>("");
 
   // 주간 범위 계산 함수
   const calculateWeekRange = (date: Date): string => {
@@ -103,7 +102,7 @@ const Hero: FC = () => {
     fetchExchangeRates();
   }, [parseExchangeRates]);
 
-  // 시간 업데이트 로직
+  // 시간 업데이트 (1초 간격)
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -123,7 +122,7 @@ const Hero: FC = () => {
   const hour = currentTime.getHours();
   const isDaytime = hour >= 6 && hour < 18;
 
-  // 날짜/시간 포맷팅
+  // 날짜/시간 포맷
   const days = ['일', '월', '화', '수', '목', '금', '토'] as const;
   const formattedDate = `${currentTime.getFullYear()}년 ${currentTime.getMonth() + 1}월 ${currentTime.getDate()}일 ${days[currentTime.getDay()]}요일`;
   const formattedTime = currentTime.toLocaleTimeString('ko-KR');
@@ -131,13 +130,30 @@ const Hero: FC = () => {
   // 현재 표시할 환율
   const currentRate = exchangeRates[currentRateIndex];
 
-  // =============================
-  // = 수정된 return 부분 시작  =
-  // =============================
+  // ========================================
+  // = 최종 return: order-* 클래스로 순서 조정 =
+  // ========================================
   return (
     <div className="block md:flex md:justify-between items-center px-4 md:px-8 mb-8 md:mb-16">
-      {/* 왼쪽 날짜/시간 위젯 */}
-      <div className="w-full md:w-64 mb-4 md:mb-0">
+      
+      {/* 
+        (1) 모바일 기준: "모바일 안내 문구" -> order-1
+            데스크탑(md 이상): "현재 시각"의 순서가 우선이므로 order-2
+      */}
+      <div className="order-1 md:order-2 text-center mb-4 md:mb-0">
+        <h1 className="text-3xl md:text-5xl font-bold text-indigo-600 mb-4">
+          이연 관세사무소
+        </h1>
+        <p className="text-lg md:text-xl text-gray-700 mb-4 md:mb-8">
+          모바일은 데스크탑 모드를 이용해주세요.
+        </p>
+      </div>
+
+      {/* 
+        (2) 모바일 기준: "현재 시각" -> order-2
+            데스크탑: order-1  (즉, 데스크톱에서 먼저 보이도록)
+      */}
+      <div className="order-2 md:order-1 w-full md:w-64 mb-4 md:mb-0">
         <div className="flex items-center gap-2 mb-2">
           {isDaytime ? (
             <Sun className="h-6 w-6 text-yellow-500" />
@@ -152,26 +168,11 @@ const Hero: FC = () => {
         </div>
       </div>
 
-      {/* 중앙 로고/제목 */}
-      <div className="text-center mb-4 md:mb-0">
-        <div className="flex items-center justify-center mb-4">
-          {/* 모바일: h-16 w-16 / md 이상: h-24 w-24 */}
-          <Avatar className="h-16 w-16 md:h-24 md:w-24 mr-4">
-            <AvatarImage src="/eyeon_logo.png" alt="eyeon_logo" />
-            <AvatarFallback>DR</AvatarFallback>
-          </Avatar>
-          {/* 폰트 사이즈도 모바일/데스크탑 분리 */}
-          <h1 className="text-3xl md:text-5xl font-bold text-indigo-600">
-            이연 관세사무소
-          </h1>
-        </div>
-        <p className="text-lg md:text-xl text-gray-700 mb-4 md:mb-8">
-          모바일은 데스크탑 모드를 이용해주세요.
-        </p>
-      </div>
-
-      {/* 오른쪽 환율 위젯 */}
-      <div className="w-full md:w-64">
+      {/* 
+        (3) 모바일 기준: "주간 환율" -> order-3 (마지막)
+            데스크탑: order-3 (마지막)
+      */}
+      <div className="order-3 w-full md:w-64">
         <div className="flex items-center gap-2 mb-2">
           <span className="font-semibold">
             주간 관세환율 [{weekRange}]
@@ -195,9 +196,6 @@ const Hero: FC = () => {
       </div>
     </div>
   );
-  // =============================
-  // = 수정된 return 부분 끝    =
-  // =============================
 };
 
 export default Hero;

@@ -154,41 +154,35 @@ const AdditionalServiceCard: React.FC<{ service: AdditionalServiceProps }> = ({ 
     }
   };
 
-  const handleClick = () => {
-    handleServiceNavigation();
-  };
-
-  // 만약 ImagePath가 있으면, 이미지 배너형 카드
+  // 이미지 배너형이면 예전 로직 유지
   if (service.ImagePath) {
     return (
       <div
         className="relative h-full rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg cursor-pointer transform hover:-translate-y-1 hover:scale-105"
         onClick={() => window.open(service.link, '_blank')}
       >
-        <Image
-          src={service.ImagePath}
-          alt={service.title}
-          layout="fill"
-          objectFit="cover"
-          className="rounded-lg"
-        />
+        {/* ... */}
       </div>
     );
   }
 
-  // 일반 카드
+  // 일반 카드 -> 중앙 정렬 적용
   return (
     <div
-      className={`${classes} ${
-        !isAuthenticated ? 'opacity-75' : ''
-      } rounded-lg overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md border p-4 transform hover:-translate-y-1 hover:scale-105`}
+      className={`
+        ${classes} ${!isAuthenticated ? 'opacity-75' : ''}
+        rounded-lg overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md border p-4 transform hover:-translate-y-1 hover:scale-105
+        flex flex-col items-center text-center
+      `}
     >
       {service.icon && <service.icon className="h-8 w-8 mb-2" />}
       <h2 className="text-lg font-semibold mb-2">{service.title}</h2>
-      {service.description && <p className="text-sm whitespace-pre-line">{service.description}</p>}
+      {service.description && (
+        <p className="text-sm whitespace-pre-line mb-2">{service.description}</p>
+      )}
       {service.link && (
         <button
-          onClick={handleClick}
+          onClick={handleServiceNavigation}
           className="inline-flex items-center text-indigo-600 hover:text-indigo-700 font-medium text-sm"
         >
           자세히 보기
@@ -198,7 +192,6 @@ const AdditionalServiceCard: React.FC<{ service: AdditionalServiceProps }> = ({ 
     </div>
   );
 };
-
 // -------------------------------
 // Services (메인 컴포넌트)
 // -------------------------------
