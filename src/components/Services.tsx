@@ -1,5 +1,3 @@
-//app/page.tsx 에 적용
-
 "use client";
 
 import React from 'react';
@@ -8,6 +6,9 @@ import { ArrowRight, Search, FileCheck, FileText, Calculator, Box } from 'lucide
 import { useAuthStore } from '@/lib/store/authStore';
 import Image from 'next/image';
 
+// -------------------------------
+// 서비스 데이터들
+// -------------------------------
 const mainServices = [
   {
     title: 'HS CODE 조회',
@@ -46,27 +47,26 @@ const additionalServices = [
   },
   {
     title: '이연관세사무소',
-    //description: '검사대행 서비스를 이용할 수 있습니다. \n 의뢰인 또는 검사자가 중개인없이 컨택이 가능합니다.',
-    //icon: Phone,
-    //color: 'purple',
     link: 'https://www.e-yeon.co.kr/', //외부링크
     ImagePath: '/Images/ad-eyeon.jpg'
   }
 ];
 
-// MainServiceCard 컴포넌트
-const MainServiceCard: React.FC<{ service: { title: string; description: string; icon: React.ElementType; link: string } }> = ({ service }) => {
+// -------------------------------
+// MainServiceCard
+// -------------------------------
+const MainServiceCard: React.FC<{
+  service: {
+    title: string;
+    description: string;
+    icon: React.ElementType;
+    link: string;
+  };
+}> = ({ service }) => {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
 
   const handleServiceNavigation = () => {
-    console.log('서비스 클릭 시 상태:', {
-      isAuthenticated: useAuthStore.getState().isAuthenticated,
-      token: useAuthStore.getState().token,
-      serviceTitle: service.title,
-      currentPath: window.location.pathname
-    });
-
     if (service.title === '관세율 및 수입 요건 확인') {
       const hsCode = "0123456789";
       router.push(`${service.link}/${hsCode}`);
@@ -76,16 +76,9 @@ const MainServiceCard: React.FC<{ service: { title: string; description: string;
   };
 
   const handleBulkCheck = () => {
-    console.log('대량 조회 클릭  상태:', {
-      isAuthenticated: useAuthStore.getState().isAuthenticated,
-      token: useAuthStore.getState().token,
-      currentPath: window.location.pathname
-    });
-
     router.push('/services/hscode/bulk');
   };
 
-  // 로그인 체크는 ProtectedRoute에서 처리하도록 수정
   const handleClick = () => {
     handleServiceNavigation();
   };
@@ -95,8 +88,11 @@ const MainServiceCard: React.FC<{ service: { title: string; description: string;
   };
 
   return (
-    <div className={`${!isAuthenticated ? 'opacity-75' : ''
-      } bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg border border-indigo-200 p-6 transform hover:-translate-y-1 hover:scale-105`}>
+    <div
+      className={`${
+        !isAuthenticated ? 'opacity-75' : ''
+      } bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg border border-indigo-200 p-6 transform hover:-translate-y-1 hover:scale-105`}
+    >
       <div className="flex items-center mb-4">
         <service.icon className="h-8 w-8 text-indigo-600 mr-4" />
         <h2 className="text-xl font-semibold text-indigo-800">{service.title}</h2>
@@ -127,7 +123,9 @@ const MainServiceCard: React.FC<{ service: { title: string; description: string;
   );
 };
 
-// AdditionalServiceCard 컴포넌트
+// -------------------------------
+// AdditionalServiceCard
+// -------------------------------
 type AdditionalServiceProps = {
   title: string;
   description?: string;
@@ -135,11 +133,9 @@ type AdditionalServiceProps = {
   link: string;
   color?: string;
   ImagePath?: string;
-}
+};
 
-// AdditionalServiceCard 컴포넌트
 const AdditionalServiceCard: React.FC<{ service: AdditionalServiceProps }> = ({ service }) => {
-
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
 
@@ -150,16 +146,7 @@ const AdditionalServiceCard: React.FC<{ service: AdditionalServiceProps }> = ({ 
 
   const classes = colorClasses[service.color as keyof typeof colorClasses] || colorClasses.blue;
 
-
-
   const handleServiceNavigation = () => {
-    console.log('추가 서비스 클릭 시 상태:', {
-      isAuthenticated: useAuthStore.getState().isAuthenticated,
-      token: useAuthStore.getState().token,
-      serviceTitle: service.title,
-      currentPath: window.location.pathname
-    });
-
     if (service.link?.startsWith('http')) {
       window.open(service.link, '_blank');
     } else {
@@ -170,7 +157,8 @@ const AdditionalServiceCard: React.FC<{ service: AdditionalServiceProps }> = ({ 
   const handleClick = () => {
     handleServiceNavigation();
   };
-  
+
+  // 만약 ImagePath가 있으면, 이미지 배너형 카드
   if (service.ImagePath) {
     return (
       <div
@@ -188,9 +176,13 @@ const AdditionalServiceCard: React.FC<{ service: AdditionalServiceProps }> = ({ 
     );
   }
 
+  // 일반 카드
   return (
-    // 기존 일반 카드 렌더링 코드는 유지
-    <div className={`${classes} ${!isAuthenticated ? 'opacity-75' : ''} rounded-lg overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md border p-4 transform hover:-translate-y-1 hover:scale-105`}>
+    <div
+      className={`${classes} ${
+        !isAuthenticated ? 'opacity-75' : ''
+      } rounded-lg overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md border p-4 transform hover:-translate-y-1 hover:scale-105`}
+    >
       {service.icon && <service.icon className="h-8 w-8 mb-2" />}
       <h2 className="text-lg font-semibold mb-2">{service.title}</h2>
       {service.description && <p className="text-sm whitespace-pre-line">{service.description}</p>}
@@ -205,24 +197,41 @@ const AdditionalServiceCard: React.FC<{ service: AdditionalServiceProps }> = ({ 
       )}
     </div>
   );
-};// Services 컴포넌트
+};
 
-
+// -------------------------------
+// Services (메인 컴포넌트)
+// -------------------------------
 export default function Services() {
   return (
-    <div className="grid grid-cols-2 gap-8">
+    // =========================================
+    // 수정: 모바일(<=md)은 한 열, md 이상 2열
+    // =========================================
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      {/* 좌측(메인서비스)는 그대로 */}
       <div className="space-y-8">
         {mainServices.map((service, index) => (
           <MainServiceCard key={index} service={service} />
         ))}
       </div>
-      <div className="grid grid-rows-2 gap-4">
-        <div className="grid grid-cols-2 gap-4">
-          {additionalServices.slice(0, 2).map((service, index) => (
-            <AdditionalServiceCard key={index} service={service} />
-          ))}
+
+      {/* 오른쪽(추가서비스) 반응형 변경 */}
+      <div
+        className="grid grid-cols-1 md:grid-cols-2 gap-4"
+        // 모바일: 1열, md 이상: 2열
+      >
+        {/* 추가서비스 첫 두 개 */}
+        {additionalServices.slice(0, 2).map((service, index) => (
+          <AdditionalServiceCard key={index} service={service} />
+        ))}
+
+        {/* 
+          마지막 하나(이연관세사무소)는 md에서 가로 두 칸 전부 차지하도록 
+          => md:col-span-2 
+        */}
+        <div className="md:col-span-2">
+          <AdditionalServiceCard service={additionalServices[2]} />
         </div>
-        <AdditionalServiceCard service={additionalServices[2]} />
       </div>
     </div>
   );
