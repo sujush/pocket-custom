@@ -23,13 +23,13 @@ const additionalFeatures = [
     title: '재수출/재수입면세 및 임가공물품등 감세 적용대상 확인',
     description: '수출물품의 선적 기일과 재수출 이행 여부를 확인할 수 있습니다.',
     icon: RefreshCw,
-    link: '/services/export-verification'
+    link: '/services/tax-exemption'
   },
   {
-    title: '수출신고 정보 조회 ',
-    description: '수출신고번호로 수출이행 여부, 정정신고 접수여부 및 적재지 검사 여부 등을 확인할 수 있습니다',
+    title: 'FOB 조건 수출 시 예상 물류 비용 확인 ',
+    description: '선적항 도착 전까지 발생하는 예상 물류비 및 부대비용을 확인할 수 있습니다',
     icon: Shield,
-    link: '/services/export-inquiry'
+    link: '/services/fob-cost'
   }
 ];
 
