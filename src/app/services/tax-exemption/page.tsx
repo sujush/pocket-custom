@@ -35,6 +35,16 @@ export default function TaxExemptionPage() {
   const [selectedOption, setSelectedOption] = useState<string>('');
   const [result, setResult] = useState<ResultType | null>(null);
   const [history, setHistory] = useState<string[]>([]);
+  
+  // 진행률 계산을 위한 최대 질문 깊이 (가장 긴 경로의 질문 수)
+  const MAX_QUESTION_DEPTH = 5;
+  
+  // 진행 상태 계산 함수
+  const calculateProgress = () => {
+    if (result) return 100;
+    // 현재까지 진행된 단계(history.length + 현재 1) / 최대 질문 수
+    return Math.min(Math.floor((history.length + 1) / MAX_QUESTION_DEPTH * 100), 95);
+  };
 
   // 질문 데이터
   const questions: QuestionType[] = [
@@ -272,7 +282,7 @@ export default function TaxExemptionPage() {
         <div className="w-full bg-gray-200 rounded-full h-2.5">
           <div 
             className="bg-blue-600 h-2.5 rounded-full" 
-            style={{ width: result ? '100%' : `${(history.length + 1) * 20}%` }}
+            style={{ width: `${calculateProgress()}%` }}
           ></div>
         </div>
       </div>
