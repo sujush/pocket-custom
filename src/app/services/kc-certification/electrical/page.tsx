@@ -149,7 +149,7 @@ export default function KCCertificationPage() {
         setError(`검색 실패: ${data.resultMsg}`);
       }
     } catch (err) {
-      setError('API 요청 중 오류가 발생했습니다. 다시 시도해주세요.');
+      setError('검색량이 많아 조회에 실패하였습니다. 재시도 하시거나 검색방법을 변경해서 다시 검색하세요');
       console.error('Search API error:', err);
     } finally {
       setIsLoading(false);
