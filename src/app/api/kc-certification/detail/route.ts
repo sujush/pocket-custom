@@ -2,12 +2,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // 환경 변수에서 API 키 가져오기
-const API_AUTH_KEY = process.env.SAFETY_KOREA_API_KEY || 'b85357b5-aa22-aaaa-aaaa-6980';
+const API_AUTH_KEY = process.env.SAFETY_KOREA_API_KEY;
 const BASE_URL = 'http://www.safetykorea.kr/openapi/api/cert';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const certNum = searchParams.get('certNum');
+
+  if (!API_AUTH_KEY) {
+    return NextResponse.json(
+      { resultCode: '5000', resultMsg: 'API 키가 설정되지 않았습니다. 환경 변수를 확인하세요.', resultData: {} },
+      { status: 500 }
+    );
+  }
 
   if (!certNum) {
     return NextResponse.json(
