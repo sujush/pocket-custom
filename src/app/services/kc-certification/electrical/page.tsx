@@ -33,22 +33,24 @@ export default function ElectricalCertificationPage() {
         <p className="text-center text-gray-600 mb-12 max-w-2xl mx-auto">
           전기용품 및 생활용품 안전관리법에 따른 KC 전기인증 정보를 조회하고 인증대행업체를 찾아보세요.
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-          {electricalServices.map((svc) => (
-            <Link href={svc.href} key={svc.title}>
-              <Card className="p-6 hover:scale-105 transition-transform duration-200 cursor-pointer group hover:shadow-lg">
-                <div className="flex flex-col items-center text-center space-y-4">
-                  <div className="p-3 rounded-full bg-yellow-100 group-hover:bg-yellow-200 transition-colors">
-                    <svc.icon className="w-8 h-8 text-yellow-500" />
+        <div className="flex justify-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl w-full">
+            {electricalServices.map((svc) => (
+              <Link href={svc.href} key={svc.title} className="flex justify-center">
+                <Card className="p-6 hover:scale-105 transition-transform duration-200 cursor-pointer group hover:shadow-lg w-full max-w-md">
+                  <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="p-3 rounded-full bg-yellow-100 group-hover:bg-yellow-200 transition-colors">
+                      <svc.icon className="w-8 h-8 text-yellow-500" />
+                    </div>
+                    <h2 className="text-xl font-semibold text-gray-800">
+                      {svc.title}
+                    </h2>
+                    <p className="text-gray-600 text-sm">{svc.description}</p>
                   </div>
-                  <h2 className="text-xl font-semibold text-gray-800">
-                    {svc.title}
-                  </h2>
-                  <p className="text-gray-600 text-sm">{svc.description}</p>
-                </div>
-              </Card>
-            </Link>
-          ))}
+                </Card>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </div>

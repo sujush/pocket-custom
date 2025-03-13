@@ -15,7 +15,7 @@ const CertifiedServices = [
   },
   {
     title: 'KC인증',
-    description: 'KC인증대상 및 KC인증 방법과 비용을 확인할 수 있습니다.',
+    description: 'KC인증 제품 인증 현황을 확인하고 대행사를 검색할 수 있습니다.',
     icon: Laptop,
     link: '/services/kc-certification'
   },
