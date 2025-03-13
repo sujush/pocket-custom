@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
-import { Zap, Radio, Baby, TestTube } from "lucide-react";
+import { Zap, Radio } from "lucide-react";
 
 export default function CertificationPage() {
   const certifications = [
