@@ -6,35 +6,23 @@ export default function CertificationPage() {
   const certifications = [
     {
       title: "전기인증",
-      description: "전기 제품의 안전성을 검증하는 인증",
+      description: "KC 인증 중 전기인증 제품의 인증 현황 및 대행업체 조회",
       icon: Zap,
       href: "/services/kc-certification/electrical",
     },
     {
         title: "전파인증",
-        description: "전파 관련 제품의 적합성을 검증하는 인증",
+        description: "KC 인증 중 전파인증 제품의 인증현황 및 대행업체 조회",
         icon: Radio,        
         href: "/services/kc-certification/radio",
       },
-    {
-      title: "어린이제품인증",
-      description: "어린이용 제품의 안전성을 검증하는 인증",
-      icon: Baby,
-      href: "/services/kc-certification/children",
-    },
-    {
-      title: "생활화학제품인증",
-      description: "생활화학제품의 안전성을 검증하는 인증",
-      icon: TestTube,
-      href: "/services/kc-certification/chemical",
-    },
   ];
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="container mx-auto px-4">
         <h1 className="text-3xl font-bold text-center mb-12 text-gray-800">
-          KC 인증 대상 및 검사비용 확인
+          KC 인증 대상 및 대행업체 확인
         </h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {certifications.map((cert) => (
