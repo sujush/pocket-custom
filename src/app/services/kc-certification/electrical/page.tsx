@@ -1,38 +1,38 @@
 'use client';
 
 import { useState } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
 } from '@/components/ui/card';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
 } from '@/components/ui/dialog';
 import {
   Pagination,
@@ -42,7 +42,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Loader2, Search, FileText, ArrowLeft } from 'lucide-react';
+import { Loader2, Search, FileText, ArrowLeft, ExternalLink } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
@@ -112,6 +112,17 @@ export default function KCCertificationPage() {
     { value: 'signDate', label: '등록일' },
   ];
 
+  // 초기화 함수
+  const handleReset = () => {
+    setSearchType('all');
+    setSearchValue('');
+    setError(null);
+    setCertifications([]);
+    setSelectedCertification(null);
+    setIsDetailModalOpen(false);
+    setCurrentPage(1);
+  };
+
   // 검색 실행 함수
   const handleSearch = async () => {
     if (!searchValue && searchType !== 'all') {
@@ -124,7 +135,7 @@ export default function KCCertificationPage() {
     setCertifications([]);
 
     try {
-      const response = await fetch(`/api/kc-certification/search?conditionKey=${searchType}&conditionValue=${searchValue}`);
+      const response = await fetch(`/api/kc-certification/search?conditionKey=${searchType}&conditionValue=${encodeURIComponent(searchValue)}`);
       const data: ApiResponse = await response.json();
 
       if (data.resultCode === '2000') {
@@ -151,7 +162,7 @@ export default function KCCertificationPage() {
     setError(null);
 
     try {
-      const response = await fetch(`/api/kc-certification/detail?certNum=${certNum}`);
+      const response = await fetch(`/api/kc-certification/detail?certNum=${encodeURIComponent(certNum)}`);
       const data: ApiResponse = await response.json();
 
       if (data.resultCode === '2000') {
@@ -170,7 +181,7 @@ export default function KCCertificationPage() {
 
   // 인증상태에 따른 배지 색상
   const getCertStateColor = (state: string) => {
-    switch(state) {
+    switch (state) {
       case '적합':
         return 'bg-green-100 text-green-800';
       case '반납':
@@ -209,7 +220,7 @@ export default function KCCertificationPage() {
     setCurrentPage(page);
   };
 
-      // 페이지네이션 컴포넌트
+  // 페이지네이션 컴포넌트
   const renderPagination = () => {
     if (totalPages <= 1) return null;
 
@@ -218,11 +229,11 @@ export default function KCCertificationPage() {
     const maxPageButtons = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
     const endPage = Math.min(totalPages, startPage + maxPageButtons - 1);
-    
+
     if (endPage - startPage + 1 < maxPageButtons) {
       startPage = Math.max(1, endPage - maxPageButtons + 1);
     }
-    
+
     for (let i = startPage; i <= endPage; i++) {
       pageNumbers.push(i);
     }
@@ -231,12 +242,12 @@ export default function KCCertificationPage() {
       <Pagination className="mt-4">
         <PaginationContent>
           <PaginationItem>
-            <PaginationPrevious 
+            <PaginationPrevious
               onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
               className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
             />
           </PaginationItem>
-          
+
           {startPage > 1 && (
             <>
               <PaginationItem>
@@ -249,10 +260,10 @@ export default function KCCertificationPage() {
               )}
             </>
           )}
-          
+
           {pageNumbers.map(page => (
             <PaginationItem key={page}>
-              <PaginationLink 
+              <PaginationLink
                 onClick={() => handlePageChange(page)}
                 isActive={page === currentPage}
               >
@@ -260,7 +271,7 @@ export default function KCCertificationPage() {
               </PaginationLink>
             </PaginationItem>
           ))}
-          
+
           {endPage < totalPages && (
             <>
               {endPage < totalPages - 1 && (
@@ -275,9 +286,9 @@ export default function KCCertificationPage() {
               </PaginationItem>
             </>
           )}
-          
+
           <PaginationItem>
-            <PaginationNext 
+            <PaginationNext
               onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
               className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
             />
@@ -287,13 +298,71 @@ export default function KCCertificationPage() {
     );
   };
 
+  // 모바일용 카드 렌더링
+  const renderMobileCard = (cert: KCCertification) => (
+    <Card key={cert.certUid} className="mb-4">
+      <CardHeader className="pb-2">
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="text-base font-medium">
+              <button
+                onClick={() => handleViewDetail(cert.certNum)}
+                className="text-blue-600 hover:underline text-left"
+              >
+                {cert.certNum}
+              </button>
+            </CardTitle>
+            <CardDescription className="text-sm mt-1">
+              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getCertStateColor(cert.certState)}`}>
+                {cert.certState}
+              </span>
+            </CardDescription>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleViewDetail(cert.certNum)}
+            className="h-8 w-8 p-0"
+          >
+            <FileText className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="space-y-2 text-sm">
+          <div>
+            <span className="font-medium text-gray-500">제품명: </span>
+            {cert.productName}
+          </div>
+          <div>
+            <span className="font-medium text-gray-500">모델명: </span>
+            {cert.modelName}
+          </div>
+          <div>
+            <span className="font-medium text-gray-500">{cert.importDiv === '수입' ? '수입사' : '제조사'}: </span>
+            {cert.importDiv === '수입' ? cert.importerName : cert.makerName}
+          </div>
+          <div>
+            <span className="font-medium text-gray-500">인증일자: </span>
+            {formatDate(cert.certDate)}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="container mx-auto py-8 px-4">
       <Card className="w-full">
         <CardHeader className="bg-slate-50">
-          <CardTitle className="text-2xl font-bold">KC 인증정보 검색</CardTitle>
+          <CardTitle
+            className="text-2xl font-bold cursor-pointer"
+            onClick={handleReset}
+          >
+            KC 인증정보 검색
+          </CardTitle>
           <CardDescription>
-            제품의 KC 인증정보를 검색하고 상세 정보를 확인할 수 있습니다.
+            전체로 검색하는 경우 검색량이 많아 조회가 안될 수 있으니 되도록 제품명이나 모델명 등으로 검색하세요
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
@@ -311,12 +380,12 @@ export default function KCCertificationPage() {
                 ))}
               </SelectContent>
             </Select>
-            
+
             <div className="flex-1 relative">
               <Input
                 placeholder={
-                  searchType === 'certDate' || searchType === 'signDate' 
-                    ? 'YYYYMMDD 형태로 입력해주세요 (예: 20230101)' 
+                  searchType === 'certDate' || searchType === 'signDate'
+                    ? 'YYYYMMDD 형태로 입력해주세요 (예: 20230101)'
                     : '검색어를 입력해주세요'
                 }
                 value={searchValue}
@@ -326,8 +395,8 @@ export default function KCCertificationPage() {
                 }}
                 className="pr-10"
               />
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="icon"
                 className="absolute right-0 top-0 h-full"
                 onClick={handleSearch}
@@ -335,7 +404,7 @@ export default function KCCertificationPage() {
                 <Search className="h-4 w-4" />
               </Button>
             </div>
-            
+
             <Button onClick={handleSearch} disabled={isLoading} className="md:w-[120px]">
               {isLoading ? (
                 <>
@@ -356,13 +425,15 @@ export default function KCCertificationPage() {
             </Alert>
           )}
 
-          {/* 검색 결과 테이블 */}
+          {/* 검색 결과 - 반응형 처리 */}
           {certifications.length > 0 ? (
             <>
               <div className="text-sm text-gray-500 mb-2">
                 총 {certifications.length}개의 결과가 검색되었습니다.
               </div>
-              <div className="rounded-md border">
+
+              {/* 데스크탑 화면용 테이블 (중간 이상 화면에서만 표시) */}
+              <div className="hidden md:block rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -380,8 +451,8 @@ export default function KCCertificationPage() {
                       currentItems.map((cert) => (
                         <TableRow key={cert.certUid} className="hover:bg-gray-50">
                           <TableCell className="font-medium">
-                            <button 
-                              onClick={() => handleViewDetail(cert.certNum)} 
+                            <button
+                              onClick={() => handleViewDetail(cert.certNum)}
                               className="text-blue-600 hover:underline"
                             >
                               {cert.certNum}
@@ -397,9 +468,9 @@ export default function KCCertificationPage() {
                           <TableCell>{cert.importDiv === '수입' ? cert.importerName : cert.makerName}</TableCell>
                           <TableCell>{formatDate(cert.certDate)}</TableCell>
                           <TableCell className="text-right">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => handleViewDetail(cert.certNum)}
                             >
                               <FileText className="h-4 w-4" />
@@ -417,6 +488,18 @@ export default function KCCertificationPage() {
                   </TableBody>
                 </Table>
               </div>
+
+              {/* 모바일 화면용 카드 리스트 (중간 이하 화면에서만 표시) */}
+              <div className="md:hidden space-y-2">
+                {currentItems.length > 0 ? (
+                  currentItems.map(cert => renderMobileCard(cert))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    검색 결과가 없습니다.
+                  </div>
+                )}
+              </div>
+
               {renderPagination()}
             </>
           ) : !isLoading && !error ? (
@@ -428,16 +511,16 @@ export default function KCCertificationPage() {
         </CardContent>
       </Card>
 
-      {/* 상세 정보 모달 */}
+      {/* 상세 정보 모달 - 모바일 최적화 */}
       <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           {selectedCertification ? (
             <>
               <DialogHeader>
                 <DialogTitle className="text-xl flex items-center gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="h-8 w-8"
                     onClick={() => setIsDetailModalOpen(false)}
                   >
@@ -445,13 +528,13 @@ export default function KCCertificationPage() {
                   </Button>
                   KC 인증정보 상세
                 </DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="break-all">
                   인증번호: {selectedCertification.certNum}
                 </DialogDescription>
               </DialogHeader>
 
               <Tabs defaultValue="basic" className="w-full mt-4">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
                   <TabsTrigger value="basic">기본정보</TabsTrigger>
                   <TabsTrigger value="image">인증이미지</TabsTrigger>
                   <TabsTrigger value="factory">제조공장</TabsTrigger>
@@ -472,23 +555,23 @@ export default function KCCertificationPage() {
                       </div>
                       <div>
                         <h3 className="text-sm font-medium text-gray-500">인증구분</h3>
-                        <p className="mt-1">{selectedCertification.certDiv}</p>
+                        <p className="mt-1 break-words">{selectedCertification.certDiv}</p>
                       </div>
                       <div>
                         <h3 className="text-sm font-medium text-gray-500">제품명</h3>
-                        <p className="mt-1">{selectedCertification.productName}</p>
+                        <p className="mt-1 break-words">{selectedCertification.productName}</p>
                       </div>
                       <div>
                         <h3 className="text-sm font-medium text-gray-500">브랜드명</h3>
-                        <p className="mt-1">{selectedCertification.brandName || '-'}</p>
+                        <p className="mt-1 break-words">{selectedCertification.brandName || '-'}</p>
                       </div>
                       <div>
                         <h3 className="text-sm font-medium text-gray-500">모델명</h3>
-                        <p className="mt-1">{selectedCertification.modelName}</p>
+                        <p className="mt-1 break-words">{selectedCertification.modelName}</p>
                       </div>
                       <div>
                         <h3 className="text-sm font-medium text-gray-500">법정 제품분류명</h3>
-                        <p className="mt-1">{selectedCertification.categoryName || '-'}</p>
+                        <p className="mt-1 break-words">{selectedCertification.categoryName || '-'}</p>
                       </div>
                     </div>
                     <div className="space-y-4">
@@ -498,7 +581,7 @@ export default function KCCertificationPage() {
                       </div>
                       <div>
                         <h3 className="text-sm font-medium text-gray-500">제조사명</h3>
-                        <p className="mt-1">{selectedCertification.makerName}</p>
+                        <p className="mt-1 break-words">{selectedCertification.makerName}</p>
                       </div>
                       <div>
                         <h3 className="text-sm font-medium text-gray-500">제조국</h3>
@@ -506,7 +589,7 @@ export default function KCCertificationPage() {
                       </div>
                       <div>
                         <h3 className="text-sm font-medium text-gray-500">수입사명</h3>
-                        <p className="mt-1">{selectedCertification.importerName || '-'}</p>
+                        <p className="mt-1 break-words">{selectedCertification.importerName || '-'}</p>
                       </div>
                       <div>
                         <h3 className="text-sm font-medium text-gray-500">인증일자</h3>
@@ -518,24 +601,24 @@ export default function KCCertificationPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* 파생 모델 정보 */}
                   {selectedCertification.derivationModels && selectedCertification.derivationModels.length > 0 && (
                     <div className="mt-6">
                       <h3 className="text-sm font-medium text-gray-500 mb-2">파생 모델</h3>
                       <div className="flex flex-wrap gap-2">
                         {selectedCertification.derivationModels.map((model, idx) => (
-                          <Badge key={idx} variant="outline">{model}</Badge>
+                          <Badge key={idx} variant="outline" className="break-all">{model}</Badge>
                         ))}
                       </div>
                     </div>
                   )}
-                  
+
                   {/* 상세 내용 */}
                   {selectedCertification.remark && (
                     <div className="mt-6">
                       <h3 className="text-sm font-medium text-gray-500 mb-2">상세 내용</h3>
-                      <p className="text-sm">{selectedCertification.remark}</p>
+                      <p className="text-sm break-words">{selectedCertification.remark}</p>
                     </div>
                   )}
                 </TabsContent>
@@ -543,12 +626,24 @@ export default function KCCertificationPage() {
                 {/* 인증 이미지 탭 */}
                 <TabsContent value="image" className="pt-4">
                   {selectedCertification.certificationImageUrls && selectedCertification.certificationImageUrls.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                       {selectedCertification.certificationImageUrls.map((url, idx) => (
                         <div key={idx} className="border rounded-md overflow-hidden">
-                          <img 
-                            src={url} 
-                            alt={`인증 이미지 ${idx + 1}`} 
+                          <div className="flex justify-between items-center p-2 bg-gray-50">
+                            <span className="text-sm font-medium">이미지 {idx + 1}</span>
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 flex items-center text-xs"
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              원본 보기
+                            </a>
+                          </div>
+                          <img
+                            src={url}
+                            alt={`인증 이미지 ${idx + 1}`}
                             className="w-full h-auto"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
@@ -565,74 +660,95 @@ export default function KCCertificationPage() {
                   )}
                 </TabsContent>
 
-                {/* 제조공장 탭 */}
-                <TabsContent value="factory" className="pt-4">
-                  {selectedCertification.factories && selectedCertification.factories.length > 0 ? (
-                    <div className="rounded-md border">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>제조사명</TableHead>
-                            <TableHead>제조국</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {selectedCertification.factories.map((factory, idx) => (
-                            <TableRow key={idx}>
-                              <TableCell>{factory.makerName}</TableCell>
-                              <TableCell>{factory.makerCntryName}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      제공된 제조공장 정보가 없습니다.
-                    </div>
-                  )}
-                </TabsContent>
-
-                {/* 연관 인증 탭 */}
+                {/* 연관 인증 탭 - 모바일 최적화 */}
                 <TabsContent value="similar" className="pt-4">
                   {selectedCertification.similarCertifications && selectedCertification.similarCertifications.length > 0 ? (
-                    <div className="rounded-md border">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>인증번호</TableHead>
-                            <TableHead>인증상태</TableHead>
-                            <TableHead>제품명</TableHead>
-                            <TableHead>모델명</TableHead>
-                            <TableHead>인증일자</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {selectedCertification.similarCertifications.map((cert) => (
-                            <TableRow key={cert.certUid}>
-                              <TableCell className="font-medium">
-                                <button 
-                                  onClick={() => {
-                                    setIsDetailModalOpen(false);
-                                    setTimeout(() => handleViewDetail(cert.certNum), 300);
-                                  }} 
-                                  className="text-blue-600 hover:underline"
-                                >
-                                  {cert.certNum}
-                                </button>
-                              </TableCell>
-                              <TableCell>
-                                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getCertStateColor(cert.certState)}`}>
-                                  {cert.certState}
-                                </span>
-                              </TableCell>
-                              <TableCell>{cert.productName}</TableCell>
-                              <TableCell>{cert.modelName}</TableCell>
-                              <TableCell>{formatDate(cert.certDate)}</TableCell>
+                    <div>
+                      {/* 데스크탑용 테이블 */}
+                      <div className="hidden md:block rounded-md border">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>인증번호</TableHead>
+                              <TableHead>인증상태</TableHead>
+                              <TableHead>제품명</TableHead>
+                              <TableHead>모델명</TableHead>
+                              <TableHead>인증일자</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                          </TableHeader>
+                          <TableBody>
+                            {selectedCertification.similarCertifications.map((cert) => (
+                              <TableRow key={cert.certUid}>
+                                <TableCell className="font-medium">
+                                  <button
+                                    onClick={() => {
+                                      setIsDetailModalOpen(false);
+                                      setTimeout(() => handleViewDetail(cert.certNum), 300);
+                                    }}
+                                    className="text-blue-600 hover:underline"
+                                  >
+                                    {cert.certNum}
+                                  </button>
+                                </TableCell>
+                                <TableCell>
+                                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getCertStateColor(cert.certState)}`}>
+                                    {cert.certState}
+                                  </span>
+                                </TableCell>
+                                <TableCell>{cert.productName}</TableCell>
+                                <TableCell>{cert.modelName}</TableCell>
+                                <TableCell>{formatDate(cert.certDate)}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+
+                      {/* 모바일용 카드 리스트 */}
+                      <div className="md:hidden space-y-3">
+                        {selectedCertification.similarCertifications.map((cert) => (
+                          <Card key={cert.certUid} className="overflow-hidden">
+                            <CardHeader className="pb-2">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <CardTitle className="text-base font-medium">
+                                    <button
+                                      onClick={() => {
+                                        setIsDetailModalOpen(false);
+                                        setTimeout(() => handleViewDetail(cert.certNum), 300);
+                                      }}
+                                      className="text-blue-600 hover:underline text-left"
+                                    >
+                                      {cert.certNum}
+                                    </button>
+                                  </CardTitle>
+                                  <CardDescription className="text-sm mt-1">
+                                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getCertStateColor(cert.certState)}`}>
+                                      {cert.certState}
+                                    </span>
+                                  </CardDescription>
+                                </div>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="pt-0">
+                              <div className="space-y-2 text-sm">
+                                <div>
+                                  <span className="font-medium text-gray-500">제품명: </span>
+                                  <span className="break-words">{cert.productName}</span>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-gray-500">모델명: </span>
+                                  <span className="break-words">{cert.modelName}</span>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-gray-500">인증일자: </span>
+                                  {formatDate(cert.certDate)}
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
                     </div>
                   ) : (
                     <div className="text-center py-8 text-gray-500">
