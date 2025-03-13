@@ -111,7 +111,16 @@ export default function TaxExemptionPage() {
       text: '해당 제품이 1) 수출물품의 용기로서 다시 수입되는 제품인가요? 또는 2) 해외시험 연구를 목적으로 수출된 후 재수입되는 물품인가요?',
       options: [
         { id: 'container-research-yes', text: '예', result: 're-import-exemption' },
-        { id: 'container-research-no', text: '아니오', result: 'no-exemption' },
+        { id: 'container-research-no', text: '아니오', next: 'repair-import-defect' }, // 결과 대신 다음 질문으로
+      ],
+    },
+    // 새로 추가된 질문
+    {
+      id: 'repair-import-defect',
+      text: '해당 제품이 한국에서 수출되었다가 하자가 발생하여 다시 한국으로 수입 후 수리하기 위해 수입된 제품인가요?',
+      options: [
+        { id: 'repair-import-defect-yes', text: '예', result: 're-export-exemption' },
+        { id: 'repair-import-defect-no', text: '아니오', result: 'no-exemption' },
       ],
     },
     // 원산지가 한국이 아닌 경우의 선택지 (신규 추가)
