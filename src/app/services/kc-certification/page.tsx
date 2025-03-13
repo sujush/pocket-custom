@@ -1,56 +1,51 @@
-"use client";
-import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import { Search, Building2, Zap } from "lucide-react";
+import Link from "next/link";
+import { Zap, Radio } from "lucide-react";
 
-export default function ElectricalCertificationPage() {
-  const electricalServices = [
+export default function CertificationPage() {
+  const certifications = [
     {
-      title: "KC 인증정보 검색",
-      description: "제품명 또는 모델명으로 전기제품 인증 정보를 조회하세요",
-      icon: Search,
-      href: "/services/kc-certification/electrical/check-products",
+      title: "전기인증",
+      description: "KC 인증 중 전기인증 제품의 인증 현황 및 대행업체 조회",
+      icon: Zap,
+      href: "/services/kc-certification/electrical",
     },
     {
-      title: "인증대행업체 조회",
-      description: "KC 전기인증 대행업체 목록과 연락처를 확인하세요",
-      icon: Building2,
-      href: "/services/kc-certification/electrical/agents",
-    }
+      title: "전파인증",
+      description: "KC 인증 중 전파인증 제품의 인증현황 및 대행업체 조회",
+      icon: Radio,        
+      href: "/services/kc-certification/radio",
+    },
   ];
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="container mx-auto px-4 py-12">
-        <div className="flex justify-center mb-8">
-          <div className="p-3 rounded-full bg-yellow-100 inline-block">
-            <Zap className="w-10 h-10 text-yellow-500" />
-          </div>
-        </div>
-        <h1 className="text-3xl font-bold text-center mb-4 text-gray-800">
-          KC 전기인증 정보
+      <div className="container mx-auto px-4">
+        <h1 className="text-3xl font-bold text-center mb-12 text-gray-800">
+          KC 인증 대상 및 대행업체 확인
         </h1>
-        <p className="text-center text-gray-600 mb-12 max-w-2xl mx-auto">
-          전기용품 및 생활용품 안전관리법에 따른 KC 전기인증 정보를 조회하고 인증대행업체를 찾아보세요.
-        </p>
         
-        {/* 카드 2개를 중앙에 배치 */}
-        <div className="flex flex-col md:flex-row gap-6 justify-center items-center">
-          {electricalServices.map((svc) => (
-            <Link href={svc.href} key={svc.title} className="w-full max-w-sm">
-              <Card className="p-6 hover:scale-105 transition-transform duration-200 cursor-pointer group hover:shadow-lg h-full">
-                <div className="flex flex-col items-center text-center space-y-4">
-                  <div className="p-3 rounded-full bg-yellow-100 group-hover:bg-yellow-200 transition-colors">
-                    <svc.icon className="w-8 h-8 text-yellow-500" />
+        {/* 중앙 정렬된 플렉스 컨테이너 */}
+        <div className="flex justify-center">
+          <div className="flex flex-col md:flex-row gap-6 max-w-3xl">
+            {certifications.map((cert) => (
+              <Link href={cert.href} key={cert.title} className="w-full md:w-1/2">
+                <Card className="p-6 hover:scale-105 transition-transform duration-200 cursor-pointer group hover:shadow-lg h-full">
+                  <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="p-3 rounded-full bg-blue-100 group-hover:bg-blue-200 transition-colors">
+                      <cert.icon className="w-8 h-8 text-blue-600" />
+                    </div>
+                    <h2 className="text-xl font-semibold text-gray-800">
+                      {cert.title}
+                    </h2>
+                    <p className="text-gray-600 text-sm">
+                      {cert.description}
+                    </p>
                   </div>
-                  <h2 className="text-xl font-semibold text-gray-800">
-                    {svc.title}
-                  </h2>
-                  <p className="text-gray-600 text-sm">{svc.description}</p>
-                </div>
-              </Card>
-            </Link>
-          ))}
+                </Card>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </div>
